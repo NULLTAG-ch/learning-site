@@ -6,6 +6,8 @@
 <title>learn.nulltag.ch – NULLTAG Piano Trainer</title>
 <meta name="description" content="Klavier lernen mit NULLTAG – alle Songs als interaktive Lernversionen: fallende Noten, Grundkurs, Web-MIDI-Support und MIDI-Import. Läuft komplett im Browser.">
 <meta name="theme-color" content="#0a0a0a">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="assets/icons/icon-192.png">
 <meta property="og:title" content="learn.nulltag.ch – NULLTAG Piano Trainer">
 <meta property="og:description" content="Klavier lernen mit NULLTAG – fallende Noten, Warte-Modus, Web-MIDI. Kein Konto, keine Installation.">
 <meta property="og:url" content="https://learn.nulltag.ch/">
@@ -1875,6 +1877,8 @@ function renderStart(){
   row.appendChild(sc);
 }
 renderStart();
+// PWA: Service Worker fuer Offline-Betrieb (Samples + App-Shell)
+if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
 // Bibliothek initial rendern
 renderLibrary();
 // Start: leichtester Song vorladen
