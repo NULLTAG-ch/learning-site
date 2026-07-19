@@ -1,0 +1,16 @@
+{
+  "name": "NULLTAG Learn – Piano Trainer",
+  "short_name": "NULLTAG Learn",
+  "description": "Klavier lernen mit NULLTAG – fallende Noten, Bibliothek, Web-MIDI. Läuft komplett im Browser.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#0a0a0a",
+  "theme_color": "#0a0a0a",
+  "lang": "de",
+  "icons": [
+    { "src": "assets/icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "assets/icons/icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "assets/icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
