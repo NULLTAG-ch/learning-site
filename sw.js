@@ -1,6 +1,6 @@
 // NULLTAG Learn – Service Worker: App-Shell vorab, Assets zur Laufzeit.
 // Version bei jedem Release hochzaehlen, sonst bleibt der alte Cache aktiv.
-const CACHE = 'nulltag-learn-v1';
+const CACHE = 'nulltag-learn-v2';
 const SHELL = ['./', 'index.html', 'manifest.json',
   'assets/icons/icon-192.png', 'assets/icons/icon-512.png', 'assets/icons/icon-maskable-512.png'];
 
