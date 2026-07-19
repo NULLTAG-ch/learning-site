@@ -1,0 +1,536 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NULLTAG · Piano Learning</title>
+<style>
+  :root {
+    --bg: #0b0b0e;
+    --panel: #141419;
+    --panel-2: #1c1c24;
+    --line: #2a2a35;
+    --text: #e9e9ef;
+    --muted: #8b8b9a;
+    --accent: #7c5cff;
+    --accent-soft: rgba(124, 92, 255, 0.18);
+    --good: #3ddc97;
+    --bad: #ff5c7a;
+    --white-key: #f2f2f5;
+    --black-key: #17171d;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { height: 100%; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+  }
+
+  header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 24px;
+    border-bottom: 1px solid var(--line);
+    background: var(--panel);
+  }
+  .brand { display: flex; align-items: baseline; gap: 10px; }
+  .brand .logo {
+    font-weight: 800;
+    letter-spacing: 0.18em;
+    font-size: 1.1rem;
+  }
+  .brand .logo span { color: var(--accent); }
+  .brand .sub { color: var(--muted); font-size: 0.85rem; }
+
+  main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    padding: 20px 24px;
+    max-width: 1100px;
+    width: 100%;
+    margin: 0 auto;
+  }
+
+  .controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    align-items: center;
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 14px 16px;
+  }
+  .controls label { color: var(--muted); font-size: 0.85rem; }
+  select, button {
+    background: var(--panel-2);
+    color: var(--text);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 8px 14px;
+    font-size: 0.9rem;
+    cursor: pointer;
+  }
+  select:focus, button:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+  button.primary { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; }
+  button:disabled { opacity: 0.45; cursor: default; }
+  .tempo-wrap { display: flex; align-items: center; gap: 8px; }
+  input[type="range"] { accent-color: var(--accent); }
+
+  .status {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    align-items: center;
+    justify-content: space-between;
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 12px 16px;
+  }
+  .status .hint { color: var(--muted); font-size: 0.9rem; }
+  .status .hint strong { color: var(--text); }
+  .stats { display: flex; gap: 18px; font-size: 0.9rem; }
+  .stats .stat b { color: var(--accent); font-variant-numeric: tabular-nums; }
+  .progress-bar {
+    flex-basis: 100%;
+    height: 6px;
+    background: var(--panel-2);
+    border-radius: 3px;
+    overflow: hidden;
+  }
+  .progress-bar .fill {
+    height: 100%;
+    width: 0%;
+    background: var(--accent);
+    border-radius: 3px;
+    transition: width 0.15s ease;
+  }
+
+  .keyboard-wrap {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 18px;
+    overflow-x: auto;
+  }
+  .keyboard {
+    position: relative;
+    height: 190px;
+    min-width: 720px;
+    user-select: none;
+  }
+  .key {
+    position: absolute;
+    top: 0;
+    border: 1px solid #00000055;
+    border-radius: 0 0 6px 6px;
+    cursor: pointer;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    padding-bottom: 6px;
+    font-size: 0.65rem;
+    transition: background 0.08s ease;
+  }
+  .key.white {
+    height: 100%;
+    background: var(--white-key);
+    color: #55555f;
+    z-index: 1;
+  }
+  .key.black {
+    height: 58%;
+    background: var(--black-key);
+    color: #9a9aa8;
+    z-index: 2;
+    border: 1px solid #000;
+  }
+  .key.white.active { background: #cfc3ff; }
+  .key.black.active { background: #4d3a99; }
+  .key.white.target { background: var(--accent); color: #fff; box-shadow: 0 0 14px var(--accent); }
+  .key.black.target { background: var(--accent); color: #fff; box-shadow: 0 0 14px var(--accent); }
+  .key.white.wrong { background: var(--bad); color: #fff; }
+  .key.black.wrong { background: var(--bad); color: #fff; }
+  .key .kbd-hint {
+    position: absolute;
+    top: 6px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 0.6rem;
+    opacity: 0.7;
+  }
+
+  footer {
+    text-align: center;
+    color: var(--muted);
+    font-size: 0.8rem;
+    padding: 14px;
+    border-top: 1px solid var(--line);
+  }
+  footer a { color: var(--accent); text-decoration: none; }
+
+  @media (max-width: 640px) {
+    main { padding: 14px; }
+    .keyboard { height: 150px; }
+  }
+</style>
+</head>
+<body>
+<header>
+  <div class="brand">
+    <div class="logo">NULL<span>TAG</span></div>
+    <div class="sub">Piano Learning</div>
+  </div>
+</header>
+
+<main>
+  <section class="controls" aria-label="Steuerung">
+    <label for="track-select">Track</label>
+    <select id="track-select"></select>
+
+    <label for="mode-select">Modus</label>
+    <select id="mode-select">
+      <option value="learn">Lernen (Taste für Taste)</option>
+      <option value="listen">Anhören (Autoplay)</option>
+    </select>
+
+    <div class="tempo-wrap">
+      <label for="tempo">Tempo</label>
+      <input type="range" id="tempo" min="40" max="160" value="90">
+      <span id="tempo-val">90 BPM</span>
+    </div>
+
+    <button class="primary" id="btn-start">Start</button>
+    <button id="btn-reset">Zurücksetzen</button>
+  </section>
+
+  <section class="status" aria-live="polite">
+    <div class="hint" id="hint">Wähle einen Track und drücke <strong>Start</strong>. Im Lernmodus leuchtet die nächste Taste auf — spiele sie mit Maus oder Computertastatur.</div>
+    <div class="stats">
+      <div class="stat">Richtig: <b id="stat-correct">0</b></div>
+      <div class="stat">Fehler: <b id="stat-wrong">0</b></div>
+      <div class="stat">Fortschritt: <b id="stat-progress">0 / 0</b></div>
+    </div>
+    <div class="progress-bar"><div class="fill" id="progress-fill"></div></div>
+  </section>
+
+  <section class="keyboard-wrap">
+    <div class="keyboard" id="keyboard" aria-label="Klaviertastatur"></div>
+  </section>
+</main>
+
+<footer>
+  NULLTAG · learning.site — Tracks lassen sich im <a href="https://github.com/nulltag-ch/learning.site" rel="noopener">Quellcode</a> (TRACKS-Array in index.html) anpassen.
+</footer>
+
+<script>
+"use strict";
+
+/* ── Track data ─────────────────────────────────────────────
+   Platzhalter-Tracks. Eigene NULLTAG-Tracks hier eintragen:
+   notes: [note, beats] — note als wissenschaftliche Notation (C4 = mittleres C). */
+const TRACKS = [
+  {
+    id: "nulltag-demo-1",
+    name: "NULLTAG Demo — Intro Theme",
+    notes: [
+      ["E4",1],["G4",1],["A4",2],["E4",1],["G4",1],["B4",0.5],["A4",1.5],
+      ["E4",1],["G4",1],["A4",2],["G4",1],["E4",1],["D4",2],
+    ],
+  },
+  {
+    id: "nulltag-demo-2",
+    name: "NULLTAG Demo — Nachtfahrt",
+    notes: [
+      ["A3",1],["C4",1],["E4",1],["A4",2],["G4",1],["E4",1],["C4",2],
+      ["A3",1],["C4",1],["E4",1],["G4",2],["F4",1],["E4",1],["D4",1],["C4",2],
+    ],
+  },
+  {
+    id: "uebung-c-dur",
+    name: "Übung — C-Dur Tonleiter",
+    notes: [
+      ["C4",1],["D4",1],["E4",1],["F4",1],["G4",1],["A4",1],["B4",1],["C5",2],
+      ["C5",1],["B4",1],["A4",1],["G4",1],["F4",1],["E4",1],["D4",1],["C4",2],
+    ],
+  },
+];
+
+/* ── Keyboard layout ──────────────────────────────────────── */
+const NOTE_NAMES = ["C","C#","D","D#","E","F","F#","G","G#","A","A#","B"];
+const START_OCTAVE = 3, END_OCTAVE = 5; // C3..B5
+const KEY_MAP = {
+  // Computertastatur → Note (untere Reihe = C4-Oktave)
+  "a":"C4","w":"C#4","s":"D4","e":"D#4","d":"E4","f":"F4","t":"F#4",
+  "g":"G4","z":"G#4","h":"A4","u":"A#4","j":"B4","k":"C5","i":"C#5",
+  "l":"D5","o":"D#5",";":"E5","y":"G#4",
+};
+
+function noteToMidi(note) {
+  const m = note.match(/^([A-G]#?)(\d)$/);
+  const idx = NOTE_NAMES.indexOf(m[1]);
+  return (parseInt(m[2], 10) + 1) * 12 + idx;
+}
+function midiToFreq(midi) { return 440 * Math.pow(2, (midi - 69) / 12); }
+
+/* ── Audio ────────────────────────────────────────────────── */
+let audioCtx = null;
+function ensureAudio() {
+  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  if (audioCtx.state === "suspended") audioCtx.resume();
+  return audioCtx;
+}
+function playNote(note, duration = 0.5) {
+  const ctx = ensureAudio();
+  const t = ctx.currentTime;
+  const freq = midiToFreq(noteToMidi(note));
+  const osc = ctx.createOscillator();
+  const osc2 = ctx.createOscillator();
+  const gain = ctx.createGain();
+  osc.type = "triangle";
+  osc.frequency.value = freq;
+  osc2.type = "sine";
+  osc2.frequency.value = freq * 2;
+  const g2 = ctx.createGain();
+  g2.gain.value = 0.15;
+  gain.gain.setValueAtTime(0.0001, t);
+  gain.gain.exponentialRampToValueAtTime(0.4, t + 0.015);
+  gain.gain.exponentialRampToValueAtTime(0.0001, t + duration);
+  osc.connect(gain);
+  osc2.connect(g2).connect(gain);
+  gain.connect(ctx.destination);
+  osc.start(t); osc2.start(t);
+  osc.stop(t + duration + 0.05); osc2.stop(t + duration + 0.05);
+}
+
+/* ── Build keyboard ───────────────────────────────────────── */
+const keyboardEl = document.getElementById("keyboard");
+const keyEls = {}; // note -> element
+const REVERSE_KEY_MAP = {};
+for (const [k, n] of Object.entries(KEY_MAP)) {
+  if (!REVERSE_KEY_MAP[n]) REVERSE_KEY_MAP[n] = k;
+}
+
+function buildKeyboard() {
+  const whiteNotes = [];
+  for (let oct = START_OCTAVE; oct <= END_OCTAVE; oct++) {
+    for (const n of NOTE_NAMES) {
+      if (!n.includes("#")) whiteNotes.push(n + oct);
+    }
+  }
+  const whiteW = 100 / whiteNotes.length;
+  whiteNotes.forEach((note, i) => {
+    const el = document.createElement("div");
+    el.className = "key white";
+    el.style.left = (i * whiteW) + "%";
+    el.style.width = whiteW + "%";
+    el.dataset.note = note;
+    el.textContent = note;
+    if (REVERSE_KEY_MAP[note]) {
+      const hint = document.createElement("span");
+      hint.className = "kbd-hint";
+      hint.textContent = REVERSE_KEY_MAP[note].toUpperCase();
+      el.appendChild(hint);
+    }
+    keyboardEl.appendChild(el);
+    keyEls[note] = el;
+  });
+  // Black keys
+  for (let oct = START_OCTAVE; oct <= END_OCTAVE; oct++) {
+    for (const n of NOTE_NAMES) {
+      if (!n.includes("#")) continue;
+      const note = n + oct;
+      const leftWhite = n[0] + oct;
+      const idx = whiteNotes.indexOf(leftWhite);
+      const el = document.createElement("div");
+      el.className = "key black";
+      el.style.left = ((idx + 0.68) * whiteW) + "%";
+      el.style.width = (whiteW * 0.62) + "%";
+      el.dataset.note = note;
+      if (REVERSE_KEY_MAP[note]) {
+        const hint = document.createElement("span");
+        hint.className = "kbd-hint";
+        hint.textContent = REVERSE_KEY_MAP[note].toUpperCase();
+        el.appendChild(hint);
+      }
+      keyboardEl.appendChild(el);
+      keyEls[note] = el;
+    }
+  }
+}
+buildKeyboard();
+
+/* ── App state ────────────────────────────────────────────── */
+const trackSelect = document.getElementById("track-select");
+const modeSelect = document.getElementById("mode-select");
+const tempoInput = document.getElementById("tempo");
+const tempoVal = document.getElementById("tempo-val");
+const btnStart = document.getElementById("btn-start");
+const btnReset = document.getElementById("btn-reset");
+const hintEl = document.getElementById("hint");
+const statCorrect = document.getElementById("stat-correct");
+const statWrong = document.getElementById("stat-wrong");
+const statProgress = document.getElementById("stat-progress");
+const progressFill = document.getElementById("progress-fill");
+
+TRACKS.forEach(t => {
+  const opt = document.createElement("option");
+  opt.value = t.id;
+  opt.textContent = t.name;
+  trackSelect.appendChild(opt);
+});
+
+const state = {
+  running: false,
+  mode: "learn",
+  track: TRACKS[0],
+  pos: 0,
+  correct: 0,
+  wrong: 0,
+  playTimer: null,
+};
+
+function currentTrack() {
+  return TRACKS.find(t => t.id === trackSelect.value) || TRACKS[0];
+}
+function beatMs() { return 60000 / parseInt(tempoInput.value, 10); }
+
+function clearHighlights() {
+  Object.values(keyEls).forEach(el => el.classList.remove("target", "active", "wrong"));
+}
+
+function updateStats() {
+  statCorrect.textContent = state.correct;
+  statWrong.textContent = state.wrong;
+  statProgress.textContent = state.pos + " / " + state.track.notes.length;
+  const pct = state.track.notes.length ? (state.pos / state.track.notes.length) * 100 : 0;
+  progressFill.style.width = pct + "%";
+}
+
+function flashKey(note, cls, ms) {
+  const el = keyEls[note];
+  if (!el) return;
+  el.classList.add(cls);
+  setTimeout(() => el.classList.remove(cls), ms);
+}
+
+function highlightTarget() {
+  clearHighlights();
+  const step = state.track.notes[state.pos];
+  if (!step) return;
+  const el = keyEls[step[0]];
+  if (el) el.classList.add("target");
+}
+
+function finish() {
+  state.running = false;
+  clearTimeout(state.playTimer);
+  clearHighlights();
+  btnStart.disabled = false;
+  const total = state.correct + state.wrong;
+  if (state.mode === "learn" && total > 0) {
+    const acc = Math.round((state.correct / total) * 100);
+    hintEl.innerHTML = "Fertig! Genauigkeit: <strong>" + acc + "%</strong> (" +
+      state.correct + " richtig, " + state.wrong + " Fehler). Nochmal? Drücke <strong>Start</strong>.";
+  } else {
+    hintEl.innerHTML = "Track beendet. Drücke <strong>Start</strong> zum Wiederholen.";
+  }
+}
+
+function startSession() {
+  ensureAudio();
+  state.track = currentTrack();
+  state.mode = modeSelect.value;
+  state.pos = 0;
+  state.correct = 0;
+  state.wrong = 0;
+  state.running = true;
+  btnStart.disabled = true;
+  updateStats();
+  if (state.mode === "listen") {
+    hintEl.innerHTML = "Autoplay läuft — schau zu, welche Tasten gespielt werden.";
+    autoplayStep();
+  } else {
+    hintEl.innerHTML = "Spiele die <strong>leuchtende Taste</strong> — per Klick oder Computertastatur.";
+    highlightTarget();
+  }
+}
+
+function autoplayStep() {
+  if (!state.running) return;
+  const step = state.track.notes[state.pos];
+  if (!step) { finish(); return; }
+  const [note, beats] = step;
+  const durMs = beats * beatMs();
+  clearHighlights();
+  const el = keyEls[note];
+  if (el) el.classList.add("active");
+  playNote(note, Math.min(durMs / 1000, 1.5));
+  state.pos++;
+  updateStats();
+  state.playTimer = setTimeout(autoplayStep, durMs);
+}
+
+function handleInput(note) {
+  playNote(note, 0.4);
+  flashKey(note, "active", 160);
+  if (!state.running || state.mode !== "learn") return;
+  const step = state.track.notes[state.pos];
+  if (!step) return;
+  if (note === step[0]) {
+    state.correct++;
+    state.pos++;
+    updateStats();
+    if (state.pos >= state.track.notes.length) { finish(); return; }
+    highlightTarget();
+  } else {
+    state.wrong++;
+    updateStats();
+    flashKey(note, "wrong", 300);
+  }
+}
+
+/* ── Events ───────────────────────────────────────────────── */
+keyboardEl.addEventListener("pointerdown", e => {
+  const el = e.target.closest(".key");
+  if (el) handleInput(el.dataset.note);
+});
+document.addEventListener("keydown", e => {
+  if (e.repeat) return;
+  if (e.target.tagName === "SELECT" || e.target.tagName === "INPUT") return;
+  const note = KEY_MAP[e.key.toLowerCase()];
+  if (note) handleInput(note);
+});
+tempoInput.addEventListener("input", () => {
+  tempoVal.textContent = tempoInput.value + " BPM";
+});
+btnStart.addEventListener("click", startSession);
+btnReset.addEventListener("click", () => {
+  state.running = false;
+  clearTimeout(state.playTimer);
+  clearHighlights();
+  state.pos = 0; state.correct = 0; state.wrong = 0;
+  state.track = currentTrack();
+  updateStats();
+  btnStart.disabled = false;
+  hintEl.innerHTML = "Wähle einen Track und drücke <strong>Start</strong>.";
+});
+trackSelect.addEventListener("change", () => {
+  state.track = currentTrack();
+  state.pos = 0;
+  updateStats();
+});
+
+state.track = currentTrack();
+updateStats();
+</script>
+</body>
+</html>
