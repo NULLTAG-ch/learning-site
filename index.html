@@ -278,6 +278,7 @@ canvas { display:block; width:100%; flex:1; touch-action:none; cursor:pointer; }
       <button id="metro">Metronom</button>
       <button id="names" class="active">Notennamen</button>
       <button id="fing" class="active">Fingersatz</button>
+      <button id="staffb">Noten</button>
       <button id="autot">Auto-Tempo</button>
       <button id="rec">● Aufnahme</button>
     </div>
@@ -650,6 +651,8 @@ let LOW = 21, HIGH = 108;
 let version = 'easy', notes = [], secStart = 0, secEnd = 8;
 let playing = false, pos = -4, tempoPct = 50, playRH = true, playLH = true, looping = true;
 let mode = 'listen', octTolerant = true, metro = false, showNames = true, showFinger = true;
+let showStaff = false, staffFlat = true;
+try { showStaff = localStorage.getItem('nulltag-staff') === '1'; } catch (e) {}
 let autoTempo = false, barErrs = {};
 let recArm = false, recActive = false, recEvents = [], recNotes = [], recPerfOff = 0, recSpb = 0.6, showRec = false;
 let sessionQueue = [], sessionActive = false;
@@ -664,7 +667,19 @@ function activeNotes(){ return notes.filter(n => (isRHn(n, SONG.split) ? playRH 
 function rebuild(){
   notes = SONG[version].filter(n => n[0] >= secStart * 4 && n[0] < secEnd * 4);
   fingering = computeFingering(notes, SONG.split);
+  staffFlat = isFlatKey(detectKey(SONG.full || notes));
   buildGroups(); resetScore();
+}
+// Kreuz-Tonarten schreiben mit Kreuzen, alle anderen mit b (Notenansicht)
+function isFlatKey(key){
+  return !(key.minor ? [4,11,6,1,8] : [7,2,9,4,11,6]).includes(key.root);
+}
+// Tonhoehe -> diatonischer Schritt (C-1 = 0) + Vorzeichen fuer die Notenansicht
+function spellPitch(p, flat){
+  const S = [[0,''],[0,'♯'],[1,''],[1,'♯'],[2,''],[3,''],[3,'♯'],[4,''],[4,'♯'],[5,''],[5,'♯'],[6,'']];
+  const F = [[0,''],[1,'♭'],[1,''],[2,'♭'],[2,''],[3,''],[4,'♭'],[4,''],[5,'♭'],[5,''],[6,'♭'],[6,'']];
+  const [li, acc] = (flat ? F : S)[p % 12];
+  return { step: (Math.floor(p / 12) - 1) * 7 + li, acc };
 }
 // ================= Fingersatz-Berechnung =================
 // Klassische Regeln als Kostenfunktion + dynamische Programmierung pro Hand:
@@ -796,13 +811,81 @@ function keyX(p, g){
   let lw = p - 1; while (!([0,2,4,5,7,9,11].includes(lw % 12))) lw--;
   return [g.wx[lw] + g.ww * 0.65, g.ww * 0.7];
 }
+// Notenschrift-Ansicht: Grand Staff oben im Trainer, Zeit horizontal, eigener
+// leichter Renderer (kein Fremd-Code) - Notenkoepfe, Vorzeichen, Hilfslinien.
+function drawStaff(g, TOP, dpr){
+  const W = g.W;
+  ctx.fillStyle = '#0f0f0f'; ctx.fillRect(0, 0, W, TOP);
+  const gap = TOP / 13;
+  const ML = 44 * dpr;
+  const tTop = TOP * 0.16, bTop = TOP * 0.56;
+  const yOf = (step, rh) => rh ? tTop + (38 - step) * gap / 2 : bTop + (26 - step) * gap / 2;
+  // Notenlinien (Violine: F5..E4, Bass: A3..G2) + Systemklammer
+  ctx.strokeStyle = '#4a4640'; ctx.lineWidth = Math.max(1, Math.round(dpr));
+  ctx.beginPath();
+  for (let i = 0; i < 5; i++) {
+    ctx.moveTo(ML * 0.5, Math.round(tTop + i * gap) + 0.5); ctx.lineTo(W - 8, Math.round(tTop + i * gap) + 0.5);
+    ctx.moveTo(ML * 0.5, Math.round(bTop + i * gap) + 0.5); ctx.lineTo(W - 8, Math.round(bTop + i * gap) + 0.5);
+  }
+  ctx.moveTo(Math.round(ML * 0.5) + 0.5, tTop); ctx.lineTo(Math.round(ML * 0.5) + 0.5, bTop + 4 * gap);
+  ctx.stroke();
+  // Schluessel als Buchstaben auf ihrer Bezugslinie (G auf G4, F auf F3)
+  ctx.fillStyle = '#8a8580'; ctx.font = '700 ' + (gap * 2.4) + 'px "JetBrains Mono",monospace';
+  ctx.fillText('G', ML * 0.5 + 5 * dpr, yOf(32, true) + gap * 0.85);
+  ctx.fillText('F', ML * 0.5 + 5 * dpr, yOf(24, false) + gap * 0.85);
+  // Zeitfenster: Playhead links, 8 Schlaege Vorschau
+  const W0 = pos - 0.5, winB = 8;
+  const xOf = t => ML + (t - W0) / winB * (W - ML - 12 * dpr);
+  ctx.strokeStyle = '#2a2a2a';
+  ctx.beginPath();
+  for (let b = Math.ceil(W0 / 4) * 4; b <= W0 + winB; b += 4) {
+    if (b < 0) continue;
+    ctx.moveTo(xOf(b), tTop); ctx.lineTo(xOf(b), bTop + 4 * gap);
+  }
+  ctx.stroke();
+  ctx.strokeStyle = '#ff2a55'; ctx.globalAlpha = 0.55;
+  ctx.beginPath(); ctx.moveTo(xOf(pos), tTop - gap); ctx.lineTo(xOf(pos), bTop + 4 * gap + gap); ctx.stroke();
+  ctx.globalAlpha = 1;
+  for (const n of activeNotes()) {
+    if (n[0] + n[1] < W0 || n[0] > W0 + winB) continue;
+    const rh = isRHn(n, SONG.split);
+    const { step, acc } = spellPitch(n[2], staffFlat);
+    const y = yOf(step, rh), xN = xOf(Math.max(n[0], W0));
+    // Hilfslinien bis zur Note (Linien liegen auf geraden Schritten)
+    const lo = rh ? 30 : 18, hi = rh ? 38 : 26;
+    ctx.strokeStyle = '#4a4640';
+    ctx.beginPath();
+    if (step < lo) for (let s = lo - 2; s >= (step % 2 ? step + 1 : step); s -= 2) {
+      ctx.moveTo(xN - gap, yOf(s, rh)); ctx.lineTo(xN + gap, yOf(s, rh));
+    }
+    if (step > hi) for (let s = hi + 2; s <= (step % 2 ? step - 1 : step); s += 2) {
+      ctx.moveTo(xN - gap, yOf(s, rh)); ctx.lineTo(xN + gap, yOf(s, rh));
+    }
+    ctx.stroke();
+    const active = n[0] <= pos && pos < n[0] + n[1];
+    const col = active ? '#e8c04a' : rh ? '#5fc8e0' : '#e8703a';
+    // Dauer als dezente Linie hinter dem Notenkopf
+    ctx.strokeStyle = col; ctx.globalAlpha = 0.3; ctx.lineWidth = gap * 0.3;
+    ctx.beginPath(); ctx.moveTo(xN + gap * 0.5, y); ctx.lineTo(xOf(Math.min(n[0] + n[1], W0 + winB)) - 1, y); ctx.stroke();
+    ctx.globalAlpha = 1; ctx.lineWidth = Math.max(1, Math.round(dpr));
+    ctx.fillStyle = col;
+    ctx.beginPath(); ctx.ellipse(xN, y, gap * 0.66, gap * 0.46, -0.3, 0, Math.PI * 2); ctx.fill();
+    if (acc) {
+      ctx.font = '500 ' + (gap * 1.5) + 'px "JetBrains Mono",monospace';
+      ctx.fillText(acc, xN - gap * 2.0, y + gap * 0.5);
+    }
+  }
+  ctx.strokeStyle = '#2a2a2a';
+  ctx.beginPath(); ctx.moveTo(0, TOP - 0.5); ctx.lineTo(W, TOP - 0.5); ctx.stroke();
+}
 function draw(){
   const dpr = window.devicePixelRatio || 1;
   const r = cv.getBoundingClientRect();
   if (cv.width !== Math.round(r.width * dpr) || cv.height !== Math.round(r.height * dpr)) { cv.width = Math.round(r.width * dpr); cv.height = Math.round(r.height * dpr); }
   const g = geom(), H = cv.height, KEY_H = Math.min(150 * dpr, H * 0.3), FALL = H - KEY_H;
+  const TOP = showStaff ? Math.min(170 * dpr, H * 0.30) : 0;
   ctx.fillStyle = '#0a0a0a'; ctx.fillRect(0, 0, g.W, H);
-  const pxPerSec = FALL / 2.6;
+  const pxPerSec = (FALL - TOP) / 2.6;
   const NLAB = ['C','C♯','D','D♯','E','F','F♯','G','G♯','A','A♯','H'];
   const pressed = new Set();
   const expectSet = (mode === 'wait' && groups[gIdx]) ? new Set(groups[gIdx].ns.map(n => fold(n[2]))) : null;
@@ -813,11 +896,11 @@ function draw(){
     const pf = fold(p), isRH = isRHn(n, SONG.split);
     if (startS <= 0 && endS > 0 && mode !== 'wait') pressed.add(pf);
     const yB = FALL + (-startS) * pxPerSec, yT = FALL + (-endS) * pxPerSec;
-    if (yB < 0 || yT > FALL) continue;
+    if (yB < TOP || yT > FALL) continue;
     const [x, w] = keyX(pf, g);
     ctx.fillStyle = isRH ? '#5fc8e0' : '#e8703a';
     ctx.strokeStyle = isRH ? '#3a8896' : '#8a4220';
-    ctx.beginPath(); ctx.roundRect(x + 1, Math.max(0, yT), w - 2, Math.max(2, Math.min(FALL, yB) - Math.max(0, yT)), 3 * dpr);
+    ctx.beginPath(); ctx.roundRect(x + 1, Math.max(TOP, yT), w - 2, Math.max(2, Math.min(FALL, yB) - Math.max(TOP, yT)), 3 * dpr);
     ctx.fill(); ctx.stroke();
     const noteH = Math.min(FALL, yB) - Math.max(0, yT);
     const fg = showFinger ? fingering.get(n) : null;
@@ -840,13 +923,14 @@ function draw(){
       const startS = (s - pos) * spb(), endS = (s + d - pos) * spb();
       const pf = fold(p);
       const yB = FALL + (-startS) * pxPerSec, yT = FALL + (-endS) * pxPerSec;
-      if (yB < 0 || yT > FALL) continue;
+      if (yB < TOP || yT > FALL) continue;
       const [x, w] = keyX(pf, g);
-      ctx.beginPath(); ctx.roundRect(x + 3, Math.max(0, yT), w - 6, Math.max(2, Math.min(FALL, yB) - Math.max(0, yT)), 3 * dpr);
+      ctx.beginPath(); ctx.roundRect(x + 3, Math.max(TOP, yT), w - 6, Math.max(2, Math.min(FALL, yB) - Math.max(TOP, yT)), 3 * dpr);
       ctx.stroke();
     }
     ctx.globalAlpha = 1;
   }
+  if (showStaff) drawStaff(g, TOP, dpr);
   ctx.fillStyle = '#050505'; ctx.fillRect(0, FALL, g.W, KEY_H);
   const now = performance.now();
   // Erwartete Taste pulsiert sanft - visuelle Fuehrung ohne Text
@@ -1335,6 +1419,13 @@ document.getElementById('autot').onclick = e => { autoTempo = !autoTempo; e.targ
 document.getElementById('rec').onclick = e => { recArm = !recArm; e.target.classList.toggle('recon'); };
 document.getElementById('names').onclick = e => { showNames = !showNames; e.target.classList.toggle('active'); draw(); };
 document.getElementById('fing').onclick = e => { showFinger = !showFinger; e.target.classList.toggle('active'); draw(); };
+document.getElementById('staffb').onclick = e => {
+  showStaff = !showStaff;
+  e.target.classList.toggle('active', showStaff);
+  try { localStorage.setItem('nulltag-staff', showStaff ? '1' : '0'); } catch (err) {}
+  draw();
+};
+if (showStaff) document.getElementById('staffb').classList.add('active');
 window.onresize = () => draw();
 
 // ================= Analyse: Tonart, Akkorde, Harmonie =================
