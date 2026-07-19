@@ -583,6 +583,8 @@ function makeSteps(ns, split, bars){
 let SONG = null;
 function loadSong(name, fullNotes, bpm){
   currentLesson = null;
+  sessionActive = false;              // manueller Songwechsel beendet eine laufende Session
+  recNotes = []; recEvents = []; showRec = false;   // alte Aufnahme gehoert zum alten Song
   const bars = Math.max(1, Math.ceil(Math.max(...fullNotes.map(n => n[0] + n[1]), 4) / 4));
   const split = splitPoint(fullNotes);
   SONG = { name, bpm, split, bars, full: fullNotes, easy: makeEasy(fullNotes, split),
@@ -1543,7 +1545,11 @@ const PRACTICE_KEY = 'nulltag-practice';
 let practiceDays;
 try { practiceDays = JSON.parse(localStorage.getItem(PRACTICE_KEY) || '{}'); } catch (e) { practiceDays = {}; }
 let playStartTs = null;
-function dayKey(offset){ const d = new Date(); d.setDate(d.getDate() - (offset || 0)); return d.toISOString().slice(0, 10); }
+function dayKey(offset){
+  const d = new Date();
+  d.setDate(d.getDate() - (offset || 0));
+  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+}
 function addPractice(min){
   const k = dayKey(0);
   practiceDays[k] = (practiceDays[k] || 0) + min;
@@ -1573,10 +1579,11 @@ function startSession(){
   const rootPitch = pcToPitch(key.root, 60);
   const steps = key.minor ? [0,2,3,5,7,8,10,12] : [0,2,4,5,7,9,11,12];
   openDrill('Warm-up: Tonleiter ' + key.label, scaleLesson(rootPitch, steps), 70);
+  sessionActive = true;               // nach openDrill setzen - loadSong cleart das Flag
 }
 function sessionAdvance(){
   const nxt = sessionQueue.shift();
-  if (nxt) nxt.open();
+  if (nxt) { nxt.open(); sessionActive = true; }
 }
 function showSessionOverlay(){
   setPlaying(false);
