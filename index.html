@@ -3,534 +3,568 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>NULLTAG · Piano Learning</title>
+<title>learn.nulltag.ch – Piano Trainer</title>
 <style>
-  :root {
-    --bg: #0b0b0e;
-    --panel: #141419;
-    --panel-2: #1c1c24;
-    --line: #2a2a35;
-    --text: #e9e9ef;
-    --muted: #8b8b9a;
-    --accent: #7c5cff;
-    --accent-soft: rgba(124, 92, 255, 0.18);
-    --good: #3ddc97;
-    --bad: #ff5c7a;
-    --white-key: #f2f2f5;
-    --black-key: #17171d;
-  }
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-  html, body { height: 100%; }
-  body {
-    background: var(--bg);
-    color: var(--text);
-    font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
-    display: flex;
-    flex-direction: column;
-    min-height: 100vh;
-  }
-
-  header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 16px 24px;
-    border-bottom: 1px solid var(--line);
-    background: var(--panel);
-  }
-  .brand { display: flex; align-items: baseline; gap: 10px; }
-  .brand .logo {
-    font-weight: 800;
-    letter-spacing: 0.18em;
-    font-size: 1.1rem;
-  }
-  .brand .logo span { color: var(--accent); }
-  .brand .sub { color: var(--muted); font-size: 0.85rem; }
-
-  main {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
-    padding: 20px 24px;
-    max-width: 1100px;
-    width: 100%;
-    margin: 0 auto;
-  }
-
-  .controls {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 12px;
-    align-items: center;
-    background: var(--panel);
-    border: 1px solid var(--line);
-    border-radius: 12px;
-    padding: 14px 16px;
-  }
-  .controls label { color: var(--muted); font-size: 0.85rem; }
-  select, button {
-    background: var(--panel-2);
-    color: var(--text);
-    border: 1px solid var(--line);
-    border-radius: 8px;
-    padding: 8px 14px;
-    font-size: 0.9rem;
-    cursor: pointer;
-  }
-  select:focus, button:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
-  button.primary { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; }
-  button:disabled { opacity: 0.45; cursor: default; }
-  .tempo-wrap { display: flex; align-items: center; gap: 8px; }
-  input[type="range"] { accent-color: var(--accent); }
-
-  .status {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 16px;
-    align-items: center;
-    justify-content: space-between;
-    background: var(--panel);
-    border: 1px solid var(--line);
-    border-radius: 12px;
-    padding: 12px 16px;
-  }
-  .status .hint { color: var(--muted); font-size: 0.9rem; }
-  .status .hint strong { color: var(--text); }
-  .stats { display: flex; gap: 18px; font-size: 0.9rem; }
-  .stats .stat b { color: var(--accent); font-variant-numeric: tabular-nums; }
-  .progress-bar {
-    flex-basis: 100%;
-    height: 6px;
-    background: var(--panel-2);
-    border-radius: 3px;
-    overflow: hidden;
-  }
-  .progress-bar .fill {
-    height: 100%;
-    width: 0%;
-    background: var(--accent);
-    border-radius: 3px;
-    transition: width 0.15s ease;
-  }
-
-  .keyboard-wrap {
-    background: var(--panel);
-    border: 1px solid var(--line);
-    border-radius: 12px;
-    padding: 18px;
-    overflow-x: auto;
-  }
-  .keyboard {
-    position: relative;
-    height: 190px;
-    min-width: 720px;
-    user-select: none;
-  }
-  .key {
-    position: absolute;
-    top: 0;
-    border: 1px solid #00000055;
-    border-radius: 0 0 6px 6px;
-    cursor: pointer;
-    display: flex;
-    align-items: flex-end;
-    justify-content: center;
-    padding-bottom: 6px;
-    font-size: 0.65rem;
-    transition: background 0.08s ease;
-  }
-  .key.white {
-    height: 100%;
-    background: var(--white-key);
-    color: #55555f;
-    z-index: 1;
-  }
-  .key.black {
-    height: 58%;
-    background: var(--black-key);
-    color: #9a9aa8;
-    z-index: 2;
-    border: 1px solid #000;
-  }
-  .key.white.active { background: #cfc3ff; }
-  .key.black.active { background: #4d3a99; }
-  .key.white.target { background: var(--accent); color: #fff; box-shadow: 0 0 14px var(--accent); }
-  .key.black.target { background: var(--accent); color: #fff; box-shadow: 0 0 14px var(--accent); }
-  .key.white.wrong { background: var(--bad); color: #fff; }
-  .key.black.wrong { background: var(--bad); color: #fff; }
-  .key .kbd-hint {
-    position: absolute;
-    top: 6px;
-    left: 50%;
-    transform: translateX(-50%);
-    font-size: 0.6rem;
-    opacity: 0.7;
-  }
-
-  footer {
-    text-align: center;
-    color: var(--muted);
-    font-size: 0.8rem;
-    padding: 14px;
-    border-top: 1px solid var(--line);
-  }
-  footer a { color: var(--accent); text-decoration: none; }
-
-  @media (max-width: 640px) {
-    main { padding: 14px; }
-    .keyboard { height: 150px; }
-  }
+:root { --rh:#40c8dc; --rhd:#1e96aa; --lh:#f0a046; --lhd:#be6e1e; --ok:#4cd964; --bad:#ff5a5a;
+        --bg:#0e0e14; --panel:#191922; --panel2:#20202c; --txt:#eaeaee; --dim:#8f8f9a; --acc:#40c8dc; }
+* { margin:0; padding:0; box-sizing:border-box; }
+html, body { height:100%; }
+body { background:var(--bg); color:var(--txt); font-family:-apple-system,'Segoe UI',Roboto,sans-serif; display:flex; flex-direction:column; overflow:hidden; }
+nav { display:flex; align-items:center; gap:4px; padding:10px 18px; border-bottom:1px solid #26262f; flex-wrap:wrap; }
+nav .logo { font-weight:800; letter-spacing:0.06em; margin-right:14px; }
+nav .logo span { color:var(--acc); }
+nav button { background:none; border:none; color:var(--dim); font-size:0.95rem; padding:8px 12px; border-radius:8px; cursor:pointer; }
+nav button.here { color:var(--txt); background:var(--panel2); }
+main { flex:1; overflow:auto; }
+.page { max-width:980px; margin:0 auto; padding:28px 20px 60px; }
+.hero h2 { font-size:2rem; margin-bottom:10px; }
+.hero p { color:var(--dim); max-width:640px; line-height:1.55; }
+.cards { display:grid; grid-template-columns:repeat(auto-fill,minmax(260px,1fr)); gap:14px; margin-top:22px; }
+.card { background:var(--panel); border:1px solid #26262f; border-radius:14px; padding:18px; }
+.card h3 { font-size:1.02rem; margin-bottom:6px; }
+.card p { font-size:0.88rem; color:var(--dim); line-height:1.5; }
+.card .num { display:inline-flex; width:26px; height:26px; border-radius:50%; background:var(--rhd); color:#fff; align-items:center; justify-content:center; font-weight:700; font-size:0.85rem; margin-bottom:10px; }
+.btn { display:inline-block; background:var(--rhd); border:none; color:#fff; font-weight:600; padding:11px 18px; border-radius:10px; cursor:pointer; font-size:0.95rem; margin-top:16px; }
+.btn.ghost { background:var(--panel2); color:var(--txt); }
+.songgrid { display:grid; grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); gap:14px; margin-top:18px; }
+.song { background:var(--panel); border:1px solid #26262f; border-radius:14px; padding:18px; cursor:pointer; transition:border-color 0.15s; }
+.song:hover { border-color:var(--acc); }
+.song h3 { margin-bottom:4px; }
+.song .meta { color:var(--dim); font-size:0.85rem; }
+.lvl { margin-top:8px; font-size:0.8rem; color:var(--dim); }
+.lvl b { color:var(--lh); letter-spacing:2px; }
+.lesson { background:var(--panel); border:1px solid #26262f; border-radius:14px; padding:18px; margin-top:14px; }
+.lesson h3 { margin-bottom:6px; }
+.lesson p { color:var(--dim); font-size:0.92rem; line-height:1.55; max-width:720px; }
+.lesson button { margin-top:10px; }
+/* Trainer */
+#view-trainer { display:flex; flex-direction:column; height:100%; }
+#tcontrols { padding:8px 16px; display:flex; gap:8px; flex-wrap:wrap; align-items:center; border-bottom:1px solid #26262f; }
+#tcontrols button, #tcontrols select { background:var(--panel); color:var(--txt); border:1px solid #333340; border-radius:8px; padding:7px 12px; font-size:0.86rem; cursor:pointer; }
+#tcontrols button.active { background:var(--rhd); border-color:var(--rh); }
+#tcontrols button.lhactive { background:var(--lhd); border-color:var(--lh); }
+#tcontrols button.okactive { background:#2c7a3c; border-color:var(--ok); }
+#play { min-width:86px; font-weight:700; }
+.grp { display:flex; gap:4px; align-items:center; }
+label { font-size:0.76rem; color:var(--dim); }
+input[type=range] { width:110px; }
+#tempoval { min-width:86px; font-variant-numeric:tabular-nums; font-size:0.8rem; }
+canvas { display:block; width:100%; flex:1; }
+#tstatus { padding:5px 16px 8px; font-size:0.83rem; color:var(--dim); display:flex; gap:16px; flex-wrap:wrap; }
+#midistat { color:var(--bad); } #midistat.on { color:var(--ok); }
+#score { color:var(--txt); font-variant-numeric:tabular-nums; }
+#songname { color:var(--txt); font-weight:600; }
+#drop { position:fixed; inset:0; background:rgba(30,150,170,0.25); border:4px dashed var(--rh); display:none; align-items:center; justify-content:center; font-size:1.3rem; z-index:9; pointer-events:none; }
+#file { display:none; }
+.hide { display:none !important; }
+.kbdlegend { font-size:0.78rem; color:var(--dim); }
+.kbdlegend b.r{color:var(--rh)} .kbdlegend b.l{color:var(--lh)} .kbdlegend b.g{color:var(--ok)} .kbdlegend b.y{color:#ffe27a}
 </style>
 </head>
 <body>
-<header>
-  <div class="brand">
-    <div class="logo">NULL<span>TAG</span></div>
-    <div class="sub">Piano Learning</div>
-  </div>
-</header>
-
+<nav>
+  <div class="logo">NULLTAG <span>·</span> Piano Trainer</div>
+  <button data-v="start" class="here">Start</button>
+  <button data-v="kurs">Grundkurs</button>
+  <button data-v="songs">Songs</button>
+  <button data-v="trainer">Trainer</button>
+</nav>
 <main>
-  <section class="controls" aria-label="Steuerung">
-    <label for="track-select">Track</label>
-    <select id="track-select"></select>
-
-    <label for="mode-select">Modus</label>
-    <select id="mode-select">
-      <option value="learn">Lernen (Taste für Taste)</option>
-      <option value="listen">Anhören (Autoplay)</option>
-    </select>
-
-    <div class="tempo-wrap">
-      <label for="tempo">Tempo</label>
-      <input type="range" id="tempo" min="40" max="160" value="90">
-      <span id="tempo-val">90 BPM</span>
+  <!-- START -->
+  <div id="view-start" class="page">
+    <div class="hero">
+      <h2>Klavier lernen mit Nulltag.</h2>
+      <p>Alle Nulltag-Songs als interaktive Lernversionen: fallende Noten, echter Sound, und wenn du ein
+      MIDI-Keyboard anschliesst, hört die App mit und sagt dir, ob du richtig spielst. Kein Konto, keine
+      Installation – alles läuft in deinem Browser.</p>
     </div>
-
-    <button class="primary" id="btn-start">Start</button>
-    <button id="btn-reset">Zurücksetzen</button>
-  </section>
-
-  <section class="status" aria-live="polite">
-    <div class="hint" id="hint">Wähle einen Track und drücke <strong>Start</strong>. Im Lernmodus leuchtet die nächste Taste auf — spiele sie mit Maus oder Computertastatur.</div>
-    <div class="stats">
-      <div class="stat">Richtig: <b id="stat-correct">0</b></div>
-      <div class="stat">Fehler: <b id="stat-wrong">0</b></div>
-      <div class="stat">Fortschritt: <b id="stat-progress">0 / 0</b></div>
+    <div class="cards">
+      <div class="card"><span class="num">1</span><h3>Keyboard anschliessen</h3>
+        <p>MIDI-Keyboard (z.B. Novation FLkey) per USB verbinden, im Trainer auf «MIDI-Keyboard verbinden»
+        klicken und die Browser-Abfrage bestätigen. Funktioniert in Chrome und Edge. Ohne Keyboard kannst du
+        alles anhören und mitlesen.</p></div>
+      <div class="card"><span class="num">2</span><h3>Einsteigen</h3>
+        <p>Noch nie Klavier gespielt? Der Grundkurs bringt dir in fünf kurzen Übungen alles bei, was du für
+        die Songs brauchst. Schon Erfahrung? Direkt zu den Songs – Heat Death ist der leichteste Einstieg.</p></div>
+      <div class="card"><span class="num">3</span><h3>So lernst du</h3>
+        <p><b>Anhören</b> zeigt den Song mit fallenden Noten. <b>Warten</b> stoppt an jedem Ton, bis du die
+        richtige Taste drückst – dein Lernmodus. <b>Kontrolle</b> prüft dich im Tempo und zählt Treffer.
+        Easy-Fassung zuerst, dann die volle.</p></div>
     </div>
-    <div class="progress-bar"><div class="fill" id="progress-fill"></div></div>
-  </section>
-
-  <section class="keyboard-wrap">
-    <div class="keyboard" id="keyboard" aria-label="Klaviertastatur"></div>
-  </section>
+    <button class="btn" onclick="go('kurs')">Grundkurs starten</button>
+    <button class="btn ghost" onclick="go('songs')">Zu den Songs</button>
+  </div>
+  <!-- GRUNDKURS -->
+  <div id="view-kurs" class="page hide">
+    <h2>Basis-Grundkurs</h2>
+    <p style="color:var(--dim); margin-top:8px; max-width:700px; line-height:1.55">Fünf Übungen, aufeinander
+    aufbauend – zusammen etwa eine Stunde. Jede Übung öffnet den Trainer im Warte-Modus: die gelbe Taste
+    zeigt dir, was dran ist, und es geht erst weiter, wenn du richtig gedrückt hast. Orientierung: Die weisse
+    Taste links neben zwei schwarzen ist immer ein C. C4 liegt in der Mitte der Klaviatur.</p>
+    <div id="lessons"></div>
+  </div>
+  <!-- SONGS -->
+  <div id="view-songs" class="page hide">
+    <h2>Nulltag-Songs</h2>
+    <p style="color:var(--dim); margin-top:8px">Sortiert nach Schwierigkeit. Jeder Song hat eine automatisch
+    erzeugte Easy-Fassung und Lernschritte in 4-Takt-Häppchen.</p>
+    <div class="songgrid" id="songgrid"></div>
+    <button class="btn ghost" onclick="document.getElementById('file').click()">Eigene MIDI-Datei laden…</button>
+  </div>
+  <!-- TRAINER -->
+  <div id="view-trainer" class="hide">
+    <div id="tcontrols">
+      <button id="midibtn">MIDI-Keyboard verbinden</button>
+      <div class="grp"><label>Modus</label>
+        <select id="mode">
+          <option value="listen">Anhören</option>
+          <option value="wait">Warten</option>
+          <option value="check">Kontrolle</option>
+        </select></div>
+      <button id="play">▶ Start</button>
+      <div class="grp"><label>Fassung</label>
+        <select id="version"><option value="easy">Easy</option><option value="full">Voll</option></select></div>
+      <div class="grp"><label>Lernschritt</label><select id="step"></select></div>
+      <div class="grp"><label>Takte</label><select id="section"></select></div>
+      <div class="grp"><label>Tempo</label><input type="range" id="tempo" min="25" max="100" value="50"><span id="tempoval"></span></div>
+      <div class="grp"><button id="bRH" class="active">RH</button><button id="bLH" class="lhactive">LH</button></div>
+      <button id="loop" class="active">Loop an</button>
+      <button id="oct" class="okactive">Oktave egal</button>
+    </div>
+    <canvas id="cv"></canvas>
+    <div id="tstatus">
+      <span id="songname"></span>
+      <span id="midistat">Kein MIDI-Keyboard</span>
+      <span id="score"></span>
+      <span class="kbdlegend"><b class="r">türkis RH</b> · <b class="l">orange LH</b> · <b class="y">gelb erwartet</b> · <b class="g">grün richtig</b></span>
+      <span id="hint"></span>
+    </div>
+  </div>
 </main>
-
-<footer>
-  NULLTAG · learning.site — Tracks lassen sich im <a href="https://github.com/nulltag-ch/learning.site" rel="noopener">Quellcode</a> (TRACKS-Array in index.html) anpassen.
-</footer>
-
+<input type="file" id="file" accept=".mid,.midi,audio/midi">
+<div id="drop">MIDI-Datei hier loslassen</div>
 <script>
-"use strict";
-
-/* ── Track data ─────────────────────────────────────────────
-   Platzhalter-Tracks. Eigene NULLTAG-Tracks hier eintragen:
-   notes: [note, beats] — note als wissenschaftliche Notation (C4 = mittleres C). */
-const TRACKS = [
-  {
-    id: "nulltag-demo-1",
-    name: "NULLTAG Demo — Intro Theme",
-    notes: [
-      ["E4",1],["G4",1],["A4",2],["E4",1],["G4",1],["B4",0.5],["A4",1.5],
-      ["E4",1],["G4",1],["A4",2],["G4",1],["E4",1],["D4",2],
-    ],
-  },
-  {
-    id: "nulltag-demo-2",
-    name: "NULLTAG Demo — Nachtfahrt",
-    notes: [
-      ["A3",1],["C4",1],["E4",1],["A4",2],["G4",1],["E4",1],["C4",2],
-      ["A3",1],["C4",1],["E4",1],["G4",2],["F4",1],["E4",1],["D4",1],["C4",2],
-    ],
-  },
-  {
-    id: "uebung-c-dur",
-    name: "Übung — C-Dur Tonleiter",
-    notes: [
-      ["C4",1],["D4",1],["E4",1],["F4",1],["G4",1],["A4",1],["B4",1],["C5",2],
-      ["C5",1],["B4",1],["A4",1],["G4",1],["F4",1],["E4",1],["D4",1],["C4",2],
-    ],
-  },
-];
-
-/* ── Keyboard layout ──────────────────────────────────────── */
-const NOTE_NAMES = ["C","C#","D","D#","E","F","F#","G","G#","A","A#","B"];
-const START_OCTAVE = 3, END_OCTAVE = 5; // C3..B5
-const KEY_MAP = {
-  // Computertastatur → Note (untere Reihe = C4-Oktave)
-  "a":"C4","w":"C#4","s":"D4","e":"D#4","d":"E4","f":"F4","t":"F#4",
-  "g":"G4","z":"G#4","h":"A4","u":"A#4","j":"B4","k":"C5","i":"C#5",
-  "l":"D5","o":"D#5",";":"E5","y":"G#4",
-};
-
-function noteToMidi(note) {
-  const m = note.match(/^([A-G]#?)(\d)$/);
-  const idx = NOTE_NAMES.indexOf(m[1]);
-  return (parseInt(m[2], 10) + 1) * 12 + idx;
-}
-function midiToFreq(midi) { return 440 * Math.pow(2, (midi - 69) / 12); }
-
-/* ── Audio ────────────────────────────────────────────────── */
-let audioCtx = null;
-function ensureAudio() {
-  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-  if (audioCtx.state === "suspended") audioCtx.resume();
-  return audioCtx;
-}
-function playNote(note, duration = 0.5) {
-  const ctx = ensureAudio();
-  const t = ctx.currentTime;
-  const freq = midiToFreq(noteToMidi(note));
-  const osc = ctx.createOscillator();
-  const osc2 = ctx.createOscillator();
-  const gain = ctx.createGain();
-  osc.type = "triangle";
-  osc.frequency.value = freq;
-  osc2.type = "sine";
-  osc2.frequency.value = freq * 2;
-  const g2 = ctx.createGain();
-  g2.gain.value = 0.15;
-  gain.gain.setValueAtTime(0.0001, t);
-  gain.gain.exponentialRampToValueAtTime(0.4, t + 0.015);
-  gain.gain.exponentialRampToValueAtTime(0.0001, t + duration);
-  osc.connect(gain);
-  osc2.connect(g2).connect(gain);
-  gain.connect(ctx.destination);
-  osc.start(t); osc2.start(t);
-  osc.stop(t + duration + 0.05); osc2.stop(t + duration + 0.05);
-}
-
-/* ── Build keyboard ───────────────────────────────────────── */
-const keyboardEl = document.getElementById("keyboard");
-const keyEls = {}; // note -> element
-const REVERSE_KEY_MAP = {};
-for (const [k, n] of Object.entries(KEY_MAP)) {
-  if (!REVERSE_KEY_MAP[n]) REVERSE_KEY_MAP[n] = k;
-}
-
-function buildKeyboard() {
-  const whiteNotes = [];
-  for (let oct = START_OCTAVE; oct <= END_OCTAVE; oct++) {
-    for (const n of NOTE_NAMES) {
-      if (!n.includes("#")) whiteNotes.push(n + oct);
-    }
-  }
-  const whiteW = 100 / whiteNotes.length;
-  whiteNotes.forEach((note, i) => {
-    const el = document.createElement("div");
-    el.className = "key white";
-    el.style.left = (i * whiteW) + "%";
-    el.style.width = whiteW + "%";
-    el.dataset.note = note;
-    el.textContent = note;
-    if (REVERSE_KEY_MAP[note]) {
-      const hint = document.createElement("span");
-      hint.className = "kbd-hint";
-      hint.textContent = REVERSE_KEY_MAP[note].toUpperCase();
-      el.appendChild(hint);
-    }
-    keyboardEl.appendChild(el);
-    keyEls[note] = el;
-  });
-  // Black keys
-  for (let oct = START_OCTAVE; oct <= END_OCTAVE; oct++) {
-    for (const n of NOTE_NAMES) {
-      if (!n.includes("#")) continue;
-      const note = n + oct;
-      const leftWhite = n[0] + oct;
-      const idx = whiteNotes.indexOf(leftWhite);
-      const el = document.createElement("div");
-      el.className = "key black";
-      el.style.left = ((idx + 0.68) * whiteW) + "%";
-      el.style.width = (whiteW * 0.62) + "%";
-      el.dataset.note = note;
-      if (REVERSE_KEY_MAP[note]) {
-        const hint = document.createElement("span");
-        hint.className = "kbd-hint";
-        hint.textContent = REVERSE_KEY_MAP[note].toUpperCase();
-        el.appendChild(hint);
+'use strict';
+const SONGS = [{"title": "Heat Death", "key": "As-Dur", "level": 1, "bpm": 94, "bars": 77, "notes": [[4.0, 3.25, 65], [4.0, 3.25, 77], [4.5, 2.0, 72], [5.0, 3.25, 80], [6.0, 3.25, 91], [6.5, 1.0, 72], [7.0, 6.0, 87], [7.5, 3.25, 72], [8.0, 3.25, 61], [8.0, 3.25, 89], [8.5, 1.0, 68], [9.0, 3.25, 77], [9.5, 2.0, 68], [11.0, 3.25, 85], [11.5, 3.25, 68], [12.0, 3.25, 56], [12.0, 3.25, 84], [12.5, 1.0, 63], [13.0, 5.0, 72], [13.5, 1.0, 63], [14.0, 3.25, 75], [14.5, 4.0, 63], [16.0, 3.25, 51], [16.0, 3.25, 82], [16.5, 1.0, 58], [17.0, 2.0, 67], [17.5, 2.0, 58], [18.0, 2.0, 68], [19.0, 3.25, 67], [19.5, 3.25, 58], [20.0, 3.25, 29], [20.0, 3.25, 41], [20.0, 3.25, 68], [20.5, 2.0, 48], [21.0, 2.0, 56], [21.0, 3.25, 80], [21.5, 3.25, 60], [22.0, 3.25, 31], [22.0, 3.25, 43], [22.0, 3.25, 82], [22.5, 3.25, 48], [23.0, 3.25, 84], [23.0, 4.5, 56], [23.5, 9.0, 63], [24.0, 3.25, 25], [24.0, 3.25, 37], [24.0, 3.25, 77], [24.5, 3.25, 44], [25.0, 3.25, 53], [26.0, 3.0, 75], [27.0, 3.0, 61], [27.0, 3.0, 73], [27.5, 3.0, 56], [28.0, 3.0, 72], [28.0, 4.0, 60], [28.0, 5.0, 32], [28.0, 5.0, 44], [28.5, 6.5, 51], [30.0, 2.0, 75], [32.0, 3.0, 27], [32.0, 3.0, 39], [32.0, 3.0, 58], [32.0, 3.0, 67], [32.0, 3.0, 70], [32.0, 3.0, 75], [33.0, 3.0, 55], [36.0, 1.0, 80], [36.0, 3.0, 53], [36.25, 1.0, 72], [36.5, 1.0, 67], [36.75, 3.0, 68], [37.0, 1.0, 80], [37.25, 1.0, 72], [37.5, 5.0, 67], [38.0, 3.0, 80], [38.25, 4.0, 72], [39.75, 1.0, 68], [40.0, 3.25, 49], [40.25, 1.0, 73], [40.5, 5.25, 65], [40.75, 5.25, 68], [41.0, 1.0, 80], [41.25, 5.25, 73], [42.0, 3.25, 80], [43.0, 3.25, 82], [43.5, 4.0, 63], [43.75, 3.25, 70], [44.0, 3.25, 32], [44.0, 3.25, 44], [44.0, 6.25, 84], [44.25, 4.0, 75], [44.75, 6.25, 72], [47.5, 3.0, 63], [48.0, 1.0, 82], [48.0, 3.25, 39], [48.25, 5.0, 75], [48.75, 6.25, 70], [49.0, 9.25, 82], [50.0, 6.25, 80], [50.5, 4.25, 63], [51.0, 3.25, 79], [52.0, 3.25, 41], [52.0, 3.25, 48], [52.25, 4.75, 56], [52.5, 3.25, 67], [52.75, 4.75, 68], [53.25, 3.25, 72], [54.0, 3.25, 43], [54.0, 3.25, 51], [54.25, 0.5, 75], [54.5, 3.25, 55], [54.75, 3.5, 75], [55.0, 4.0, 63], [56.0, 3.25, 37], [56.0, 3.25, 49], [56.0, 7.25, 84], [56.25, 1.0, 77], [56.5, 2.0, 65], [57.25, 1.0, 77], [57.5, 2.25, 73], [58.0, 3.25, 87], [58.25, 1.0, 77], [58.25, 3.0, 75], [58.5, 4.25, 65], [59.25, 3.25, 77], [59.75, 3.25, 73], [60.0, 3.25, 44], [60.0, 3.25, 51], [60.25, 0.5, 72], [60.5, 1.0, 63], [60.75, 3.25, 56], [60.75, 3.25, 72], [61.25, 1.0, 75], [61.5, 5.25, 63], [62.25, 4.75, 75], [63.0, 3.25, 87], [64.0, 3.25, 39], [64.0, 4.25, 82], [64.25, 6.5, 70], [64.5, 4.75, 67], [64.75, 3.25, 58], [67.0, 1.0, 72], [68.0, 1.5, 72], [68.0, 3.25, 41], [68.25, 3.25, 48], [68.5, 5.25, 65], [68.75, 2.0, 56], [69.5, 2.0, 72], [70.75, 3.25, 56], [71.5, 3.5, 72], [72.0, 3.25, 37], [72.0, 4.25, 73], [72.25, 1.25, 44], [72.5, 3.25, 75], [72.75, 3.25, 53], [73.5, 5.75, 44], [73.75, 3.25, 51], [74.0, 8.0, 56], [74.25, 0.5, 60], [74.5, 4.0, 63], [74.75, 3.5, 60], [75.0, 1.0, 72], [75.5, 3.25, 70], [76.0, 1.0, 72], [77.0, 5.25, 72], [78.25, 3.25, 60], [78.5, 5.25, 63], [79.5, 0.5, 70], [80.0, 3.25, 39], [80.0, 3.25, 70], [80.25, 3.25, 46], [80.75, 3.25, 51], [81.0, 3.25, 67], [81.5, 2.5, 41], [81.5, 3.25, 68], [81.75, 2.5, 48], [82.0, 1.75, 53], [82.25, 1.0, 56], [82.5, 2.75, 65], [83.0, 1.0, 72], [83.25, 2.75, 56], [83.5, 3.25, 70], [83.75, 5.0, 53], [84.0, 1.5, 72], [84.0, 3.25, 41], [84.25, 3.25, 48], [85.25, 4.5, 65], [85.5, 2.0, 72], [86.0, 6.5, 56], [87.5, 7.5, 72], [88.0, 3.25, 37], [88.0, 4.25, 73], [88.5, 3.25, 75], [88.75, 3.25, 53], [89.5, 3.25, 32], [89.75, 3.25, 44], [90.0, 5.25, 51], [90.25, 4.0, 60], [90.5, 2.0, 63], [91.5, 3.25, 70], [92.5, 3.5, 63], [93.5, 3.25, 75], [94.25, 3.25, 60], [94.75, 3.25, 56], [95.0, 3.25, 72], [95.25, 0.75, 51], [95.5, 3.75, 70], [96.0, 3.25, 39], [96.0, 3.25, 51], [96.0, 3.25, 63], [96.75, 3.25, 55], [96.75, 3.5, 67], [97.5, 4.75, 68], [97.5, 5.75, 29], [97.5, 5.75, 41], [98.0, 5.0, 53], [98.5, 1.0, 65], [99.5, 3.25, 65], [100.0, 3.25, 77], [100.5, 3.25, 79], [101.0, 3.25, 80], [101.5, 3.25, 31], [101.5, 3.25, 43], [101.5, 3.25, 82], [102.0, 3.25, 32], [102.0, 3.25, 84], [102.0, 4.25, 72], [102.5, 3.0, 63], [103.5, 5.75, 75], [104.0, 1.0, 77], [104.0, 3.25, 37], [104.0, 3.25, 65], [104.5, 4.0, 56], [105.0, 3.25, 77], [105.5, 4.25, 63], [106.0, 3.25, 32], [107.0, 3.25, 31], [107.0, 3.25, 73], [107.0, 3.75, 61], [108.0, 3.25, 29], [108.0, 3.25, 60], [108.0, 3.25, 72], [108.5, 4.0, 53], [110.0, 1.5, 84], [111.5, 3.75, 84], [112.0, 3.25, 39], [112.5, 3.25, 82], [113.0, 4.0, 67], [113.5, 4.0, 58], [114.0, 1.0, 68], [115.0, 3.25, 68], [115.25, 0.5, 63], [115.75, 1.5, 63], [117.0, 3.25, 67], [117.25, 3.75, 63], [117.5, 3.25, 58], [118.0, 0.5, 82], [118.5, 3.75, 82], [119.5, 3.25, 80], [119.75, 3.25, 79], [120.0, 3.25, 29], [120.5, 3.25, 77], [124.25, 3.25, 17], [124.25, 3.25, 29], [127.75, 3.25, 15], [127.75, 3.25, 27], [136.0, 3.25, 15], [136.0, 3.25, 27], [140.25, 3.25, 17], [140.25, 3.25, 29], [148.0, 3.25, 75], [148.0, 3.25, 80], [148.0, 3.25, 84], [148.0, 3.25, 87], [148.0, 3.25, 92], [148.0, 3.25, 96], [148.0, 3.25, 99], [148.0, 3.25, 104], [148.0, 3.25, 108], [148.0, 3.25, 111], [148.0, 3.25, 113], [148.0, 4.0, 72], [152.0, 3.25, 51], [152.0, 3.25, 63], [153.5, 3.75, 82], [154.0, 3.25, 94], [155.5, 3.25, 68], [155.5, 3.25, 80], [155.5, 3.25, 92], [155.75, 3.25, 67], [155.75, 3.25, 79], [155.75, 3.25, 91], [156.5, 3.75, 65], [156.5, 3.75, 77], [156.5, 3.75, 89], [170.0, 3.25, 94], [171.5, 3.0, 89], [171.5, 3.25, 92], [171.75, 3.0, 91], [198.0, 1.75, 84], [199.75, 0.25, 84], [200.0, 3.25, 84], [200.5, 3.25, 82], [204.0, 3.25, 41], [206.0, 3.5, 75], [207.0, 3.25, 79], [207.5, 3.25, 80], [208.0, 3.25, 37], [208.0, 3.25, 49], [210.0, 1.5, 75], [211.0, 3.25, 77], [211.5, 3.25, 75], [211.75, 3.25, 72], [211.75, 4.0, 84], [212.0, 3.25, 32], [212.0, 3.25, 44], [215.75, 3.25, 84], [216.0, 3.25, 39], [216.0, 3.25, 51], [216.5, 3.25, 82], [220.0, 3.25, 41], [220.0, 3.25, 53], [221.0, 2.5, 80], [222.0, 3.25, 75], [223.0, 3.25, 79], [223.5, 1.5, 80], [224.0, 3.25, 49], [225.0, 3.25, 80], [226.0, 3.25, 87], [227.0, 3.25, 85], [227.5, 2.5, 84], [230.0, 4.5, 84], [232.0, 3.25, 79], [232.5, 0.5, 82], [233.0, 3.25, 82], [233.5, 1.5, 75], [234.0, 3.25, 94], [235.0, 3.25, 75], [235.5, 1.5, 80], [235.5, 3.25, 92], [235.75, 3.25, 79], [235.75, 3.25, 91], [236.25, 3.25, 84], [236.5, 0.5, 53], [236.5, 3.25, 89], [237.0, 1.0, 53], [237.0, 2.5, 80], [237.5, 3.25, 77], [238.0, 1.5, 53], [238.0, 3.25, 87], [239.0, 3.25, 79], [239.5, 3.25, 53], [239.5, 4.5, 80], [240.5, 1.0, 49], [241.5, 1.5, 51], [242.0, 3.25, 87], [243.0, 3.25, 89], [243.0, 3.75, 51], [243.5, 3.25, 84], [266.0, 2.0, 39], [266.0, 2.0, 46], [266.0, 2.0, 51], [266.0, 2.0, 55], [266.0, 2.0, 58], [266.0, 2.0, 63], [268.0, 2.0, 41], [268.0, 2.0, 44], [268.0, 2.0, 53], [268.0, 2.0, 56], [268.0, 2.0, 60], [268.0, 2.0, 65], [270.0, 2.0, 39], [270.0, 2.0, 46], [270.0, 2.0, 51], [270.0, 2.0, 55], [270.0, 2.0, 58], [270.0, 2.0, 63], [272.0, 2.0, 41], [272.0, 2.0, 56], [272.0, 4.0, 49], [272.0, 4.0, 53], [272.0, 4.0, 61], [274.0, 2.0, 46], [274.0, 2.0, 58], [276.0, 4.0, 44], [276.0, 4.0, 56], [276.0, 4.0, 60], [276.0, 8.0, 51], [280.0, 3.25, 82], [280.0, 3.25, 84], [280.0, 3.25, 87], [280.0, 3.25, 94], [280.0, 4.0, 39], [280.0, 4.0, 46], [280.0, 4.0, 55], [280.0, 4.0, 58], [280.0, 4.0, 63], [284.0, 3.0, 53], [284.0, 3.0, 65], [284.25, 3.0, 70], [284.5, 3.5, 67], [284.75, 1.5, 72], [285.0, 2.5, 80], [286.0, 2.0, 87], [286.25, 1.75, 72], [287.0, 1.0, 79], [287.5, 0.5, 80], [288.0, 3.0, 49], [288.0, 3.0, 61], [288.0, 3.0, 77], [288.25, 0.5, 73], [288.5, 1.0, 68], [288.75, 1.0, 73], [289.0, 3.0, 80], [289.5, 2.0, 68], [289.75, 0.5, 73], [290.0, 2.0, 87], [290.25, 1.0, 73], [291.0, 1.0, 85], [291.25, 0.5, 73], [291.5, 0.5, 68], [291.5, 2.5, 84], [291.75, 0.25, 73], [292.0, 0.5, 63], [292.0, 3.0, 56], [292.25, 1.5, 72], [292.5, 2.0, 63], [293.0, 2.0, 75], [293.75, 0.5, 72], [294.0, 4.75, 84], [294.25, 1.0, 72], [294.5, 5.75, 63], [295.0, 1.0, 75], [295.25, 0.75, 72], [296.0, 3.0, 39], [296.0, 3.0, 51], [296.5, 0.5, 70], [296.75, 4.75, 82], [297.0, 0.5, 70], [297.5, 0.5, 70], [298.25, 1.25, 70], [299.5, 4.5, 70], [299.75, 3.0, 79], [300.5, 3.0, 75], [302.0, 3.0, 29], [302.0, 3.0, 41], [302.0, 3.0, 77]]}, {"title": "Peace Remains", "key": "d-Moll", "level": 2, "bpm": 114, "bars": 80, "notes": [[5.0, 1.0, 86], [5.0, 2.0, 50], [5.0, 2.0, 65], [5.25, 0.5, 77], [5.5, 1.5, 74], [5.75, 1.0, 77], [6.0, 1.0, 86], [6.5, 0.5, 81], [6.75, 0.25, 77], [7.0, 2.0, 55], [7.0, 2.0, 62], [7.0, 2.0, 82], [7.25, 1.0, 74], [7.5, 1.5, 79], [8.25, 0.5, 74], [8.75, 0.25, 74], [9.0, 2.0, 53], [9.0, 2.0, 60], [9.0, 2.0, 81], [9.25, 0.5, 72], [9.5, 1.5, 77], [9.75, 1.0, 72], [10.75, 0.25, 72], [11.0, 1.0, 81], [11.0, 2.0, 57], [11.0, 2.0, 64], [11.25, 0.5, 73], [11.5, 1.0, 76], [11.75, 0.5, 73], [12.0, 1.0, 81], [12.25, 0.5, 73], [12.5, 0.5, 76], [12.75, 0.25, 73], [13.0, 2.0, 65], [13.0, 2.0, 86], [13.0, 4.0, 50], [13.25, 0.5, 77], [13.5, 1.5, 74], [13.75, 1.0, 77], [14.5, 0.5, 81], [14.75, 0.25, 77], [15.0, 2.0, 43], [15.0, 2.0, 82], [15.25, 1.0, 74], [15.5, 1.0, 79], [16.25, 0.5, 74], [16.5, 0.5, 79], [16.75, 0.25, 74], [17.0, 2.0, 41], [17.0, 2.0, 81], [17.0, 4.0, 48], [17.25, 0.5, 72], [17.5, 1.0, 77], [17.75, 0.5, 72], [18.25, 0.5, 72], [18.5, 0.5, 77], [18.75, 0.25, 72], [19.0, 1.0, 79], [19.0, 2.0, 33], [19.25, 0.5, 72], [19.5, 1.0, 76], [19.75, 0.5, 72], [20.0, 1.0, 79], [20.25, 0.5, 72], [20.5, 0.5, 76], [20.75, 0.25, 72], [21.0, 1.0, 77], [21.0, 3.25, 38], [21.0, 3.25, 45], [21.25, 0.5, 69], [21.5, 2.0, 74], [21.75, 1.0, 69], [22.0, 3.0, 77], [22.5, 2.5, 81], [22.75, 2.25, 69], [23.0, 1.0, 82], [23.25, 0.5, 70], [23.5, 1.5, 50], [23.5, 1.5, 74], [23.75, 1.0, 67], [23.75, 1.0, 70], [24.0, 1.0, 82], [24.75, 0.25, 67], [24.75, 0.25, 70], [25.0, 3.25, 53], [25.0, 3.25, 81], [25.25, 3.25, 70], [25.5, 2.0, 72], [25.75, 1.0, 69], [25.75, 3.25, 65], [26.0, 3.0, 79], [26.5, 2.5, 77], [26.75, 0.5, 69], [27.0, 1.0, 48], [27.0, 1.0, 76], [27.25, 1.0, 69], [27.5, 1.5, 72], [27.75, 0.5, 67], [28.0, 1.0, 48], [28.0, 1.0, 76], [28.25, 0.75, 67], [28.25, 0.75, 69], [29.0, 3.25, 74], [32.0, 0.25, 64], [32.25, 0.25, 53], [32.5, 0.25, 60], [32.75, 0.25, 53], [33.0, 0.25, 65], [33.25, 0.25, 53], [33.5, 0.25, 60], [33.75, 0.25, 53], [34.0, 0.25, 64], [34.25, 0.25, 53], [34.5, 0.25, 60], [34.75, 0.25, 53], [35.0, 0.25, 65], [35.25, 0.25, 53], [35.5, 0.25, 60], [35.75, 0.25, 53], [39.0, 2.0, 67], [40.0, 1.0, 76], [41.0, 3.0, 77], [41.0, 3.25, 50], [41.25, 2.75, 76], [41.5, 2.5, 74], [44.0, 1.0, 70], [44.0, 1.0, 82], [44.5, 0.5, 74], [45.0, 2.0, 69], [45.0, 2.0, 81], [45.0, 3.25, 53], [47.0, 2.0, 67], [47.0, 2.0, 79], [48.0, 1.0, 76], [49.0, 3.0, 65], [49.0, 3.0, 77], [49.0, 3.25, 50], [49.25, 2.75, 76], [49.5, 2.5, 74], [52.0, 1.0, 70], [52.0, 1.0, 82], [52.5, 0.5, 74], [53.0, 3.25, 53], [53.0, 3.25, 60], [53.0, 3.25, 69], [53.0, 3.25, 72], [53.0, 3.25, 84], [53.0, 4.25, 65], [53.0, 5.25, 57], [54.0, 3.25, 81], [55.0, 3.25, 61], [55.0, 3.25, 64], [55.0, 3.25, 76], [55.0, 4.25, 73], [56.5, 3.25, 74], [60.0, 1.0, 43], [60.0, 1.0, 46], [60.0, 1.0, 50], [60.0, 1.0, 70], [60.0, 1.0, 74], [61.0, 3.25, 41], [61.0, 3.25, 45], [61.0, 3.25, 48], [61.0, 3.25, 65], [61.0, 3.25, 69], [61.0, 3.25, 72], [64.0, 0.25, 76], [64.25, 0.25, 73], [64.5, 0.25, 76], [64.75, 0.25, 77], [64.75, 3.25, 34], [64.75, 3.25, 46], [64.75, 3.25, 53], [64.75, 3.25, 62], [64.75, 3.25, 65], [65.0, 0.25, 76], [65.25, 0.25, 74], [65.5, 0.25, 69], [65.75, 0.25, 77], [66.0, 0.25, 76], [66.25, 0.25, 74], [66.5, 0.25, 69], [67.0, 0.25, 64], [67.5, 0.25, 69], [68.0, 0.25, 64], [68.5, 0.25, 69], [68.75, 2.0, 31], [68.75, 2.0, 43], [68.75, 2.0, 55], [68.75, 2.0, 58], [69.0, 0.25, 64], [69.5, 0.25, 67], [70.0, 0.25, 64], [70.5, 0.25, 67], [70.75, 3.25, 33], [70.75, 3.25, 45], [70.75, 3.25, 57], [70.75, 3.25, 64], [71.0, 0.25, 62], [71.5, 0.25, 62], [72.0, 0.25, 62], [72.5, 0.25, 62], [73.0, 0.25, 62], [73.5, 0.25, 62], [74.0, 0.25, 62], [74.5, 0.25, 62], [75.0, 2.0, 61], [77.0, 2.0, 26], [77.0, 2.0, 38], [77.0, 2.0, 53], [77.0, 2.0, 57], [77.0, 2.0, 62], [77.0, 4.0, 50], [79.0, 2.0, 31], [79.0, 2.0, 43], [79.0, 2.0, 55], [79.0, 2.0, 58], [81.0, 2.0, 29], [81.0, 2.0, 41], [81.0, 2.0, 53], [81.0, 2.0, 57], [81.0, 4.0, 48], [83.0, 1.5, 33], [83.0, 2.0, 45], [83.0, 2.0, 52], [83.0, 2.0, 55], [84.5, 0.5, 36], [85.0, 2.0, 26], [85.0, 2.0, 38], [85.0, 2.0, 53], [85.0, 2.0, 57], [85.0, 2.0, 62], [85.0, 4.0, 50], [87.0, 2.0, 31], [87.0, 2.0, 43], [87.0, 2.0, 55], [87.0, 2.0, 58], [89.0, 2.0, 29], [89.0, 2.0, 41], [89.0, 2.0, 48], [89.0, 2.0, 53], [89.0, 6.0, 57], [91.0, 2.0, 33], [91.0, 2.0, 45], [91.0, 2.0, 49], [91.0, 2.0, 52], [91.0, 2.0, 61], [93.0, 2.0, 26], [93.0, 2.0, 38], [93.0, 2.0, 62], [93.0, 2.0, 65], [93.0, 4.0, 50], [95.0, 2.0, 31], [95.0, 2.0, 43], [95.0, 2.0, 55], [95.0, 2.0, 58], [95.0, 2.0, 70], [97.0, 2.0, 29], [97.0, 2.0, 41], [97.0, 2.0, 48], [97.0, 2.0, 53], [97.0, 2.0, 57], [97.0, 2.0, 69], [99.0, 2.0, 33], [99.0, 2.0, 49], [99.0, 2.0, 52], [99.0, 2.0, 67], [99.0, 4.0, 45], [99.0, 4.0, 57], [101.0, 2.0, 38], [101.0, 2.0, 62], [101.0, 2.0, 65], [101.0, 4.0, 50], [103.0, 2.0, 31], [103.0, 2.0, 43], [103.0, 2.0, 55], [103.0, 2.0, 67], [103.0, 4.0, 58], [105.0, 2.0, 34], [105.0, 2.0, 46], [105.0, 2.0, 53], [105.0, 2.0, 65], [105.0, 2.0, 77], [107.0, 3.25, 33], [107.0, 3.25, 45], [107.0, 3.25, 52], [107.0, 3.25, 57], [107.0, 3.25, 62], [107.0, 3.25, 76], [111.0, 3.25, 76], [115.0, 2.0, 38], [115.0, 2.0, 57], [115.0, 2.0, 65], [115.0, 4.0, 50], [115.0, 4.0, 62], [117.0, 2.0, 43], [117.0, 2.0, 50], [117.0, 2.0, 55], [117.0, 2.0, 58], [119.0, 2.0, 41], [119.0, 2.0, 48], [119.0, 2.0, 53], [119.0, 5.25, 57], [121.0, 3.25, 45], [121.0, 3.25, 52], [121.0, 3.25, 61], [125.0, 2.0, 43], [125.0, 2.0, 50], [125.0, 2.0, 55], [125.0, 2.0, 58], [127.0, 2.0, 41], [127.0, 2.0, 48], [127.0, 2.0, 53], [127.0, 5.25, 57], [129.0, 3.25, 45], [129.0, 3.25, 52], [129.0, 3.25, 61], [133.0, 2.0, 43], [133.0, 2.0, 50], [133.0, 2.0, 55], [133.0, 2.0, 58], [135.0, 2.0, 50], [135.0, 2.0, 53], [135.0, 2.0, 62], [135.0, 6.0, 57], [137.0, 2.0, 45], [137.0, 2.0, 52], [137.0, 2.0, 61], [139.0, 2.0, 53], [139.0, 4.0, 50], [139.0, 4.0, 62], [141.0, 2.0, 43], [141.0, 2.0, 55], [141.0, 2.0, 58], [143.0, 2.0, 53], [143.0, 2.0, 62], [143.0, 2.0, 65], [143.0, 4.0, 57], [145.0, 2.0, 45], [145.0, 2.0, 52], [145.0, 2.0, 61], [147.0, 2.0, 50], [148.0, 1.0, 65], [149.0, 2.0, 55], [149.0, 2.0, 58], [149.0, 2.0, 62], [151.0, 2.0, 53], [151.0, 2.0, 58], [151.5, 0.5, 62], [152.0, 0.5, 60], [152.5, 0.25, 65], [152.75, 0.25, 61], [152.75, 0.25, 65], [153.0, 2.0, 45], [153.0, 2.0, 52], [153.0, 2.0, 61], [153.0, 4.0, 57], [154.5, 0.5, 64], [155.0, 2.0, 50], [155.0, 2.0, 53], [155.5, 0.5, 62], [156.0, 0.5, 65], [156.5, 2.5, 62], [156.75, 0.25, 67], [156.75, 2.25, 55], [156.75, 2.25, 58], [157.5, 0.5, 67], [158.0, 0.25, 70], [158.25, 0.25, 67], [158.5, 0.5, 70], [159.0, 2.0, 53], [159.0, 2.0, 60], [159.0, 6.0, 57], [160.0, 0.5, 72], [160.5, 0.5, 65], [161.0, 2.0, 45], [161.0, 2.0, 52], [161.5, 0.5, 62], [162.0, 0.5, 61], [162.5, 0.5, 73], [163.0, 2.0, 53], [163.0, 4.0, 50], [163.75, 0.75, 65], [164.5, 0.5, 65], [165.0, 2.0, 55], [165.0, 2.0, 58], [165.75, 0.25, 60], [166.0, 0.5, 70], [166.5, 0.5, 67], [167.0, 2.0, 53], [167.0, 2.0, 60], [167.0, 6.0, 57], [167.75, 1.25, 65], [169.0, 2.0, 45], [169.0, 2.0, 61], [171.0, 2.0, 38], [171.0, 2.0, 53], [171.0, 2.0, 65], [171.0, 4.0, 50], [171.0, 4.0, 62], [173.0, 2.0, 43], [173.0, 2.0, 55], [173.0, 2.0, 58], [173.0, 2.0, 67], [175.0, 2.0, 41], [175.0, 2.0, 48], [175.0, 2.0, 53], [175.0, 2.0, 60], [175.0, 2.0, 65], [175.0, 6.0, 57], [177.0, 1.0, 45], [177.0, 1.0, 52], [177.0, 1.0, 61], [177.0, 1.0, 64], [177.0, 1.0, 69], [178.0, 1.0, 45], [178.0, 1.0, 52], [178.0, 1.0, 61], [178.0, 1.0, 64], [179.0, 2.0, 38], [179.0, 2.0, 53], [179.0, 2.0, 65], [179.0, 4.0, 50], [179.0, 4.0, 62], [181.0, 2.0, 43], [181.0, 2.0, 55], [181.0, 2.0, 58], [181.0, 2.0, 67], [183.0, 2.25, 41], [183.0, 2.25, 48], [183.0, 2.25, 53], [183.0, 2.25, 60], [183.0, 2.25, 65], [183.0, 6.0, 57], [185.25, 1.75, 33], [185.25, 1.75, 45], [185.25, 1.75, 52], [185.25, 1.75, 61], [185.25, 1.75, 64], [187.0, 2.0, 38], [187.0, 2.0, 53], [187.0, 2.0, 65], [187.0, 4.0, 50], [187.0, 4.0, 62], [189.0, 2.0, 43], [189.0, 2.0, 55], [189.0, 2.0, 58], [189.0, 2.0, 67], [191.0, 2.0, 41], [191.0, 2.0, 48], [191.0, 2.0, 53], [191.0, 2.0, 60], [191.0, 2.0, 65], [191.0, 2.0, 72], [191.0, 6.0, 57], [191.0, 6.0, 69], [193.0, 0.25, 61], [193.0, 0.25, 73], [193.0, 2.0, 45], [193.0, 2.0, 52], [193.0, 2.0, 64], [193.25, 0.5, 62], [193.25, 0.5, 74], [193.75, 1.25, 76], [195.0, 2.0, 38], [195.0, 2.0, 53], [195.0, 2.0, 65], [195.0, 4.0, 50], [195.0, 4.0, 62], [196.75, 0.25, 70], [197.0, 2.0, 43], [197.0, 2.0, 55], [197.0, 2.0, 58], [197.0, 2.0, 67], [197.0, 2.0, 70], [199.0, 2.0, 41], [199.0, 2.0, 48], [199.0, 2.0, 53], [199.0, 2.0, 60], [199.0, 2.0, 65], [199.0, 2.0, 72], [199.0, 6.0, 57], [199.0, 6.0, 69], [201.0, 2.0, 45], [201.0, 2.0, 52], [201.0, 2.0, 61], [201.0, 2.0, 64], [201.0, 2.0, 73], [203.0, 2.0, 38], [203.0, 2.0, 53], [203.0, 2.0, 65], [203.0, 4.0, 50], [203.0, 4.0, 62], [204.75, 2.25, 70], [205.0, 2.0, 43], [205.0, 2.0, 55], [205.0, 2.0, 58], [205.0, 2.0, 67], [207.0, 2.0, 41], [207.0, 2.0, 48], [207.0, 2.0, 53], [207.0, 2.0, 60], [207.0, 2.0, 65], [207.0, 2.0, 72], [207.0, 6.0, 57], [207.0, 6.0, 69], [209.0, 2.0, 45], [209.0, 2.0, 52], [209.0, 2.0, 61], [209.0, 2.0, 64], [209.0, 2.0, 73], [211.0, 2.0, 38], [211.0, 2.0, 53], [211.0, 4.0, 50], [211.0, 4.0, 62], [213.0, 2.0, 31], [213.0, 2.0, 43], [213.0, 2.0, 55], [213.0, 2.0, 58], [214.0, 1.0, 82], [215.0, 2.0, 41], [215.0, 2.0, 48], [215.0, 2.0, 53], [215.0, 2.0, 65], [215.0, 2.0, 81], [215.0, 4.0, 57], [217.0, 2.0, 33], [217.0, 2.0, 45], [217.0, 2.0, 52], [217.0, 2.0, 61], [217.0, 2.0, 64], [218.0, 1.0, 76], [219.0, 2.0, 57], [219.0, 2.0, 77], [219.0, 4.0, 50], [219.0, 4.0, 62], [219.25, 1.75, 76], [219.5, 1.5, 74], [221.0, 2.0, 31], [221.0, 2.0, 43], [221.0, 2.0, 55], [221.0, 2.0, 58], [222.0, 1.0, 82], [222.5, 0.5, 74], [223.0, 2.0, 29], [223.0, 2.0, 41], [223.0, 2.0, 48], [223.0, 2.0, 53], [223.0, 2.0, 84], [223.0, 4.0, 57], [224.0, 1.0, 77], [224.5, 0.5, 69], [224.75, 0.25, 65], [225.0, 0.75, 64], [225.0, 2.0, 33], [225.0, 2.0, 45], [225.0, 2.0, 52], [225.0, 2.0, 61], [225.0, 2.0, 76], [225.5, 1.5, 73], [225.75, 1.25, 64], [226.0, 0.75, 69], [226.75, 0.25, 69], [227.0, 2.0, 57], [227.0, 2.0, 77], [227.0, 4.0, 50], [227.0, 4.0, 62], [227.25, 1.0, 69], [227.5, 1.5, 74], [228.25, 0.75, 69], [229.0, 1.0, 82], [229.0, 2.0, 31], [229.0, 2.0, 55], [229.25, 1.75, 70], [229.5, 1.5, 79], [229.75, 0.5, 74], [230.0, 0.75, 82], [230.25, 0.75, 74], [230.5, 0.5, 84], [230.75, 0.25, 82], [231.0, 1.0, 81], [231.0, 2.0, 53], [231.0, 2.0, 65], [231.25, 0.5, 72], [231.5, 1.0, 77], [231.75, 0.5, 72], [232.0, 1.0, 81], [232.25, 0.5, 72], [232.5, 0.5, 77], [232.75, 0.25, 72], [233.0, 2.0, 57], [233.0, 2.0, 64], [233.0, 2.0, 79], [233.25, 0.5, 73], [233.5, 0.75, 76], [233.75, 1.25, 73], [234.0, 1.0, 81], [234.25, 0.75, 76], [235.0, 0.5, 77], [235.0, 2.0, 62], [235.25, 1.75, 69], [235.5, 1.5, 77], [236.5, 0.5, 76], [237.0, 2.0, 55], [237.0, 2.0, 70], [237.0, 2.0, 79], [237.0, 4.5, 62], [237.25, 1.75, 67], [237.5, 1.0, 74], [238.0, 1.0, 82], [238.5, 0.5, 74], [239.0, 2.5, 58], [239.0, 3.25, 81], [239.75, 4.5, 77], [240.25, 3.25, 74], [240.5, 4.0, 65], [241.5, 3.25, 61], [241.5, 3.25, 76], [241.5, 3.75, 64], [241.5, 4.0, 69], [242.25, 3.25, 73], [248.0, 0.25, 57], [248.0, 3.25, 38], [248.0, 3.25, 50], [248.25, 0.25, 57], [248.5, 0.25, 57], [248.75, 0.25, 57], [249.0, 0.25, 57], [249.25, 0.25, 57], [249.5, 0.25, 57], [249.75, 0.25, 57], [250.0, 0.75, 58], [250.75, 0.25, 57], [251.0, 0.25, 58], [251.25, 0.25, 58], [251.5, 0.25, 57], [251.75, 0.25, 55], [252.0, 0.25, 57], [252.0, 3.25, 38], [252.0, 3.25, 50], [252.25, 0.75, 57], [253.0, 0.75, 57], [253.75, 0.25, 57], [254.0, 0.75, 55], [254.0, 0.75, 67], [254.0, 2.0, 33], [254.75, 0.25, 57], [255.0, 0.75, 61], [255.0, 0.75, 64], [255.75, 0.25, 57], [256.0, 0.25, 62], [256.0, 0.25, 65], [256.0, 3.25, 38], [256.25, 0.75, 57], [257.0, 0.25, 65], [257.0, 1.0, 57], [257.5, 0.25, 62], [258.0, 0.25, 58], [258.0, 0.75, 55], [258.25, 0.25, 50], [258.5, 0.25, 58], [258.75, 0.25, 57], [259.0, 0.75, 58], [259.0, 1.0, 55], [259.75, 3.25, 57], [262.25, 3.25, 26], [266.25, 3.25, 43], [266.25, 3.25, 55], [268.0, 3.25, 41], [268.0, 3.25, 53], [272.0, 3.25, 38], [272.0, 3.25, 50], [275.75, 2.25, 65], [275.75, 3.25, 69], [275.75, 3.25, 72], [275.75, 3.25, 77], [276.0, 2.0, 41], [276.0, 3.0, 65], [278.0, 0.75, 61], [278.0, 2.0, 33], [278.0, 2.0, 45], [278.0, 2.0, 64], [278.0, 2.0, 73], [282.0, 3.25, 43], [282.0, 3.25, 55], [282.0, 3.25, 67], [282.0, 3.25, 70], [282.0, 3.25, 74], [286.0, 3.25, 64], [286.0, 3.25, 69], [286.0, 3.25, 72], [286.0, 3.25, 76], [290.0, 3.25, 43], [290.0, 3.25, 55], [290.0, 3.25, 67], [290.0, 3.25, 70], [290.0, 3.25, 74], [294.5, 3.25, 64], [294.5, 3.25, 69], [294.5, 3.25, 72], [294.5, 3.25, 76], [298.0, 2.0, 31], [298.0, 2.0, 43], [298.0, 2.0, 55], [298.0, 2.0, 62], [298.0, 2.0, 67], [298.0, 2.0, 70], [300.0, 2.0, 29], [300.0, 2.0, 41], [300.0, 2.0, 53], [300.0, 2.0, 60], [300.0, 2.0, 65], [300.0, 2.0, 69], [300.0, 6.0, 57], [302.0, 2.0, 33], [302.0, 2.0, 45], [302.0, 2.0, 52], [302.0, 2.0, 55], [302.0, 2.0, 61], [302.0, 2.0, 64], [302.0, 2.0, 67], [304.0, 2.0, 26], [304.0, 2.0, 38], [304.0, 2.0, 50], [304.0, 4.0, 62], [304.0, 4.0, 65], [304.5, 0.25, 69], [304.75, 0.25, 69], [305.0, 0.25, 77], [305.25, 0.25, 69], [305.5, 0.25, 81], [305.75, 0.25, 77], [306.0, 0.25, 82], [306.0, 2.0, 31], [306.0, 2.0, 43], [306.0, 2.0, 55], [306.0, 2.0, 70], [306.25, 0.25, 74], [306.5, 0.25, 79], [306.75, 0.25, 74], [307.0, 0.25, 82], [307.25, 0.25, 74], [307.5, 0.25, 79], [307.75, 0.25, 82], [308.0, 0.25, 81], [308.0, 2.25, 34], [308.0, 2.25, 46], [308.0, 2.25, 58], [308.0, 2.25, 65], [308.0, 5.5, 69], [308.25, 0.25, 74], [308.5, 0.25, 77], [308.75, 0.25, 74], [309.0, 0.25, 77], [309.25, 0.25, 74], [309.75, 0.25, 81], [310.0, 0.25, 74], [310.25, 1.5, 76], [310.25, 3.25, 33], [310.25, 3.25, 45], [310.25, 3.25, 57], [310.25, 4.0, 64], [311.0, 3.25, 67], [311.0, 3.25, 73], [311.75, 2.5, 61], [311.75, 2.5, 76], [314.5, 3.25, 38], [314.5, 3.25, 50], [314.5, 3.25, 57], [314.5, 3.25, 62], [314.5, 3.25, 65], [314.5, 3.25, 74]]}, {"title": "Burn the Void", "key": "G-Dur", "level": 2, "bpm": 100, "bars": 75, "notes": [[4.0, 3.25, 64], [4.5, 3.25, 71], [5.0, 0.75, 83], [5.5, 3.25, 81], [5.75, 1.25, 83], [6.0, 2.5, 67], [6.0, 3.25, 74], [7.0, 2.5, 83], [7.0, 4.5, 43], [7.75, 1.25, 84], [8.0, 3.25, 48], [8.0, 3.25, 76], [8.5, 3.25, 67], [9.0, 3.25, 84], [9.5, 3.75, 83], [10.0, 1.75, 74], [10.0, 3.25, 71], [10.5, 3.25, 50], [11.5, 3.25, 43], [11.75, 3.25, 74], [12.0, 0.5, 81], [12.0, 3.25, 38], [12.5, 0.5, 81], [12.5, 3.25, 57], [13.0, 4.0, 81], [13.5, 3.25, 83], [14.0, 3.25, 52], [14.0, 3.25, 64], [14.0, 3.25, 67], [14.0, 6.25, 79], [14.25, 3.25, 78], [14.5, 3.25, 59], [14.75, 0.75, 76], [15.5, 3.25, 76], [16.0, 3.25, 36], [16.0, 3.25, 48], [16.5, 3.25, 55], [17.5, 3.25, 72], [17.75, 0.75, 71], [18.0, 1.0, 62], [18.0, 3.25, 43], [18.0, 3.25, 50], [18.5, 0.5, 69], [18.5, 3.25, 71], [19.0, 0.75, 69], [19.0, 3.25, 42], [19.0, 3.25, 62], [19.75, 3.25, 69], [20.0, 3.25, 40], [20.0, 3.25, 47], [21.0, 0.75, 83], [21.5, 3.25, 81], [21.75, 0.75, 83], [22.0, 1.0, 31], [22.0, 1.0, 43], [22.5, 0.25, 83], [22.5, 0.75, 74], [22.75, 0.75, 83], [23.0, 3.0, 31], [23.0, 3.0, 43], [23.25, 0.25, 74], [23.5, 0.25, 74], [23.5, 2.25, 83], [23.75, 0.75, 74], [23.75, 3.5, 86], [24.0, 0.5, 76], [24.0, 3.25, 36], [24.5, 1.0, 74], [24.5, 1.0, 76], [24.5, 1.0, 88], [25.0, 3.25, 84], [25.5, 0.25, 74], [25.5, 3.25, 76], [25.5, 3.25, 88], [25.75, 0.75, 74], [25.75, 0.75, 83], [26.0, 3.25, 31], [26.0, 3.25, 43], [26.25, 3.75, 69], [26.5, 2.0, 74], [26.5, 2.0, 78], [26.5, 4.0, 83], [28.0, 3.25, 38], [28.0, 3.25, 45], [28.0, 4.25, 81], [28.5, 4.0, 66], [28.5, 4.25, 74], [28.5, 5.0, 78], [30.0, 3.25, 40], [30.0, 3.25, 47], [30.0, 3.25, 79], [30.5, 3.25, 83], [30.75, 2.75, 76], [31.0, 4.0, 71], [31.0, 7.5, 67], [32.0, 1.5, 88], [32.0, 2.0, 62], [32.0, 3.25, 36], [32.0, 3.25, 43], [32.0, 3.25, 48], [32.0, 3.25, 55], [33.5, 4.5, 88], [33.5, 9.75, 76], [33.75, 3.25, 85], [33.75, 4.25, 66], [34.0, 3.25, 57], [34.0, 4.25, 62], [34.25, 4.25, 81], [34.25, 4.75, 78], [34.5, 3.25, 74], [34.5, 3.25, 86], [35.5, 3.25, 64], [36.0, 3.25, 36], [36.0, 3.25, 43], [36.0, 3.25, 48], [38.0, 5.25, 88], [38.5, 7.75, 67], [40.0, 3.25, 40], [40.0, 3.25, 47], [40.0, 3.25, 52], [40.0, 6.25, 71], [41.0, 3.75, 81], [41.75, 1.25, 74], [42.0, 3.25, 31], [42.0, 3.25, 43], [43.0, 3.25, 74], [44.0, 2.0, 36], [48.0, 0.25, 81], [48.0, 2.0, 26], [48.0, 2.0, 38], [48.5, 0.25, 81], [49.0, 1.0, 81], [50.0, 0.25, 83], [50.0, 2.0, 28], [50.0, 2.0, 40], [50.0, 2.0, 59], [50.25, 0.25, 79], [50.75, 1.25, 76], [52.0, 2.0, 24], [52.0, 2.0, 36], [52.0, 2.0, 60], [52.0, 2.0, 64], [52.5, 0.25, 79], [53.0, 0.25, 79], [53.5, 0.25, 72], [53.75, 1.25, 71], [54.0, 1.0, 31], [54.0, 1.0, 43], [54.0, 2.0, 62], [55.0, 1.0, 30], [55.0, 1.0, 42], [55.0, 1.0, 57], [55.0, 1.0, 69], [56.0, 2.0, 28], [56.0, 2.0, 40], [56.0, 2.0, 64], [56.0, 3.25, 59], [57.0, 0.5, 67], [57.0, 0.5, 71], [57.0, 0.5, 83], [57.5, 0.25, 66], [57.5, 0.25, 69], [57.5, 0.25, 81], [57.75, 1.25, 67], [57.75, 1.25, 71], [57.75, 1.25, 83], [58.0, 2.0, 31], [58.0, 2.0, 43], [59.0, 0.5, 71], [59.0, 0.5, 83], [59.0, 0.75, 67], [59.5, 0.25, 74], [59.5, 0.25, 86], [59.75, 1.25, 67], [59.75, 1.25, 72], [59.75, 1.25, 84], [60.0, 2.0, 24], [60.0, 2.0, 36], [61.0, 0.5, 72], [61.0, 0.5, 76], [61.0, 0.5, 84], [61.5, 0.5, 86], [61.5, 2.5, 74], [62.0, 2.0, 31], [62.0, 2.0, 43], [62.0, 2.0, 71], [62.0, 2.0, 83], [63.75, 0.25, 72], [63.75, 0.25, 84], [64.0, 1.0, 69], [64.0, 1.0, 81], [64.0, 2.0, 26], [64.0, 2.0, 38], [64.0, 2.0, 62], [65.0, 1.0, 74], [65.0, 1.0, 86], [66.0, 0.25, 79], [66.0, 0.25, 91], [66.0, 2.0, 28], [66.0, 2.0, 40], [66.0, 2.0, 59], [66.5, 0.25, 78], [66.5, 0.25, 90], [66.75, 3.25, 76], [66.75, 3.25, 88], [68.0, 3.25, 24], [68.0, 3.25, 36], [68.0, 3.25, 55], [68.0, 3.25, 60], [68.0, 3.25, 64], [72.0, 3.25, 28], [72.0, 3.25, 40], [72.0, 3.25, 52], [72.0, 3.25, 59], [72.0, 3.25, 64], [73.5, 0.25, 66], [73.75, 0.25, 67], [74.25, 0.25, 67], [75.0, 0.25, 67], [75.5, 0.25, 66], [75.75, 0.25, 69], [76.0, 0.25, 67], [76.5, 0.25, 67], [77.0, 0.25, 67], [77.5, 0.25, 66], [77.75, 0.25, 67], [78.25, 0.25, 67], [79.0, 0.5, 71], [79.5, 0.25, 69], [79.5, 0.5, 30], [79.5, 0.5, 42], [79.5, 0.5, 62], [79.75, 0.25, 71], [80.0, 2.0, 24], [80.0, 2.0, 36], [80.0, 3.25, 55], [80.0, 3.25, 60], [80.0, 3.25, 64], [81.5, 0.25, 62], [82.0, 2.0, 31], [82.0, 2.0, 43], [82.25, 0.25, 62], [83.0, 0.5, 62], [83.5, 0.25, 67], [83.75, 0.25, 71], [84.0, 0.25, 69], [84.0, 3.25, 26], [84.0, 3.25, 38], [84.0, 3.25, 57], [84.0, 3.25, 62], [85.0, 0.25, 69], [85.5, 0.25, 67], [85.75, 0.25, 69], [86.25, 0.25, 69], [87.0, 0.25, 69], [87.25, 0.25, 67], [87.5, 0.25, 66], [87.75, 0.25, 69], [88.0, 0.25, 76], [88.0, 3.25, 28], [88.0, 3.25, 40], [88.0, 3.25, 59], [88.0, 3.25, 64], [88.5, 0.25, 67], [89.0, 0.25, 67], [89.0, 0.25, 79], [89.5, 0.25, 66], [89.5, 0.25, 78], [89.75, 0.25, 67], [89.75, 0.25, 79], [90.25, 0.25, 67], [90.25, 0.25, 79], [91.0, 0.25, 67], [91.0, 0.25, 79], [91.5, 0.25, 66], [91.5, 0.25, 78], [91.75, 0.25, 69], [91.75, 0.25, 81], [92.0, 0.25, 67], [92.0, 0.25, 79], [92.0, 3.25, 28], [92.0, 3.25, 40], [92.0, 3.25, 59], [92.5, 0.25, 67], [92.5, 0.25, 79], [93.0, 0.25, 67], [93.0, 0.25, 79], [93.5, 0.25, 66], [93.5, 0.25, 78], [93.75, 0.25, 67], [93.75, 0.25, 79], [94.25, 0.25, 67], [94.25, 0.25, 79], [95.0, 0.5, 71], [95.0, 0.5, 83], [95.5, 0.25, 69], [95.5, 0.25, 81], [95.5, 0.5, 30], [95.5, 0.5, 42], [95.5, 0.5, 62], [95.75, 0.25, 71], [95.75, 0.25, 83], [96.0, 0.25, 76], [96.0, 2.0, 24], [96.0, 2.0, 36], [96.0, 2.0, 60], [96.0, 2.0, 64], [97.0, 0.25, 76], [97.25, 0.25, 78], [97.5, 0.25, 79], [97.75, 0.25, 84], [98.0, 0.25, 83], [98.0, 2.0, 31], [98.0, 2.0, 43], [98.0, 2.0, 71], [98.0, 5.25, 62], [98.75, 0.25, 74], [99.0, 0.25, 83], [99.25, 0.25, 84], [99.5, 0.25, 86], [99.75, 0.25, 79], [99.75, 0.25, 91], [100.0, 3.25, 26], [100.0, 3.25, 38], [100.0, 3.25, 69], [100.0, 3.25, 81], [100.0, 3.25, 93], [104.0, 3.25, 28], [104.0, 3.25, 40], [104.0, 3.25, 59], [104.0, 3.25, 67], [105.0, 0.25, 79], [105.75, 0.25, 79], [107.0, 0.25, 79], [107.5, 0.25, 66], [107.5, 0.25, 78], [107.75, 0.5, 79], [108.0, 3.5, 28], [108.0, 3.5, 40], [108.5, 0.75, 79], [109.25, 0.25, 66], [109.25, 0.25, 78], [109.75, 0.25, 79], [111.5, 0.5, 30], [111.5, 0.5, 42], [112.0, 3.25, 31], [112.0, 3.25, 43], [112.0, 3.25, 62], [112.0, 3.25, 71], [113.0, 0.25, 83], [113.25, 0.25, 69], [113.25, 0.25, 81], [113.75, 0.25, 83], [115.0, 0.25, 67], [115.0, 0.25, 79], [115.25, 0.25, 74], [115.5, 0.25, 67], [115.5, 0.25, 79], [115.75, 0.25, 69], [115.75, 0.25, 81], [116.0, 0.75, 83], [116.75, 1.25, 74], [116.75, 1.25, 86], [118.0, 2.0, 26], [118.0, 2.0, 38], [118.0, 2.0, 69], [118.0, 2.0, 81], [120.0, 3.25, 28], [120.0, 3.25, 40], [120.0, 3.25, 59], [120.0, 3.25, 67], [121.0, 0.25, 79], [121.25, 0.25, 66], [121.25, 0.25, 78], [121.75, 0.25, 79], [123.0, 0.25, 76], [123.5, 0.25, 66], [123.5, 0.25, 78], [123.75, 0.25, 79], [124.5, 0.75, 79], [125.25, 0.25, 66], [125.25, 0.25, 78], [125.75, 0.25, 79], [126.25, 0.25, 71], [126.5, 0.25, 64], [126.5, 0.25, 76], [126.75, 0.25, 66], [126.75, 0.25, 78], [127.0, 0.25, 67], [127.0, 0.25, 79], [127.0, 0.5, 28], [127.0, 0.5, 40], [127.25, 0.25, 66], [127.25, 0.25, 78], [127.5, 0.25, 67], [127.5, 0.25, 79], [127.5, 0.5, 30], [127.5, 0.5, 42], [127.75, 0.25, 69], [127.75, 0.25, 81], [131.0, 3.0, 31], [131.0, 3.0, 43], [131.0, 3.0, 55], [131.0, 3.0, 67], [131.0, 3.0, 71], [131.0, 5.0, 50], [131.0, 5.0, 62], [133.25, 0.75, 74], [134.0, 2.0, 38], [134.0, 2.0, 54], [134.0, 2.0, 57], [134.0, 2.0, 66], [134.0, 2.0, 69], [136.0, 3.25, 28], [136.0, 3.25, 40], [136.0, 3.25, 40], [136.0, 3.25, 47], [136.0, 3.25, 52], [136.0, 3.25, 52], [136.0, 3.25, 55], [136.0, 3.25, 59], [136.0, 3.25, 64], [136.5, 0.5, 76], [137.0, 0.5, 76], [137.5, 7.75, 76], [137.75, 3.25, 78], [141.25, 3.25, 74], [141.75, 3.25, 71], [143.0, 0.5, 40], [143.0, 0.5, 52], [143.5, 0.5, 30], [143.5, 0.5, 42], [143.5, 0.5, 42], [143.5, 0.5, 54], [143.5, 0.5, 54], [143.5, 0.5, 57], [143.5, 0.5, 66], [143.5, 7.75, 50], [143.5, 7.75, 62], [144.0, 3.25, 43], [144.0, 3.25, 55], [144.0, 7.25, 31], [144.0, 7.25, 43], [144.0, 7.25, 55], [144.0, 7.25, 67], [144.0, 7.25, 71], [144.5, 7.75, 79], [145.75, 3.25, 81], [146.25, 6.25, 83], [147.5, 3.25, 74], [149.75, 4.5, 81], [150.0, 2.0, 38], [150.0, 2.0, 38], [150.0, 2.0, 50], [150.0, 2.0, 57], [150.25, 4.0, 69], [150.75, 4.25, 66], [151.5, 3.25, 62], [152.0, 3.25, 28], [152.0, 3.25, 40], [152.0, 3.25, 40], [152.0, 3.25, 47], [152.0, 3.25, 52], [152.0, 3.25, 52], [152.0, 3.25, 55], [152.0, 3.25, 59], [152.0, 3.25, 64], [152.25, 3.25, 74], [152.5, 1.75, 76], [153.75, 0.75, 78], [154.25, 1.75, 76], [154.5, 3.5, 78], [155.5, 2.25, 71], [156.0, 5.25, 76], [157.25, 5.75, 74], [157.75, 3.25, 71], [159.0, 0.5, 28], [159.0, 0.5, 40], [159.0, 0.5, 40], [159.0, 0.5, 47], [159.0, 0.5, 52], [159.0, 0.5, 52], [159.0, 0.5, 55], [159.0, 0.5, 59], [159.0, 0.5, 64], [159.0, 3.25, 67], [159.5, 0.5, 30], [159.5, 0.5, 38], [159.5, 0.5, 42], [159.5, 0.5, 42], [159.5, 0.5, 54], [159.5, 0.5, 54], [159.5, 0.5, 57], [159.5, 0.5, 66], [159.5, 3.25, 69], [159.5, 3.75, 50], [159.5, 3.75, 62], [160.0, 3.25, 31], [160.0, 3.25, 43], [160.0, 3.25, 43], [160.0, 3.25, 55], [160.0, 3.25, 55], [160.0, 3.25, 67], [160.0, 3.25, 71], [160.0, 4.75, 79], [161.75, 4.0, 81], [162.25, 0.75, 83], [163.0, 5.25, 83], [164.0, 2.0, 31], [164.0, 2.0, 43], [164.0, 2.0, 50], [164.0, 2.0, 55], [164.0, 2.0, 62], [165.25, 4.5, 86], [165.75, 3.25, 81], [165.75, 5.25, 74], [166.0, 2.0, 38], [166.0, 2.0, 45], [166.0, 2.0, 50], [166.0, 3.25, 38], [166.0, 3.25, 50], [166.25, 3.5, 69], [166.25, 5.25, 57], [166.75, 4.0, 66], [167.0, 3.25, 62], [168.0, 3.25, 36], [168.0, 3.25, 48], [168.0, 3.25, 88], [168.0, 6.0, 36], [168.0, 6.0, 43], [168.0, 6.0, 48], [168.0, 7.25, 76], [168.5, 2.0, 67], [168.5, 3.75, 64], [169.0, 3.25, 83], [170.0, 3.75, 81], [170.5, 5.25, 67], [171.0, 3.25, 79], [172.0, 3.25, 36], [172.0, 3.25, 48], [172.0, 3.25, 88], [172.25, 1.25, 64], [173.0, 3.25, 83], [173.5, 5.25, 64], [174.0, 3.75, 81], [175.0, 3.25, 79], [176.0, 3.25, 31], [176.0, 3.25, 43], [176.0, 3.25, 86], [176.0, 4.0, 31], [176.0, 4.0, 43], [176.0, 4.0, 50], [176.0, 7.25, 74], [177.0, 3.25, 83], [178.0, 2.0, 81], [179.0, 3.25, 79], [180.0, 3.25, 38], [180.0, 3.25, 45], [180.0, 4.0, 38], [180.0, 4.0, 45], [180.0, 4.0, 50], [180.0, 5.25, 81], [181.0, 8.5, 83], [182.0, 3.25, 84], [184.0, 2.0, 40], [184.0, 2.0, 47], [184.0, 2.0, 52], [184.0, 2.0, 71], [184.0, 2.0, 79], [184.0, 3.25, 40], [184.0, 3.25, 52], [184.0, 3.25, 88], [184.0, 3.75, 76], [185.5, 3.25, 78], [185.5, 3.25, 81], [186.0, 2.0, 31], [186.0, 2.0, 50], [186.0, 3.25, 31], [186.0, 3.25, 43], [186.0, 3.25, 71], [186.0, 3.25, 74], [186.0, 3.25, 79], [186.0, 6.0, 43], [187.75, 1.25, 84], [187.75, 3.25, 72], [187.75, 3.25, 76], [188.0, 2.0, 36], [188.0, 2.0, 48], [188.0, 3.25, 36], [188.0, 3.25, 48], [189.0, 3.25, 84], [189.5, 3.75, 83], [189.5, 5.75, 74], [190.0, 2.0, 31], [190.0, 3.25, 31], [190.0, 3.25, 43], [190.0, 3.25, 71], [190.0, 3.25, 79], [190.0, 4.0, 50], [192.0, 2.0, 38], [192.0, 2.0, 45], [192.0, 3.25, 38], [192.0, 3.25, 45], [192.0, 3.25, 50], [192.0, 3.25, 78], [192.0, 3.25, 86], [192.0, 3.25, 90], [192.0, 4.75, 81], [194.0, 2.0, 40], [194.0, 2.0, 47], [194.0, 2.0, 52], [194.0, 3.0, 79], [194.0, 3.25, 40], [194.0, 3.25, 52], [194.0, 3.25, 71], [194.0, 3.25, 83], [194.75, 3.25, 76], [194.75, 3.25, 88], [196.0, 1.5, 72], [196.0, 2.0, 36], [196.0, 2.0, 48], [196.0, 3.25, 36], [196.0, 3.25, 48], [197.0, 3.25, 79], [197.5, 3.25, 72], [197.75, 7.25, 71], [198.0, 1.0, 31], [198.0, 1.0, 43], [198.0, 2.0, 50], [198.0, 3.25, 31], [198.0, 3.25, 43], [198.0, 3.25, 50], [199.0, 1.0, 30], [199.0, 1.0, 42], [199.0, 2.5, 69], [199.0, 3.25, 30], [199.0, 3.25, 42], [200.0, 2.0, 28], [200.0, 2.0, 40], [200.0, 2.0, 47], [200.0, 2.0, 55], [200.0, 3.25, 28], [200.0, 3.25, 40], [200.0, 3.25, 52], [201.0, 0.75, 83], [201.0, 3.25, 79], [201.5, 3.25, 69], [201.5, 3.25, 81], [201.75, 3.25, 83], [201.75, 4.0, 74], [202.0, 2.0, 31], [202.0, 2.0, 50], [202.0, 3.25, 31], [202.0, 3.25, 43], [202.0, 3.25, 50], [202.0, 6.0, 43], [203.5, 5.5, 86], [203.75, 1.25, 76], [203.75, 3.25, 72], [203.75, 3.25, 84], [204.0, 2.0, 36], [204.0, 2.0, 48], [204.0, 3.25, 36], [204.0, 3.25, 48], [205.0, 3.25, 76], [205.0, 3.25, 88], [205.75, 5.5, 74], [206.0, 2.0, 31], [206.0, 3.25, 31], [206.0, 3.25, 43], [206.0, 4.0, 50], [206.0, 5.25, 50], [208.0, 2.0, 38], [208.0, 2.0, 45], [208.0, 2.25, 78], [208.0, 3.25, 38], [208.0, 3.25, 81], [208.0, 3.25, 93], [209.0, 3.25, 83], [209.0, 3.25, 95], [210.0, 2.0, 40], [210.0, 2.0, 47], [210.0, 2.0, 52], [210.0, 3.25, 40], [210.0, 3.25, 52], [210.0, 3.25, 71], [210.0, 3.25, 79], [210.0, 3.25, 91], [210.25, 3.25, 78], [210.75, 3.25, 76], [210.75, 3.25, 88], [212.0, 3.25, 36], [212.0, 3.25, 36], [212.0, 3.25, 43], [212.0, 3.25, 48], [212.0, 3.25, 48], [212.0, 3.25, 60], [212.0, 3.25, 72], [214.5, 0.75, 66], [214.5, 0.75, 78], [215.0, 0.75, 67], [215.0, 0.75, 79], [215.25, 3.25, 66], [215.25, 3.25, 78], [215.75, 3.25, 67], [215.75, 3.25, 79], [218.0, 3.25, 31], [218.0, 3.25, 43], [220.0, 3.25, 36], [220.0, 3.25, 48], [222.0, 3.25, 31], [222.0, 3.25, 43], [224.0, 3.25, 38], [224.0, 3.25, 50], [226.0, 3.25, 28], [226.0, 3.25, 40], [228.0, 3.25, 36], [228.0, 3.25, 48], [230.0, 3.25, 31], [230.0, 3.25, 43], [231.0, 3.25, 30], [231.0, 3.25, 42], [231.5, 3.25, 57], [232.0, 3.25, 28], [232.0, 3.25, 40], [234.0, 3.25, 31], [234.0, 3.25, 43], [236.0, 3.25, 36], [236.0, 3.25, 48], [238.0, 3.25, 31], [238.0, 3.25, 43], [240.0, 1.0, 81], [240.0, 2.0, 38], [240.0, 2.0, 62], [240.0, 2.0, 66], [240.0, 2.0, 69], [240.0, 4.0, 71], [241.0, 1.0, 83], [242.0, 0.25, 79], [242.0, 2.0, 28], [242.0, 2.0, 40], [242.0, 4.0, 64], [242.0, 4.0, 67], [242.25, 0.5, 66], [242.25, 0.5, 78], [242.75, 3.25, 76], [244.0, 2.0, 36], [244.0, 2.0, 48], [244.0, 2.0, 72], [246.0, 2.0, 66], [246.5, 0.5, 78], [247.0, 0.25, 67], [247.0, 0.25, 79], [247.25, 0.5, 78], [247.75, 0.25, 79], [247.75, 8.25, 67], [248.0, 2.0, 28], [248.0, 2.0, 40], [248.0, 2.0, 64], [248.0, 4.0, 71], [249.0, 0.5, 83], [249.5, 0.25, 69], [249.5, 0.25, 78], [249.5, 0.25, 81], [249.75, 1.25, 74], [249.75, 1.75, 83], [250.0, 2.0, 31], [250.0, 2.0, 43], [250.0, 2.0, 62], [251.5, 0.25, 83], [251.75, 1.75, 84], [251.75, 2.25, 72], [252.0, 2.0, 36], [252.0, 2.0, 48], [252.0, 2.0, 64], [253.5, 2.5, 71], [253.5, 2.5, 83], [254.0, 2.0, 31], [254.0, 2.0, 43], [254.0, 4.0, 62], [256.0, 2.0, 38], [256.0, 2.0, 66], [256.0, 2.0, 69], [256.0, 2.0, 81], [258.0, 0.25, 83], [258.0, 2.0, 28], [258.0, 2.0, 40], [258.0, 2.0, 71], [258.0, 4.0, 64], [258.0, 5.0, 67], [258.25, 0.5, 79], [258.75, 1.25, 76], [262.25, 0.5, 31], [262.25, 0.5, 43], [262.25, 0.5, 55], [262.25, 0.5, 59], [262.25, 0.5, 62], [262.75, 0.5, 31], [262.75, 0.5, 43], [262.75, 0.5, 55], [262.75, 0.5, 59], [262.75, 0.5, 62], [263.25, 0.5, 42], [263.25, 0.5, 54], [263.25, 0.5, 57], [263.25, 0.5, 61], [263.25, 0.5, 66], [263.75, 0.5, 42], [263.75, 0.5, 54], [263.75, 0.5, 57], [263.75, 0.5, 61], [263.75, 0.5, 66], [264.25, 2.0, 40], [264.25, 2.0, 47], [264.25, 2.0, 52], [264.25, 2.0, 64], [264.25, 4.0, 59], [264.25, 6.0, 55], [266.25, 2.0, 31], [266.25, 2.0, 43], [266.25, 2.0, 62], [268.25, 2.0, 36], [268.25, 2.0, 48], [268.25, 2.0, 60], [268.25, 2.0, 64], [270.25, 2.0, 31], [270.25, 2.0, 43], [270.25, 2.0, 55], [270.25, 2.0, 59], [270.25, 4.0, 62], [272.0, 2.25, 38], [272.0, 2.25, 50], [272.0, 2.25, 57], [272.0, 2.25, 66], [274.0, 2.0, 40], [274.0, 2.0, 52], [274.0, 2.0, 59], [274.0, 4.0, 64], [274.0, 5.0, 55], [276.0, 2.0, 36], [276.0, 2.0, 48], [276.0, 2.0, 60], [278.0, 1.0, 31], [278.0, 1.0, 43], [278.0, 1.0, 59], [278.0, 1.0, 62], [279.0, 1.0, 30], [279.0, 1.0, 42], [279.0, 1.0, 54], [279.0, 1.0, 57], [279.0, 1.0, 61], [279.0, 1.0, 66], [280.0, 2.0, 28], [280.0, 2.0, 40], [280.0, 2.0, 52], [280.0, 2.0, 55], [280.0, 2.0, 59], [280.0, 2.0, 64], [280.0, 3.25, 40], [280.0, 3.25, 47], [280.0, 3.25, 52], [280.5, 3.25, 59], [281.0, 0.75, 79], [281.0, 0.75, 83], [281.5, 1.5, 78], [281.5, 3.25, 81], [281.75, 1.75, 83], [281.75, 4.25, 79], [282.0, 2.5, 55], [282.5, 3.25, 62], [282.75, 3.25, 71], [283.0, 3.0, 78], [283.5, 4.25, 83], [283.75, 2.25, 84], [284.0, 2.0, 48], [284.0, 2.0, 60], [284.5, 1.5, 64], [284.5, 3.5, 55], [286.0, 1.25, 74], [286.5, 0.5, 71], [286.5, 1.5, 62], [287.0, 1.0, 71], [287.25, 0.75, 74], [287.5, 0.5, 79], [287.75, 0.25, 83], [288.0, 2.0, 50], [288.0, 2.0, 81], [288.0, 5.5, 78], [288.5, 1.5, 57], [288.75, 1.25, 66], [289.25, 0.75, 69], [289.5, 0.5, 83], [290.0, 1.5, 71], [290.0, 2.0, 52], [290.0, 3.25, 79], [290.5, 3.25, 59], [290.75, 4.25, 76], [291.0, 3.0, 67], [291.25, 2.25, 64], [291.5, 3.25, 71], [292.0, 3.0, 36], [292.0, 3.0, 48], [292.5, 2.5, 55], [293.0, 1.0, 60], [293.5, 1.5, 64], [294.0, 1.0, 60], [294.0, 1.0, 67], [295.0, 1.0, 38], [295.0, 1.0, 50], [295.0, 1.0, 62], [295.0, 1.0, 66], [296.0, 3.25, 28], [296.0, 3.25, 40], [296.0, 3.25, 64], [296.0, 3.25, 67], [296.0, 3.25, 76]]}, {"title": "Fifteen Years", "key": "E-Dur", "level": 3, "bpm": 152, "bars": 123, "notes": [[0.0, 4.0, 61], [0.0, 4.0, 76], [1.0, 3.0, 68], [2.0, 2.0, 88], [4.0, 4.0, 57], [4.0, 4.0, 87], [5.0, 3.0, 64], [6.0, 2.0, 83], [8.0, 3.5, 80], [8.0, 4.0, 52], [9.0, 3.0, 59], [9.5, 2.5, 64], [10.0, 2.0, 66], [10.5, 1.5, 68], [11.0, 1.0, 71], [11.5, 4.5, 80], [12.0, 4.0, 47], [12.0, 4.0, 78], [12.5, 3.5, 54], [13.0, 3.0, 59], [13.5, 2.5, 76], [14.0, 1.5, 66], [14.5, 1.5, 71], [15.0, 1.0, 75], [15.5, 0.5, 66], [16.0, 4.0, 37], [16.0, 4.0, 76], [16.5, 3.5, 44], [17.0, 3.0, 52], [17.5, 2.5, 56], [18.0, 2.0, 88], [18.5, 1.0, 64], [19.0, 1.0, 63], [19.5, 0.5, 64], [20.0, 4.0, 45], [20.0, 4.0, 78], [20.0, 4.0, 87], [20.5, 3.5, 52], [21.0, 3.0, 59], [21.5, 1.5, 61], [22.0, 2.0, 85], [23.0, 1.0, 61], [23.5, 3.0, 71], [23.5, 3.25, 76], [24.0, 3.5, 83], [24.0, 5.0, 40], [24.5, 5.0, 47], [25.0, 3.5, 54], [25.5, 3.5, 59], [26.0, 5.0, 64], [26.5, 5.0, 71], [27.0, 2.5, 76], [27.5, 5.0, 83], [28.0, 5.0, 78], [28.5, 5.0, 54], [29.0, 5.0, 59], [29.5, 5.0, 76], [30.0, 5.0, 66], [31.25, 2.25, 75], [32.5, 4.5, 37], [33.5, 2.5, 75], [34.0, 0.5, 56], [34.0, 3.0, 73], [34.5, 2.5, 56], [35.0, 1.5, 76], [35.0, 2.0, 64], [35.5, 1.5, 68], [36.0, 5.0, 75], [36.5, 5.0, 76], [37.0, 4.0, 45], [37.5, 3.5, 52], [38.0, 3.0, 57], [38.5, 2.5, 59], [39.0, 2.0, 61], [39.0, 6.0, 81], [39.5, 4.0, 64], [41.0, 4.0, 40], [41.5, 3.5, 47], [42.0, 3.0, 52], [42.0, 3.0, 80], [42.5, 2.5, 56], [43.0, 2.0, 59], [43.5, 1.5, 64], [44.0, 1.0, 68], [44.5, 4.5, 71], [45.0, 4.0, 35], [45.0, 4.0, 78], [45.5, 3.5, 54], [46.0, 3.0, 59], [46.5, 2.0, 76], [47.0, 2.0, 63], [47.5, 1.5, 66], [48.0, 0.75, 75], [48.5, 0.5, 76], [48.75, 0.25, 75], [49.0, 4.0, 37], [49.0, 5.0, 73], [49.5, 3.5, 44], [50.0, 3.0, 56], [50.5, 2.5, 61], [51.0, 2.0, 64], [51.5, 1.5, 68], [52.0, 5.0, 75], [52.5, 5.0, 76], [53.0, 4.0, 45], [53.5, 3.5, 52], [54.0, 3.0, 57], [54.5, 2.5, 59], [55.0, 2.0, 61], [55.0, 6.0, 81], [55.5, 9.25, 64], [57.0, 5.0, 40], [57.5, 9.5, 47], [58.0, 5.0, 52], [58.0, 5.0, 80], [58.75, 5.0, 56], [59.25, 5.0, 76], [60.5, 5.0, 68], [62.0, 5.0, 54], [62.0, 5.0, 59], [62.0, 5.0, 78], [68.0, 1.5, 59], [68.5, 4.0, 64], [69.0, 2.0, 63], [69.5, 4.0, 59], [70.0, 2.0, 54], [71.0, 8.0, 63], [72.0, 2.0, 54], [72.5, 9.5, 64], [73.5, 5.5, 59], [74.0, 5.0, 54], [79.0, 5.0, 25], [79.0, 5.0, 37], [79.0, 5.0, 56], [79.0, 5.0, 61], [81.0, 5.0, 68], [81.0, 5.0, 76], [82.0, 6.0, 64], [83.0, 5.0, 33], [83.0, 5.0, 66], [83.0, 5.0, 75], [84.0, 9.0, 52], [85.0, 5.0, 69], [85.0, 5.0, 71], [86.0, 3.0, 59], [86.5, 4.0, 68], [87.0, 5.0, 40], [88.0, 1.5, 64], [88.5, 5.0, 56], [89.0, 4.5, 59], [89.5, 8.5, 64], [90.0, 6.0, 66], [90.5, 5.0, 68], [91.0, 5.0, 35], [92.0, 5.0, 54], [92.5, 5.0, 71], [93.0, 6.0, 63], [93.5, 5.0, 59], [95.0, 5.0, 37], [95.5, 5.0, 44], [96.0, 4.5, 52], [96.75, 9.25, 73], [97.0, 5.0, 76], [97.5, 4.0, 61], [98.0, 5.0, 64], [98.5, 9.0, 71], [99.0, 5.0, 33], [99.0, 5.0, 75], [99.0, 5.0, 87], [100.0, 5.0, 45], [100.5, 8.5, 52], [101.0, 5.0, 69], [101.0, 5.0, 85], [101.5, 5.0, 61], [102.5, 9.5, 83], [103.0, 5.0, 40], [103.5, 5.0, 47], [104.5, 5.0, 56], [105.0, 8.0, 59], [105.5, 9.0, 76], [106.0, 5.0, 78], [106.0, 8.5, 66], [106.5, 5.0, 80], [107.0, 5.0, 35], [107.5, 5.0, 54], [108.5, 10.5, 75], [109.0, 5.0, 63], [110.5, 2.5, 73], [111.0, 5.0, 37], [111.5, 5.0, 49], [112.0, 5.0, 64], [112.5, 5.0, 56], [113.0, 8.0, 61], [113.0, 10.0, 73], [114.5, 5.0, 76], [115.0, 5.0, 33], [115.0, 5.0, 45], [115.5, 8.5, 52], [116.5, 6.0, 59], [117.0, 1.5, 69], [117.0, 6.0, 81], [118.5, 5.0, 69], [119.0, 5.0, 40], [119.5, 8.5, 47], [120.0, 5.0, 80], [120.0, 7.0, 71], [120.5, 6.0, 56], [121.0, 5.0, 64], [122.5, 6.5, 76], [123.0, 5.0, 35], [123.0, 5.0, 78], [123.5, 5.0, 54], [124.0, 1.5, 59], [124.5, 5.0, 83], [125.0, 5.0, 63], [125.5, 5.0, 59], [126.0, 5.0, 66], [126.0, 9.0, 75], [127.0, 5.0, 37], [127.0, 5.0, 49], [127.5, 5.0, 44], [128.0, 5.0, 73], [128.5, 9.75, 52], [129.0, 5.0, 56], [129.0, 6.5, 76], [129.5, 3.0, 61], [130.0, 8.25, 64], [131.0, 5.0, 33], [131.0, 5.0, 45], [132.0, 9.25, 59], [132.5, 4.75, 61], [133.0, 5.75, 69], [133.0, 5.75, 81], [135.0, 4.75, 40], [135.5, 4.75, 47], [136.0, 4.75, 80], [136.5, 4.75, 56], [137.0, 4.75, 76], [138.5, 4.75, 66], [138.75, 4.75, 71], [139.0, 4.75, 78], [143.5, 6.5, 59], [144.0, 5.0, 64], [144.5, 5.0, 63], [145.5, 4.0, 54], [146.0, 9.0, 52], [146.5, 9.0, 51], [147.0, 2.0, 47], [147.5, 7.0, 42], [148.0, 5.0, 40], [148.5, 2.0, 39], [149.0, 5.0, 35], [149.0, 5.0, 47], [149.5, 5.0, 54], [150.5, 5.0, 39], [151.0, 5.0, 32], [151.0, 5.0, 37], [151.0, 7.5, 49], [151.5, 5.0, 44], [152.0, 9.0, 61], [152.5, 6.5, 56], [155.0, 5.0, 33], [155.5, 11.5, 64], [156.0, 6.5, 52], [157.0, 3.5, 59], [159.0, 5.0, 40], [159.5, 8.5, 47], [160.5, 5.5, 59], [162.5, 7.5, 63], [163.0, 5.0, 35], [163.5, 7.0, 54], [166.0, 5.0, 59], [166.5, 4.5, 61], [167.0, 5.0, 37], [167.0, 5.0, 49], [167.5, 7.0, 56], [168.5, 8.0, 52], [170.5, 2.5, 69], [171.0, 5.0, 33], [171.0, 5.0, 45], [171.0, 6.0, 61], [172.5, 4.0, 59], [173.0, 5.0, 69], [173.5, 5.0, 68], [175.0, 5.0, 40], [175.5, 8.5, 47], [176.5, 9.0, 59], [178.5, 5.0, 68], [179.0, 1.0, 66], [179.0, 5.0, 35], [180.0, 6.0, 66], [181.5, 5.0, 64], [182.0, 5.0, 63], [182.5, 3.0, 61], [183.0, 5.0, 37], [183.0, 5.0, 49], [183.5, 1.5, 56], [183.5, 5.0, 44], [184.5, 11.0, 52], [185.0, 5.0, 56], [185.5, 8.5, 61], [186.5, 2.5, 69], [187.0, 5.0, 33], [187.0, 5.0, 45], [188.5, 5.0, 57], [189.0, 5.0, 69], [189.5, 8.0, 68], [190.0, 8.5, 59], [191.0, 5.0, 40], [191.5, 8.5, 47], [192.0, 6.0, 56], [193.5, 5.5, 71], [194.5, 2.5, 66], [195.0, 3.0, 63], [195.0, 5.0, 35], [195.5, 5.0, 54], [196.5, 5.0, 64], [197.0, 5.0, 66], [197.5, 5.0, 68], [198.0, 5.0, 63], [198.5, 3.0, 61], [199.0, 5.0, 37], [199.0, 5.0, 49], [199.5, 5.0, 44], [199.5, 5.0, 56], [200.5, 3.0, 52], [200.5, 3.5, 73], [201.5, 2.5, 61], [202.0, 5.0, 75], [202.5, 5.0, 76], [203.0, 5.0, 33], [203.0, 5.0, 45], [203.5, 9.5, 52], [204.0, 5.0, 61], [204.0, 5.0, 73], [204.5, 5.0, 57], [205.0, 5.0, 69], [205.5, 8.0, 68], [206.0, 8.5, 59], [207.0, 5.0, 40], [207.5, 8.5, 47], [208.5, 0.5, 56], [209.0, 5.0, 56], [210.0, 5.0, 71], [210.5, 2.5, 75], [211.0, 5.0, 35], [211.5, 5.0, 54], [212.5, 9.5, 73], [213.0, 1.0, 75], [213.5, 5.0, 76], [214.0, 5.0, 75], [215.0, 5.0, 33], [215.0, 5.0, 45], [215.5, 7.0, 52], [216.0, 6.0, 61], [216.5, 3.0, 59], [218.5, 7.5, 63], [219.0, 5.0, 75], [219.5, 6.0, 59], [220.5, 6.0, 64], [221.0, 5.0, 76], [222.5, 4.75, 66], [223.0, 4.75, 35], [223.0, 4.75, 47], [223.0, 4.75, 71], [223.5, 4.75, 54], [225.0, 4.75, 75], [225.5, 8.75, 59], [226.0, 4.75, 63], [226.5, 1.5, 64], [226.75, 11.25, 76], [227.75, 4.75, 64], [228.25, 6.5, 66], [228.75, 4.75, 78], [230.5, 5.0, 71], [231.0, 5.0, 37], [231.0, 5.0, 49], [231.5, 5.0, 44], [232.0, 6.0, 80], [232.5, 5.0, 56], [233.0, 4.0, 64], [233.5, 7.5, 61], [234.5, 2.0, 73], [234.5, 2.0, 81], [235.0, 5.0, 33], [235.0, 5.0, 45], [236.5, 5.0, 57], [236.5, 5.5, 81], [236.5, 6.0, 73], [237.0, 4.0, 64], [238.0, 4.0, 80], [239.0, 2.0, 68], [239.0, 5.0, 28], [239.0, 5.0, 40], [239.5, 8.5, 47], [240.0, 5.0, 52], [240.5, 5.0, 59], [240.5, 6.0, 71], [241.0, 5.0, 64], [241.0, 5.0, 68], [242.0, 19.0, 80], [242.5, 2.0, 78], [243.0, 5.0, 35], [243.0, 5.0, 66], [243.5, 5.0, 54], [244.5, 0.5, 78], [244.5, 6.0, 63], [245.0, 5.0, 78], [246.0, 5.0, 75], [246.5, 11.5, 76], [247.0, 5.0, 37], [247.0, 5.0, 49], [247.5, 3.0, 73], [248.0, 5.0, 44], [248.5, 5.0, 56], [249.0, 5.0, 68], [249.0, 9.0, 64], [249.5, 9.0, 61], [250.5, 2.0, 73], [250.5, 2.0, 81], [251.0, 5.0, 33], [251.0, 5.0, 45], [251.5, 9.5, 52], [252.5, 0.5, 73], [252.5, 1.5, 81], [252.5, 13.0, 59], [253.0, 4.5, 71], [253.0, 5.0, 73], [253.0, 5.0, 83], [254.0, 5.0, 81], [255.0, 5.0, 28], [255.0, 5.0, 40], [255.5, 8.5, 47], [257.0, 5.0, 68], [257.5, 5.0, 71], [258.0, 5.0, 64], [258.5, 1.5, 78], [259.0, 5.0, 35], [259.0, 8.0, 66], [259.5, 5.0, 54], [260.0, 2.0, 78], [260.5, 2.0, 76], [261.0, 5.0, 63], [261.0, 5.0, 80], [262.0, 5.0, 78], [262.5, 2.5, 76], [263.0, 5.0, 37], [263.0, 5.0, 49], [263.5, 5.0, 75], [264.0, 6.5, 56], [264.0, 10.0, 73], [264.5, 5.0, 64], [265.0, 6.5, 76], [266.0, 5.0, 63], [267.0, 5.0, 33], [267.0, 5.0, 45], [267.5, 8.0, 52], [268.0, 5.0, 59], [268.5, 5.0, 61], [269.0, 6.0, 69], [269.0, 6.0, 81], [269.5, 5.0, 64], [271.0, 5.0, 28], [271.0, 5.0, 40], [272.0, 5.0, 80], [272.5, 5.0, 56], [273.0, 8.5, 59], [273.5, 5.0, 71], [274.0, 4.5, 76], [274.5, 5.0, 83], [275.0, 5.0, 35], [275.0, 5.0, 47], [275.0, 5.0, 78], [275.5, 2.0, 54], [276.0, 2.0, 63], [277.0, 5.0, 66], [277.5, 5.0, 54], [278.0, 9.0, 63], [278.0, 9.0, 75], [278.5, 9.0, 76], [279.0, 5.0, 37], [279.0, 5.0, 49], [279.0, 5.0, 73], [279.5, 6.0, 56], [280.0, 3.5, 52], [281.0, 14.0, 64], [281.5, 8.0, 61], [283.0, 5.0, 33], [283.0, 5.0, 45], [283.5, 8.5, 52], [284.0, 14.5, 59], [285.0, 5.0, 73], [285.0, 6.0, 69], [285.0, 6.0, 81], [287.0, 5.0, 28], [287.0, 5.0, 40], [288.0, 5.0, 68], [288.0, 5.0, 80], [289.0, 3.5, 76], [290.5, 7.5, 66], [290.75, 5.0, 71], [291.0, 5.0, 47], [291.0, 5.0, 78], [292.5, 6.0, 76], [294.0, 4.0, 63], [294.0, 4.0, 75], [295.0, 5.0, 37], [295.0, 5.0, 49], [295.0, 5.0, 73], [295.5, 5.0, 56], [296.5, 4.5, 64], [297.5, 5.0, 68], [298.0, 5.0, 63], [298.0, 5.0, 75], [298.5, 10.5, 76], [299.0, 5.0, 33], [299.0, 5.0, 45], [299.5, 8.5, 52], [300.0, 5.0, 57], [300.5, 4.0, 71], [300.5, 14.0, 59], [301.0, 9.0, 64], [301.5, 5.0, 69], [301.5, 5.5, 81], [302.0, 5.0, 93], [302.5, 5.0, 80], [302.5, 5.0, 92], [303.0, 5.0, 28], [303.0, 5.0, 40], [303.5, 8.5, 47], [304.5, 3.5, 71], [306.5, 5.0, 78], [306.5, 5.0, 90], [307.0, 5.0, 35], [307.5, 5.0, 54], [308.0, 5.0, 71], [308.5, 5.0, 63], [309.0, 1.5, 76], [309.0, 5.0, 66], [310.0, 5.0, 87], [310.0, 9.0, 75], [310.5, 4.0, 76], [310.5, 5.0, 88], [311.0, 5.0, 37], [311.0, 5.0, 49], [311.5, 5.0, 56], [312.0, 10.0, 64], [312.5, 5.0, 61], [313.5, 5.0, 68], [314.0, 5.0, 63], [314.5, 2.5, 76], [315.0, 5.0, 33], [315.0, 5.0, 45], [315.5, 8.5, 52], [316.0, 5.0, 57], [316.5, 7.5, 59], [316.5, 9.5, 71], [317.0, 6.0, 69], [317.0, 12.0, 76], [317.5, 0.5, 81], [318.0, 5.0, 81], [318.0, 5.0, 93], [318.5, 5.0, 80], [318.5, 5.0, 92], [319.0, 5.0, 28], [319.0, 5.0, 40], [319.5, 8.5, 47], [320.0, 5.0, 56], [322.0, 5.0, 64], [322.5, 5.0, 83], [322.5, 5.0, 95], [323.0, 5.0, 35], [323.5, 5.0, 54], [324.0, 5.0, 59], [324.5, 5.0, 63], [325.0, 5.5, 66], [326.0, 5.0, 87], [326.0, 12.5, 75], [326.5, 5.0, 88], [327.0, 5.0, 49], [328.5, 3.0, 64], [329.0, 3.0, 76], [330.5, 2.5, 83], [331.0, 5.0, 57], [331.5, 3.5, 64], [332.0, 4.0, 76], [333.0, 4.0, 83], [335.0, 5.0, 64], [335.5, 11.5, 71], [336.0, 4.5, 76], [337.0, 5.0, 83], [337.5, 5.0, 81], [338.0, 5.0, 80], [338.5, 5.0, 78], [339.0, 5.0, 59], [339.5, 3.0, 66], [340.5, 0.5, 76], [341.0, 12.75, 76], [341.5, 4.0, 75], [342.5, 5.0, 66], [343.0, 5.0, 49], [343.5, 5.0, 56], [344.0, 9.0, 61], [344.5, 4.0, 64], [345.5, 5.0, 75], [346.5, 2.5, 83], [347.0, 5.0, 45], [347.5, 5.0, 52], [348.5, 4.5, 64], [349.0, 1.0, 83], [350.0, 9.25, 83], [350.5, 5.0, 88], [351.0, 5.0, 40], [351.5, 8.75, 47], [352.0, 5.0, 56], [352.5, 8.75, 59], [353.0, 5.0, 64], [353.75, 5.0, 76], [354.75, 5.0, 87], [355.75, 5.0, 54], [357.0, 5.0, 63], [357.5, 5.0, 66], [358.25, 4.75, 71], [359.0, 4.75, 75], [359.75, 4.75, 83], [361.0, 4.75, 85], [361.0, 5.75, 49], [361.0, 8.75, 61], [361.0, 12.75, 64], [363.0, 6.25, 76], [365.0, 4.75, 45], [367.0, 1.0, 81], [368.0, 4.5, 81], [369.0, 4.5, 52], [369.0, 4.5, 68], [369.0, 8.5, 59], [370.0, 4.5, 80], [373.0, 4.5, 63], [373.0, 4.5, 66], [373.0, 4.5, 78], [374.5, 2.0, 76], [376.0, 4.25, 75], [376.5, 2.5, 76], [377.0, 4.25, 49], [377.5, 4.25, 56], [378.0, 4.25, 61], [378.5, 4.25, 64], [379.0, 6.0, 76], [381.0, 4.25, 45], [381.5, 4.25, 52], [382.0, 4.25, 57], [382.5, 4.25, 59], [383.25, 1.25, 81], [383.25, 4.25, 61], [384.25, 4.5, 81], [385.5, 4.5, 40], [386.25, 4.5, 47], [386.75, 4.5, 80], [387.25, 4.5, 56], [388.0, 4.5, 76], [391.0, 2.25, 63], [391.0, 4.5, 47], [391.0, 4.5, 78], [391.75, 4.5, 54], [392.5, 4.5, 59], [393.25, 4.75, 63], [394.25, 4.75, 66], [397.75, 4.75, 76], [398.25, 4.75, 75], [398.75, 4.75, 71], [399.25, 4.75, 66], [399.75, 4.75, 64], [400.5, 4.75, 63], [401.0, 4.75, 59], [401.5, 4.75, 54], [402.0, 4.75, 52], [402.75, 4.75, 51], [403.25, 2.75, 47], [404.0, 5.0, 42], [404.75, 0.75, 39], [405.25, 5.0, 39], [406.25, 5.0, 47], [406.25, 5.75, 35], [408.0, 5.0, 25], [408.0, 5.0, 37], [408.0, 8.0, 64], [408.0, 8.0, 76], [409.0, 5.0, 49], [410.0, 5.0, 68], [412.0, 2.0, 83], [412.0, 4.0, 33], [412.0, 4.0, 45], [412.0, 4.0, 75], [412.5, 1.0, 59], [413.0, 2.0, 57], [413.5, 1.0, 59], [414.0, 2.0, 71], [414.0, 2.0, 83], [414.5, 1.5, 59], [415.0, 1.0, 57], [416.0, 4.0, 40], [416.0, 4.0, 68], [416.0, 4.0, 80], [416.5, 1.0, 59], [417.0, 3.0, 64], [417.5, 2.5, 59], [419.0, 1.0, 71], [419.5, 11.5, 76], [420.0, 2.5, 66], [420.0, 4.0, 35], [420.0, 4.0, 78], [420.5, 0.5, 59], [421.0, 3.0, 59], [421.5, 2.5, 83], [422.0, 2.0, 63], [422.5, 1.5, 66], [423.0, 1.0, 75], [424.0, 5.0, 37], [424.0, 8.0, 75], [424.5, 1.0, 61], [425.0, 5.0, 56], [425.5, 5.0, 61], [426.0, 5.0, 68], [426.0, 5.0, 88], [427.0, 5.0, 64], [428.0, 4.0, 33], [428.0, 4.0, 45], [428.0, 4.0, 87], [429.0, 2.0, 57], [430.0, 2.0, 73], [430.0, 2.0, 85], [431.0, 1.0, 57], [431.5, 8.5, 71], [431.5, 8.5, 83], [432.0, 4.0, 40], [432.5, 3.5, 59], [433.5, 2.5, 56], [434.0, 2.0, 64], [434.5, 1.5, 76], [435.0, 1.0, 78], [436.0, 4.0, 35], [436.5, 2.0, 59], [437.5, 2.5, 75], [438.0, 2.0, 63], [438.5, 1.5, 59], [439.0, 1.0, 76], [439.5, 4.5, 73], [440.0, 3.5, 76], [440.0, 4.0, 37], [440.5, 3.5, 71], [441.0, 0.5, 68], [441.5, 2.5, 49], [441.5, 2.5, 68], [442.0, 2.0, 64], [443.0, 1.0, 75], [443.5, 4.5, 76], [444.0, 4.0, 33], [444.0, 4.0, 45], [444.5, 3.5, 52], [445.0, 3.0, 57], [445.5, 2.5, 59], [446.0, 2.0, 64], [446.0, 2.0, 73], [446.0, 6.0, 69], [446.0, 6.0, 81], [446.5, 1.5, 61], [448.0, 4.0, 40], [448.0, 8.0, 78], [448.5, 3.5, 47], [449.0, 1.0, 68], [449.0, 3.0, 80], [449.5, 2.5, 59], [450.0, 2.0, 64], [450.0, 2.0, 68], [450.0, 2.0, 76], [450.5, 1.5, 71], [451.5, 4.5, 83], [452.0, 4.0, 35], [452.0, 4.0, 66], [452.5, 3.5, 59], [453.0, 2.0, 63], [453.5, 10.75, 76], [455.0, 1.0, 63], [455.0, 1.0, 75], [456.0, 4.0, 37], [456.5, 3.5, 75], [457.0, 3.0, 73], [457.5, 2.5, 56], [458.0, 2.5, 64], [460.0, 4.25, 33], [460.5, 3.75, 64], [461.0, 1.5, 57], [461.5, 2.75, 59], [462.0, 2.25, 73], [462.0, 6.75, 69], [462.0, 6.75, 81], [462.5, 1.5, 57], [464.0, 4.75, 40], [464.75, 8.75, 47], [465.25, 3.5, 56], [465.25, 3.5, 68], [465.25, 3.5, 80], [466.25, 2.5, 64], [466.25, 2.5, 76], [468.75, 4.5, 78], [469.5, 4.5, 54], [470.25, 4.5, 59], [471.0, 4.5, 64], [471.75, 4.0, 75], [476.0, 4.5, 37], [476.0, 4.5, 73], [476.0, 8.25, 64], [477.0, 4.5, 44], [477.5, 4.5, 49], [478.0, 4.5, 52], [478.5, 4.5, 56], [479.0, 4.5, 61], [480.0, 4.5, 68], [480.5, 4.5, 73], [480.75, 1.5, 37], [481.25, 8.25, 76], [481.75, 4.5, 80], [482.5, 4.5, 85], [483.0, 4.5, 88], [483.75, 4.5, 92], [485.0, 4.5, 68], [485.0, 4.5, 97]]}, {"title": "Pilze, Pl\u00e4ne und Panik", "key": "B-Dur", "level": 3, "bpm": 93, "bars": 70, "notes": [[4.0, 3.0, 67], [4.25, 0.5, 74], [4.5, 0.75, 82], [4.75, 0.25, 74], [5.0, 3.5, 74], [5.25, 3.0, 82], [5.75, 0.5, 87], [5.75, 0.75, 63], [6.0, 2.0, 70], [6.25, 0.75, 87], [6.5, 3.0, 63], [6.75, 3.0, 75], [7.0, 3.0, 87], [7.5, 3.75, 86], [8.0, 3.0, 70], [8.25, 0.5, 77], [8.75, 0.25, 77], [9.0, 0.5, 77], [9.25, 3.0, 82], [9.5, 1.25, 77], [9.75, 0.5, 84], [9.75, 3.0, 65], [10.0, 0.5, 72], [10.25, 0.75, 84], [10.5, 3.0, 72], [10.75, 3.0, 77], [11.0, 3.0, 84], [11.25, 0.5, 86], [11.5, 3.0, 89], [11.75, 3.0, 86], [12.0, 3.0, 67], [12.0, 4.25, 91], [12.25, 0.5, 74], [12.5, 1.25, 82], [12.75, 0.75, 74], [13.0, 3.0, 79], [13.5, 3.0, 74], [13.75, 0.5, 82], [13.75, 0.75, 63], [14.0, 0.5, 70], [14.25, 3.0, 82], [14.5, 1.5, 70], [14.5, 3.0, 63], [14.75, 3.0, 75], [15.0, 3.0, 87], [15.5, 1.0, 86], [15.75, 0.5, 77], [16.0, 3.0, 70], [16.25, 0.5, 77], [16.5, 3.0, 86], [16.75, 0.25, 77], [17.0, 0.5, 77], [17.25, 1.25, 82], [17.5, 1.5, 77], [17.75, 3.0, 65], [17.75, 3.0, 84], [18.0, 1.25, 72], [18.5, 3.0, 82], [18.75, 3.0, 81], [19.0, 3.0, 77], [19.25, 3.0, 72], [19.5, 1.75, 70], [19.75, 3.0, 69], [20.0, 3.0, 31], [20.0, 3.0, 43], [20.25, 3.0, 50], [20.5, 0.5, 58], [20.75, 3.0, 57], [21.0, 1.5, 58], [21.25, 3.0, 70], [21.5, 0.75, 67], [21.75, 1.25, 75], [21.75, 3.0, 39], [21.75, 5.25, 46], [22.0, 3.0, 51], [22.25, 3.0, 67], [22.5, 1.25, 58], [22.5, 1.25, 63], [22.75, 2.0, 65], [23.0, 3.0, 75], [23.5, 3.75, 74], [23.75, 1.75, 58], [23.75, 3.0, 63], [24.0, 3.0, 34], [24.25, 4.75, 53], [24.5, 4.0, 62], [24.75, 7.75, 65], [25.25, 4.5, 70], [25.5, 6.5, 58], [25.75, 4.5, 60], [25.75, 5.0, 72], [26.0, 3.0, 41], [26.0, 3.0, 48], [26.5, 3.0, 57], [27.25, 3.25, 74], [28.0, 3.25, 39], [28.0, 3.5, 46], [28.0, 6.5, 67], [28.25, 3.25, 51], [28.75, 3.25, 55], [29.75, 4.25, 70], [30.0, 1.0, 77], [30.5, 2.0, 69], [31.0, 3.25, 77], [32.0, 4.25, 82], [32.5, 1.0, 69], [33.75, 5.5, 69], [34.0, 1.25, 70], [34.25, 3.25, 84], [34.5, 4.25, 67], [35.0, 3.25, 70], [35.25, 3.25, 77], [37.0, 3.0, 43], [37.0, 4.25, 82], [37.25, 3.0, 62], [37.5, 3.0, 79], [37.75, 5.75, 74], [38.25, 1.75, 86], [38.75, 3.0, 87], [38.75, 5.0, 58], [39.0, 3.0, 65], [40.0, 2.5, 86], [40.75, 3.0, 84], [41.0, 3.0, 53], [41.25, 4.0, 72], [41.5, 2.75, 81], [42.0, 3.0, 87], [42.5, 3.0, 69], [42.5, 3.25, 86], [43.0, 3.0, 55], [43.0, 3.0, 62], [43.25, 0.75, 82], [43.25, 5.75, 67], [43.5, 3.0, 70], [43.75, 3.0, 74], [44.0, 3.0, 82], [44.25, 3.0, 81], [44.75, 0.75, 79], [44.75, 3.25, 51], [45.25, 4.25, 58], [45.5, 3.25, 79], [45.75, 3.0, 63], [46.25, 3.5, 77], [46.5, 3.0, 70], [47.0, 3.0, 46], [47.25, 1.5, 82], [47.5, 3.0, 53], [48.0, 3.0, 62], [48.25, 2.75, 65], [48.75, 2.25, 82], [49.0, 2.0, 48], [49.0, 2.0, 55], [49.0, 2.0, 84], [49.25, 1.75, 63], [49.5, 1.5, 79], [50.25, 2.75, 86], [51.0, 2.0, 41], [51.5, 1.5, 48], [51.5, 1.5, 84], [51.75, 1.25, 57], [52.0, 1.0, 60], [52.25, 0.75, 65], [52.5, 0.5, 69], [52.75, 0.25, 72], [53.0, 1.75, 43], [53.0, 1.75, 70], [53.25, 1.5, 50], [53.5, 1.25, 67], [53.75, 0.75, 58], [54.25, 0.5, 74], [54.5, 0.25, 58], [54.75, 2.0, 46], [54.75, 2.0, 75], [55.0, 1.75, 58], [55.25, 0.75, 74], [55.25, 1.5, 53], [55.75, 1.0, 65], [56.0, 0.75, 62], [56.0, 0.75, 74], [56.75, 0.75, 72], [57.0, 1.75, 41], [57.0, 1.75, 53], [57.25, 1.5, 48], [57.5, 1.25, 69], [57.5, 1.25, 72], [58.0, 0.75, 75], [58.5, 2.25, 74], [58.75, 2.0, 43], [59.0, 0.5, 58], [59.25, 0.75, 70], [59.5, 1.25, 58], [60.0, 0.75, 62], [60.0, 0.75, 70], [60.25, 0.5, 69], [60.75, 0.75, 67], [61.0, 2.0, 39], [61.0, 2.0, 51], [61.25, 3.75, 46], [61.5, 1.5, 58], [61.5, 1.5, 67], [62.0, 1.0, 63], [62.25, 2.75, 65], [63.25, 1.75, 70], [63.5, 1.5, 53], [64.0, 1.0, 62], [64.5, 0.5, 82], [65.0, 2.0, 48], [65.0, 2.0, 55], [65.0, 2.0, 63], [65.0, 4.0, 84], [65.25, 1.75, 58], [65.5, 1.5, 86], [66.5, 0.5, 82], [67.0, 2.0, 53], [67.0, 2.0, 60], [68.5, 3.5, 82], [69.0, 3.0, 43], [73.0, 4.75, 43], [77.0, 0.75, 50], [77.0, 0.75, 55], [77.0, 0.75, 58], [77.0, 0.75, 62], [77.75, 1.0, 43], [77.75, 1.0, 50], [77.75, 1.0, 55], [77.75, 1.0, 62], [77.75, 5.0, 58], [78.75, 2.25, 39], [78.75, 2.25, 51], [78.75, 2.25, 63], [80.5, 2.25, 62], [81.0, 1.75, 46], [81.0, 4.0, 53], [82.75, 2.25, 41], [82.75, 2.25, 48], [82.75, 2.25, 57], [82.75, 2.25, 60], [84.5, 0.5, 65], [85.0, 1.75, 43], [85.0, 1.75, 50], [85.0, 1.75, 67], [85.0, 4.0, 55], [85.0, 4.0, 58], [86.75, 2.25, 39], [86.75, 2.25, 46], [86.75, 2.25, 51], [86.75, 2.25, 63], [89.0, 1.75, 46], [89.0, 1.75, 58], [89.0, 1.75, 62], [89.0, 4.0, 53], [90.75, 2.25, 41], [90.75, 2.25, 48], [90.75, 2.25, 57], [90.75, 2.25, 60], [91.25, 0.25, 65], [91.5, 0.5, 69], [92.0, 0.25, 70], [92.25, 0.25, 69], [92.5, 0.5, 65], [93.0, 1.75, 43], [93.0, 1.75, 50], [93.0, 1.75, 70], [93.0, 4.0, 55], [93.0, 5.75, 58], [93.5, 1.25, 82], [94.75, 1.25, 75], [94.75, 1.75, 87], [94.75, 2.25, 39], [94.75, 2.25, 51], [94.75, 4.0, 46], [95.5, 0.5, 67], [96.25, 0.25, 70], [96.5, 0.5, 63], [96.5, 1.75, 74], [96.5, 1.75, 86], [96.75, 0.25, 67], [97.0, 1.75, 62], [97.0, 4.0, 53], [98.25, 0.5, 70], [98.25, 0.5, 82], [98.75, 1.5, 72], [98.75, 1.5, 84], [98.75, 2.25, 41], [98.75, 2.25, 48], [98.75, 2.25, 57], [98.75, 2.25, 60], [99.25, 0.5, 65], [100.25, 0.25, 74], [100.25, 0.25, 86], [100.5, 0.5, 77], [100.5, 0.5, 89], [100.75, 0.25, 86], [101.0, 3.0, 39], [101.0, 3.0, 46], [101.0, 3.0, 51], [101.0, 3.0, 55], [101.0, 3.0, 79], [101.0, 3.0, 91], [101.75, 1.25, 67], [103.0, 0.75, 69], [103.75, 0.75, 69], [104.5, 0.5, 69], [105.0, 0.75, 70], [105.0, 0.75, 82], [105.75, 0.75, 70], [105.75, 0.75, 82], [106.5, 0.5, 70], [106.5, 0.5, 82], [107.0, 0.75, 72], [107.0, 0.75, 84], [107.75, 0.75, 72], [107.75, 0.75, 84], [108.5, 0.5, 72], [108.5, 0.5, 84], [109.0, 1.5, 74], [109.0, 1.5, 86], [110.5, 0.5, 70], [110.5, 0.5, 74], [111.0, 2.0, 75], [111.0, 2.0, 87], [111.25, 0.5, 70], [111.75, 0.25, 46], [112.25, 0.25, 46], [112.75, 0.25, 46], [113.0, 0.75, 77], [113.0, 0.75, 89], [113.75, 3.25, 77], [113.75, 3.25, 89], [117.0, 1.0, 70], [117.0, 1.0, 82], [117.0, 1.75, 43], [117.0, 1.75, 50], [117.0, 1.75, 55], [117.0, 1.75, 58], [117.75, 1.0, 62], [118.0, 0.75, 70], [118.0, 0.75, 82], [118.25, 0.5, 74], [118.25, 0.5, 86], [118.75, 2.25, 46], [118.75, 2.25, 58], [118.75, 2.25, 75], [118.75, 2.25, 87], [118.75, 4.0, 53], [118.75, 4.0, 65], [119.25, 0.75, 62], [119.25, 0.75, 74], [119.25, 0.75, 86], [120.0, 0.25, 62], [120.0, 0.25, 74], [120.0, 0.25, 86], [120.25, 0.75, 62], [120.25, 0.75, 74], [120.25, 0.75, 86], [120.75, 2.0, 60], [120.75, 2.0, 72], [120.75, 2.0, 84], [121.0, 1.75, 41], [121.0, 1.75, 57], [121.5, 1.25, 69], [121.5, 1.25, 81], [122.0, 0.75, 75], [122.0, 0.75, 87], [122.5, 2.25, 62], [122.5, 2.25, 74], [122.5, 2.25, 86], [122.75, 1.75, 55], [122.75, 2.0, 43], [122.75, 2.0, 50], [122.75, 6.25, 58], [123.25, 0.75, 70], [123.25, 0.75, 82], [124.0, 0.75, 70], [124.0, 0.75, 82], [124.25, 0.5, 69], [124.25, 0.5, 81], [124.5, 2.25, 55], [124.75, 2.0, 39], [124.75, 2.0, 51], [124.75, 2.0, 67], [124.75, 2.0, 79], [126.25, 2.75, 65], [126.25, 2.75, 77], [126.75, 2.25, 34], [126.75, 2.25, 46], [127.25, 1.25, 70], [127.25, 1.25, 82], [127.25, 1.75, 51], [128.0, 1.0, 62], [128.5, 0.5, 70], [128.5, 0.5, 82], [129.0, 1.0, 72], [129.0, 1.0, 84], [129.0, 2.0, 36], [129.0, 2.0, 55], [129.0, 2.0, 63], [129.0, 4.0, 48], [129.5, 1.5, 67], [129.5, 1.5, 79], [129.5, 1.5, 91], [130.0, 3.0, 72], [130.0, 3.0, 84], [130.25, 0.75, 74], [130.25, 0.75, 86], [131.0, 0.75, 41], [131.0, 2.0, 53], [131.0, 2.0, 65], [131.75, 0.75, 41], [132.0, 2.0, 70], [132.5, 0.5, 41], [133.0, 1.0, 82], [133.0, 1.75, 31], [133.0, 1.75, 43], [133.0, 1.75, 50], [133.0, 4.0, 58], [133.5, 1.25, 55], [133.5, 1.25, 67], [133.75, 1.0, 62], [134.0, 0.75, 70], [134.0, 0.75, 82], [134.25, 0.5, 74], [134.25, 0.5, 86], [134.75, 2.25, 34], [134.75, 2.25, 46], [134.75, 2.25, 75], [134.75, 2.25, 87], [134.75, 4.0, 53], [134.75, 4.0, 65], [135.25, 0.75, 74], [135.25, 0.75, 86], [136.0, 1.0, 74], [136.0, 1.0, 86], [136.75, 0.75, 72], [136.75, 0.75, 84], [136.75, 2.0, 60], [137.0, 1.75, 29], [137.0, 1.75, 41], [137.0, 1.75, 57], [137.5, 1.25, 72], [137.5, 1.25, 84], [138.0, 0.75, 75], [138.0, 0.75, 87], [138.5, 0.25, 74], [138.5, 0.25, 86], [138.75, 2.25, 31], [138.75, 2.25, 43], [138.75, 2.25, 62], [138.75, 2.25, 74], [138.75, 2.25, 86], [138.75, 4.0, 55], [138.75, 6.25, 58], [139.25, 0.75, 70], [139.25, 0.75, 82], [140.0, 1.0, 70], [140.0, 1.0, 82], [140.25, 0.75, 69], [140.25, 0.75, 81], [140.75, 2.0, 51], [140.75, 2.0, 67], [140.75, 2.0, 79], [141.0, 1.75, 39], [142.25, 2.75, 65], [142.25, 2.75, 77], [142.75, 2.25, 34], [142.75, 2.25, 46], [143.25, 1.75, 70], [143.25, 1.75, 82], [145.0, 2.0, 36], [145.0, 2.0, 55], [145.0, 2.0, 63], [145.0, 2.0, 75], [145.0, 4.0, 48], [145.0, 4.0, 60], [145.0, 4.0, 72], [145.0, 4.0, 84], [145.5, 1.5, 74], [145.5, 1.5, 86], [146.5, 0.5, 70], [146.5, 0.5, 82], [147.0, 2.0, 29], [147.0, 2.0, 41], [147.0, 2.0, 53], [147.0, 2.0, 57], [148.5, 2.5, 70], [148.5, 2.5, 82], [149.0, 2.0, 43], [149.0, 2.0, 55], [149.0, 2.0, 58], [152.0, 0.25, 58], [152.0, 0.25, 70], [152.25, 0.25, 62], [152.5, 0.25, 55], [152.5, 0.25, 67], [152.75, 0.25, 57], [152.75, 0.25, 69], [153.0, 0.25, 58], [153.0, 0.25, 70], [153.0, 5.75, 31], [153.0, 5.75, 43], [153.25, 0.25, 57], [153.25, 0.25, 69], [153.5, 0.25, 55], [153.5, 0.25, 67], [153.75, 0.25, 60], [153.75, 0.25, 72], [154.0, 0.25, 58], [154.0, 0.25, 70], [154.25, 0.25, 57], [154.25, 0.25, 69], [154.5, 0.25, 62], [154.5, 0.25, 74], [154.75, 0.25, 60], [154.75, 0.25, 72], [155.0, 0.25, 58], [155.0, 0.25, 70], [155.25, 0.25, 63], [155.25, 0.25, 75], [155.5, 0.25, 62], [155.5, 0.25, 74], [155.75, 0.25, 60], [155.75, 0.25, 72], [156.0, 1.0, 19], [156.0, 3.0, 31], [156.5, 0.5, 26], [156.5, 0.5, 38], [156.5, 0.5, 50], [157.0, 1.75, 55], [157.0, 1.75, 70], [157.0, 1.75, 82], [157.0, 2.0, 43], [157.0, 4.0, 58], [158.0, 3.0, 46], [158.25, 0.5, 67], [158.25, 0.5, 79], [158.75, 2.25, 34], [158.75, 2.25, 65], [158.75, 2.25, 77], [158.75, 4.0, 53], [159.0, 2.0, 62], [159.0, 2.0, 74], [161.0, 1.75, 41], [161.0, 1.75, 57], [161.0, 1.75, 60], [161.0, 1.75, 72], [161.0, 1.75, 84], [161.75, 1.0, 70], [161.75, 1.0, 82], [162.25, 2.75, 62], [162.25, 2.75, 74], [162.25, 2.75, 86], [162.75, 2.25, 43], [162.75, 4.0, 55], [164.5, 0.5, 53], [164.5, 0.5, 65], [164.5, 0.5, 77], [165.0, 1.75, 39], [165.0, 1.75, 51], [165.0, 1.75, 67], [165.0, 1.75, 79], [166.75, 2.25, 34], [166.75, 2.25, 46], [166.75, 2.25, 65], [166.75, 2.25, 77], [166.75, 5.25, 53], [167.0, 2.0, 62], [167.0, 2.0, 74], [169.0, 3.0, 41], [169.0, 3.0, 57], [169.0, 3.0, 60], [169.0, 3.0, 72], [173.0, 1.75, 43], [173.0, 1.75, 55], [173.0, 1.75, 67], [173.0, 1.75, 70], [173.0, 1.75, 79], [173.0, 1.75, 82], [173.75, 0.25, 62], [173.75, 0.25, 74], [174.5, 0.25, 74], [174.75, 2.25, 46], [174.75, 2.25, 58], [174.75, 2.25, 77], [174.75, 4.0, 53], [174.75, 4.0, 65], [175.0, 2.0, 86], [175.25, 0.25, 62], [175.25, 0.25, 74], [175.75, 0.25, 63], [175.75, 1.25, 87], [177.0, 1.75, 41], [177.0, 1.75, 57], [177.0, 1.75, 60], [177.0, 1.75, 84], [177.25, 0.25, 77], [177.5, 0.25, 81], [177.75, 1.25, 89], [178.0, 0.25, 77], [178.25, 0.25, 81], [178.75, 2.25, 43], [178.75, 2.25, 62], [178.75, 2.25, 74], [178.75, 4.0, 55], [178.75, 6.25, 58], [179.0, 2.0, 82], [179.25, 0.25, 84], [179.5, 0.25, 67], [179.5, 0.25, 79], [179.75, 1.25, 81], [180.0, 0.25, 67], [180.0, 0.25, 79], [180.5, 0.25, 65], [180.5, 0.25, 77], [181.0, 1.75, 39], [181.0, 1.75, 51], [181.0, 1.75, 67], [181.0, 1.75, 79], [181.5, 0.25, 63], [181.5, 0.25, 75], [181.75, 0.25, 77], [182.0, 0.25, 70], [182.25, 0.25, 77], [182.5, 0.25, 63], [182.5, 0.25, 75], [182.75, 2.25, 46], [182.75, 2.25, 53], [182.75, 2.25, 65], [182.75, 2.25, 77], [183.0, 2.0, 74], [183.5, 0.25, 70], [183.75, 0.25, 72], [184.0, 0.25, 70], [184.5, 0.25, 70], [185.0, 1.75, 57], [185.0, 4.0, 41], [185.0, 4.0, 53], [185.0, 4.0, 60], [185.0, 4.0, 72], [185.25, 0.25, 48], [185.5, 0.25, 65], [185.75, 0.25, 70], [186.0, 0.25, 48], [186.25, 0.25, 70], [186.75, 2.25, 48], [187.0, 0.25, 65], [187.25, 0.25, 70], [187.5, 0.25, 69], [187.75, 0.25, 70], [188.25, 0.25, 65], [188.5, 0.25, 70], [189.0, 1.75, 43], [189.0, 1.75, 50], [189.0, 1.75, 55], [189.0, 4.0, 70], [190.75, 2.25, 46], [190.75, 2.25, 63], [191.0, 2.0, 53], [191.25, 0.25, 62], [192.0, 1.0, 74], [192.5, 0.5, 77], [193.0, 2.0, 38], [193.0, 4.0, 50], [193.0, 4.0, 72], [194.25, 0.75, 57], [195.0, 2.0, 43], [195.25, 0.25, 58], [196.0, 1.0, 67], [196.5, 0.5, 69], [197.0, 2.0, 39], [197.0, 2.0, 51], [197.0, 4.0, 70], [197.75, 1.25, 63], [198.0, 1.0, 58], [198.75, 0.25, 72], [199.0, 2.0, 46], [199.0, 2.0, 74], [199.0, 4.75, 53], [199.5, 1.5, 65], [200.0, 1.0, 77], [201.0, 2.75, 41], [201.0, 2.75, 60], [201.0, 2.75, 72], [201.0, 4.0, 69], [202.5, 2.5, 70], [205.0, 3.0, 31], [205.0, 3.0, 55], [205.0, 3.75, 82], [205.5, 3.0, 79], [206.25, 1.0, 86], [206.75, 3.0, 87], [207.0, 2.0, 70], [207.0, 3.0, 63], [207.0, 3.0, 75], [207.25, 3.25, 86], [208.75, 3.0, 84], [209.0, 2.0, 70], [209.0, 3.0, 65], [209.25, 3.0, 77], [209.5, 2.75, 81], [210.0, 3.0, 87], [210.5, 0.25, 86], [210.75, 3.0, 86], [211.0, 2.0, 70], [211.0, 3.0, 67], [211.0, 3.0, 74], [211.25, 3.75, 82], [212.25, 3.0, 81], [212.5, 4.75, 77], [212.75, 3.0, 79], [213.0, 3.0, 39], [213.0, 4.75, 46], [213.5, 2.75, 55], [214.0, 1.5, 58], [214.25, 2.75, 63], [215.0, 1.0, 70], [215.0, 2.0, 53], [215.0, 2.75, 74], [215.5, 2.75, 58], [216.0, 2.75, 70], [216.5, 2.5, 65], [217.0, 2.75, 41], [217.0, 2.75, 48], [217.0, 2.75, 53], [217.0, 2.75, 72], [218.0, 2.75, 57], [218.5, 2.25, 60], [219.0, 2.75, 65], [219.5, 2.75, 69], [220.0, 3.0, 70], [220.75, 1.0, 60], [221.25, 3.0, 82], [221.75, 3.0, 60], [222.25, 3.0, 81], [223.0, 3.0, 72], [223.75, 3.0, 77], [226.0, 1.75, 31], [226.0, 1.75, 43], [226.0, 1.75, 50], [226.0, 1.75, 53], [226.0, 5.75, 58], [227.75, 2.25, 27], [227.75, 2.25, 39], [227.75, 2.25, 51], [227.75, 2.25, 55], [227.75, 4.0, 46], [230.0, 1.75, 34], [230.0, 1.75, 50], [230.0, 4.0, 53], [231.75, 2.25, 29], [231.75, 2.25, 41], [231.75, 2.25, 48], [231.75, 2.25, 57], [234.0, 1.75, 31], [234.0, 1.75, 43], [234.0, 1.75, 50], [234.0, 1.75, 55], [234.0, 1.75, 58], [235.75, 2.25, 27], [235.75, 2.25, 39], [235.75, 2.25, 51], [235.75, 2.25, 55], [235.75, 4.0, 46], [235.75, 4.0, 58], [238.0, 1.75, 34], [238.0, 1.75, 50], [238.0, 4.0, 53], [239.75, 2.25, 29], [239.75, 2.25, 41], [239.75, 2.25, 48], [239.75, 2.25, 57], [242.0, 1.0, 67], [242.0, 1.0, 70], [242.0, 1.0, 74], [242.0, 1.75, 31], [242.0, 1.75, 43], [242.0, 1.75, 50], [242.0, 4.0, 55], [242.0, 5.75, 58], [243.0, 0.25, 74], [243.0, 0.75, 67], [243.0, 0.75, 70], [243.25, 0.5, 82], [243.75, 1.0, 70], [243.75, 1.0, 75], [243.75, 2.25, 27], [243.75, 2.25, 39], [243.75, 2.25, 51], [244.75, 0.25, 67], [244.75, 0.75, 70], [244.75, 0.75, 75], [245.5, 0.5, 67], [245.5, 1.5, 74], [245.5, 2.25, 62], [246.0, 1.0, 70], [246.0, 1.75, 34], [246.0, 1.75, 46], [246.0, 1.75, 53], [247.0, 0.25, 74], [247.0, 0.75, 70], [247.25, 0.5, 82], [247.75, 2.25, 29], [247.75, 2.25, 41], [247.75, 2.25, 48], [247.75, 2.25, 53], [247.75, 2.25, 57], [247.75, 2.25, 65], [247.75, 2.25, 69], [247.75, 2.25, 72], [250.0, 1.75, 31], [250.0, 1.75, 43], [250.0, 1.75, 50], [250.0, 1.75, 67], [250.0, 1.75, 74], [250.0, 2.25, 70], [250.0, 4.0, 55], [250.0, 5.75, 58], [251.75, 0.5, 75], [251.75, 2.25, 27], [251.75, 2.25, 39], [251.75, 2.25, 51], [252.25, 1.25, 70], [252.25, 1.25, 75], [252.75, 0.25, 67], [253.5, 0.5, 62], [253.5, 0.5, 67], [253.5, 0.5, 74], [254.0, 1.25, 74], [254.0, 1.75, 34], [254.0, 1.75, 46], [254.0, 1.75, 62], [254.0, 1.75, 70], [254.0, 4.0, 53], [255.25, 0.5, 82], [255.75, 0.5, 65], [255.75, 0.5, 69], [255.75, 0.5, 72], [255.75, 2.25, 29], [255.75, 2.25, 41], [255.75, 2.25, 48], [255.75, 2.25, 57], [256.25, 0.75, 65], [256.25, 0.75, 69], [256.25, 0.75, 72], [257.0, 1.0, 65], [257.0, 1.0, 69], [257.0, 1.0, 72], [258.0, 0.5, 82], [258.0, 0.5, 82], [258.0, 1.5, 67], [258.0, 2.0, 43], [258.0, 2.0, 55], [258.0, 3.0, 55], [258.0, 3.0, 62], [258.0, 6.0, 70], [258.5, 0.25, 82], [258.5, 0.75, 82], [258.75, 1.75, 82], [259.0, 1.0, 67], [259.25, 1.75, 82], [259.5, 0.5, 74], [259.5, 2.5, 67], [260.0, 2.0, 51], [260.0, 2.0, 63], [260.0, 3.0, 63], [260.25, 0.5, 75], [260.25, 1.0, 75], [260.5, 2.5, 82], [261.0, 0.5, 87], [261.0, 3.0, 87], [261.25, 0.5, 75], [261.25, 3.0, 75], [261.5, 1.75, 86], [261.5, 4.0, 86], [261.75, 0.25, 77], [261.75, 1.5, 77], [262.0, 2.0, 58], [262.0, 3.0, 58], [262.0, 4.0, 65], [262.0, 4.0, 65], [262.25, 2.0, 77], [263.0, 0.5, 82], [263.0, 2.0, 82], [263.25, 0.5, 89], [263.25, 3.0, 89], [263.5, 2.5, 70], [263.75, 0.75, 84], [263.75, 3.5, 84], [264.0, 2.0, 72], [264.0, 2.0, 72], [264.25, 1.25, 77], [264.25, 1.75, 77], [264.5, 2.0, 82], [265.0, 1.0, 81], [265.0, 1.0, 81], [265.5, 3.0, 77], [266.0, 1.0, 82], [266.0, 2.0, 55], [266.0, 3.0, 55], [266.0, 3.0, 62], [266.25, 0.5, 74], [266.25, 1.5, 74], [266.75, 3.0, 84], [267.0, 0.5, 86], [267.0, 3.0, 86], [267.25, 3.0, 74], [267.5, 0.5, 89], [267.5, 1.5, 89], [267.75, 0.25, 70], [267.75, 0.5, 70], [268.0, 0.5, 70], [268.0, 0.5, 91], [268.0, 2.25, 63], [268.0, 2.25, 63], [268.0, 2.25, 91], [268.25, 0.5, 70], [268.5, 1.75, 89], [268.75, 0.25, 70], [268.75, 1.0, 70], [269.0, 0.5, 82], [269.0, 1.0, 82], [269.5, 0.25, 70], [269.75, 0.5, 84], [269.75, 0.5, 84], [270.0, 0.25, 70], [270.0, 0.25, 70], [270.25, 1.25, 86], [270.25, 2.5, 58], [270.25, 2.5, 58], [270.25, 2.5, 86], [270.25, 5.5, 65], [270.25, 7.25, 65], [270.5, 0.25, 70], [270.5, 0.5, 70], [270.75, 0.5, 77], [270.75, 1.25, 77], [271.0, 0.25, 70], [271.0, 1.0, 70], [271.5, 1.0, 82], [271.5, 1.25, 82], [271.75, 3.5, 70], [272.0, 0.75, 77], [272.0, 3.0, 77], [272.25, 4.25, 82], [272.75, 0.75, 60], [272.75, 1.5, 72], [272.75, 3.0, 53], [272.75, 3.0, 53], [272.75, 3.0, 69], [272.75, 3.0, 84], [272.75, 3.0, 84], [272.75, 3.75, 60], [273.5, 3.0, 60], [274.25, 2.25, 72], [274.25, 3.0, 72], [275.0, 4.5, 82], [276.5, 3.0, 43], [276.5, 3.0, 43], [276.5, 3.0, 50], [276.5, 3.0, 50], [276.5, 3.0, 55], [276.5, 3.0, 55], [276.5, 3.0, 70], [276.5, 3.0, 70], [276.5, 3.0, 74], [276.5, 3.0, 74], [276.5, 3.0, 82]]}, {"title": "Lovesong", "key": "Es-Dur", "level": 4, "bpm": 99, "bars": 84, "notes": [[4.0, 1.0, 77], [4.0, 3.25, 65], [4.5, 1.0, 72], [5.0, 1.0, 77], [5.5, 1.0, 72], [6.0, 3.25, 77], [6.5, 2.0, 72], [7.0, 3.25, 80], [7.75, 3.25, 79], [8.0, 2.0, 75], [8.0, 3.25, 60], [8.5, 1.0, 72], [9.5, 2.0, 72], [10.0, 3.0, 75], [11.0, 1.0, 79], [11.5, 3.25, 72], [11.75, 3.25, 77], [12.0, 2.0, 79], [12.0, 3.25, 51], [12.0, 3.25, 63], [12.5, 1.0, 70], [13.0, 2.75, 75], [13.5, 2.0, 70], [14.0, 3.25, 79], [15.0, 3.25, 82], [15.5, 1.0, 70], [15.75, 1.25, 75], [16.0, 3.25, 46], [16.0, 3.25, 65], [16.0, 3.25, 77], [16.5, 1.0, 70], [17.0, 3.25, 75], [17.5, 1.0, 70], [18.0, 3.25, 74], [18.5, 0.5, 70], [18.75, 0.75, 62], [19.0, 4.0, 70], [19.25, 1.75, 65], [19.5, 0.75, 62], [20.0, 1.75, 72], [20.0, 3.25, 41], [20.0, 3.25, 53], [20.25, 3.25, 62], [20.5, 1.0, 68], [20.75, 0.5, 60], [21.0, 3.25, 65], [21.25, 0.5, 60], [21.5, 0.5, 68], [21.75, 0.5, 60], [21.75, 0.5, 72], [22.0, 0.5, 68], [22.25, 0.5, 60], [22.25, 0.5, 72], [22.5, 7.25, 68], [22.75, 4.75, 60], [22.75, 5.0, 72], [23.0, 2.0, 82], [23.0, 3.25, 31], [23.0, 3.25, 43], [23.25, 0.5, 63], [23.25, 0.5, 75], [23.5, 3.25, 58], [23.5, 3.25, 70], [23.75, 1.5, 63], [23.75, 3.25, 75], [24.0, 3.25, 32], [24.0, 3.25, 44], [24.0, 3.25, 84], [24.25, 3.25, 48], [25.0, 4.0, 82], [25.25, 8.0, 63], [26.0, 3.25, 80], [27.0, 3.25, 79], [27.5, 3.25, 58], [28.0, 3.25, 24], [28.0, 3.25, 36], [28.0, 5.25, 75], [28.25, 3.25, 48], [28.5, 4.25, 55], [30.75, 5.5, 65], [30.75, 6.25, 77], [31.5, 3.25, 67], [31.5, 3.25, 79], [32.0, 3.25, 31], [32.0, 3.25, 43], [36.0, 3.25, 82], [40.0, 1.5, 75], [40.0, 3.25, 36], [40.0, 3.25, 48], [40.25, 0.5, 67], [40.75, 4.25, 67], [41.5, 0.75, 75], [42.0, 3.25, 32], [42.0, 3.25, 44], [42.0, 3.75, 84], [42.25, 0.5, 75], [42.75, 5.25, 75], [43.0, 3.75, 82], [43.5, 2.25, 58], [44.0, 1.0, 79], [44.0, 3.25, 27], [44.0, 3.25, 39], [44.25, 2.5, 70], [45.0, 3.25, 55], [45.0, 3.75, 79], [45.25, 3.25, 80], [46.0, 3.25, 46], [46.0, 3.75, 77], [46.75, 3.25, 70], [47.0, 3.25, 53], [47.25, 3.75, 65], [47.5, 3.25, 74], [48.0, 2.5, 75], [48.0, 3.25, 36], [48.0, 3.25, 48], [48.25, 1.5, 67], [49.0, 3.25, 55], [49.75, 3.25, 67], [50.0, 3.25, 44], [50.0, 3.75, 87], [50.5, 3.25, 51], [50.75, 6.75, 75], [51.0, 2.75, 82], [51.0, 3.25, 46], [51.5, 7.5, 58], [52.0, 3.25, 39], [52.0, 3.75, 79], [52.25, 1.0, 70], [52.5, 3.25, 55], [53.25, 3.25, 80], [53.25, 5.5, 70], [53.75, 3.25, 82], [54.0, 3.25, 53], [54.0, 3.75, 77], [55.0, 3.25, 74], [55.25, 3.75, 65], [56.0, 3.25, 48], [56.0, 4.25, 36], [56.5, 4.5, 55], [56.75, 6.5, 91], [57.5, 3.25, 75], [58.0, 0.75, 80], [58.0, 0.75, 84], [58.0, 3.25, 44], [58.0, 3.25, 68], [58.0, 3.25, 92], [58.5, 1.5, 51], [58.75, 3.25, 84], [58.75, 5.75, 80], [59.0, 2.0, 79], [59.0, 3.25, 39], [59.0, 5.75, 82], [59.5, 3.25, 72], [59.75, 1.5, 70], [60.0, 3.25, 51], [61.0, 3.25, 79], [61.25, 3.75, 70], [62.0, 0.25, 77], [62.0, 3.25, 46], [62.0, 3.25, 65], [62.25, 3.25, 77], [63.0, 1.0, 87], [63.0, 4.25, 36], [63.0, 4.25, 48], [63.5, 4.0, 55], [64.0, 1.0, 75], [64.0, 3.25, 87], [64.75, 3.25, 86], [64.75, 4.0, 74], [65.0, 1.0, 75], [65.5, 1.25, 70], [65.5, 1.25, 82], [66.0, 1.75, 75], [66.0, 3.25, 72], [66.0, 3.25, 84], [66.0, 4.25, 44], [66.25, 0.5, 51], [66.75, 1.25, 70], [66.75, 2.75, 82], [66.75, 4.5, 51], [67.5, 1.25, 68], [67.5, 1.25, 80], [67.75, 4.0, 75], [68.0, 1.5, 70], [68.0, 3.25, 39], [68.0, 3.25, 79], [68.0, 5.0, 67], [68.75, 0.5, 68], [68.75, 0.5, 80], [69.25, 3.25, 68], [69.25, 3.25, 80], [69.5, 1.0, 82], [69.5, 3.25, 70], [70.0, 0.75, 77], [70.0, 3.25, 65], [70.0, 4.25, 46], [70.5, 0.25, 82], [70.75, 0.5, 77], [70.75, 0.5, 82], [71.0, 0.5, 77], [71.0, 0.5, 82], [71.5, 0.25, 77], [71.5, 0.25, 82], [71.5, 3.25, 74], [71.75, 3.25, 77], [71.75, 3.25, 82], [72.0, 4.25, 36], [72.0, 4.25, 48], [74.0, 1.0, 51], [74.0, 3.25, 44], [74.0, 3.25, 72], [74.0, 12.25, 75], [75.0, 5.25, 39], [75.0, 5.25, 51], [75.0, 11.25, 67], [75.0, 11.25, 79], [78.0, 3.25, 46], [78.0, 3.25, 53], [78.0, 3.25, 62], [78.0, 3.25, 77], [78.0, 4.0, 65], [79.0, 5.25, 36], [79.0, 5.25, 48], [82.0, 3.0, 51], [82.0, 3.25, 44], [83.0, 2.0, 39], [83.0, 2.0, 70], [83.0, 2.0, 82], [85.0, 0.75, 70], [85.0, 0.75, 82], [85.0, 1.0, 39], [85.0, 1.0, 51], [85.25, 3.25, 80], [85.75, 3.25, 82], [85.75, 5.25, 70], [86.0, 1.0, 46], [86.0, 3.25, 39], [86.0, 3.25, 77], [86.0, 3.25, 89], [86.5, 0.75, 87], [87.0, 0.5, 74], [87.0, 3.25, 46], [87.0, 3.25, 86], [87.25, 0.75, 87], [87.5, 3.25, 62], [87.5, 3.25, 74], [88.0, 1.0, 36], [88.0, 1.0, 48], [88.0, 1.0, 75], [88.0, 3.25, 87], [88.5, 2.25, 63], [88.75, 3.75, 67], [89.0, 0.75, 75], [89.0, 1.0, 36], [89.0, 1.0, 48], [89.75, 1.0, 75], [90.0, 1.0, 32], [90.0, 1.0, 44], [90.0, 3.25, 84], [90.25, 1.75, 51], [90.5, 3.25, 72], [90.75, 3.75, 63], [90.75, 3.75, 75], [91.0, 3.25, 32], [91.0, 3.25, 44], [91.0, 5.75, 82], [91.5, 0.25, 70], [91.75, 1.0, 70], [92.0, 1.0, 79], [92.0, 4.25, 27], [92.0, 4.25, 39], [92.25, 3.25, 51], [92.75, 1.5, 70], [93.0, 5.0, 79], [93.25, 3.25, 80], [93.75, 3.25, 67], [94.0, 0.75, 77], [94.0, 4.25, 26], [94.0, 4.25, 38], [94.25, 3.25, 50], [94.25, 3.25, 70], [94.75, 4.0, 77], [95.0, 1.0, 75], [95.25, 4.25, 62], [95.5, 3.25, 74], [96.0, 0.5, 75], [96.0, 2.0, 36], [96.0, 2.0, 48], [96.5, 4.5, 75], [98.0, 3.75, 72], [98.0, 4.25, 32], [98.0, 4.25, 44], [98.25, 3.75, 51], [98.75, 3.75, 86], [99.0, 4.25, 27], [99.0, 4.25, 39], [100.0, 4.25, 79], [100.25, 4.75, 70], [101.25, 4.0, 80], [101.5, 3.5, 82], [102.0, 4.25, 34], [102.0, 4.25, 46], [102.25, 3.25, 77], [102.5, 5.0, 74], [103.5, 3.25, 62], [104.0, 1.0, 36], [104.0, 1.0, 48], [104.0, 1.0, 75], [104.25, 3.25, 60], [104.5, 2.0, 63], [104.75, 6.5, 67], [105.0, 0.5, 75], [105.0, 3.25, 36], [105.0, 3.25, 48], [105.75, 1.25, 75], [106.0, 1.0, 32], [106.0, 1.0, 44], [106.25, 1.75, 51], [106.5, 2.0, 63], [106.75, 2.0, 70], [107.0, 0.75, 75], [107.0, 3.25, 32], [107.0, 3.25, 44], [107.5, 4.0, 74], [107.75, 1.25, 75], [108.0, 4.25, 27], [108.0, 4.25, 39], [108.25, 5.0, 46], [108.5, 3.25, 63], [108.75, 4.25, 70], [109.0, 2.0, 75], [109.5, 0.5, 77], [110.0, 1.0, 34], [110.0, 3.25, 77], [110.25, 3.25, 53], [110.5, 0.25, 65], [110.75, 3.75, 65], [111.0, 2.0, 75], [111.0, 3.25, 34], [111.0, 3.25, 62], [111.5, 5.25, 74], [112.0, 1.0, 36], [112.0, 1.0, 48], [112.25, 1.75, 55], [112.5, 2.0, 63], [112.75, 0.5, 67], [113.0, 2.0, 75], [113.0, 3.25, 36], [113.0, 3.25, 48], [113.25, 6.0, 67], [114.0, 4.25, 32], [114.0, 4.25, 44], [114.25, 1.75, 51], [114.5, 5.25, 63], [114.75, 4.5, 70], [115.0, 3.25, 75], [115.25, 3.25, 68], [115.5, 4.25, 77], [115.75, 1.75, 79], [116.0, 4.25, 27], [116.0, 4.25, 39], [116.25, 5.0, 46], [117.0, 3.25, 80], [117.5, 3.25, 79], [118.0, 1.0, 34], [118.25, 3.25, 65], [118.5, 3.25, 53], [119.0, 3.25, 34], [119.0, 3.25, 62], [119.25, 3.25, 70], [119.5, 3.25, 31], [119.5, 6.5, 74], [119.75, 3.25, 77], [120.0, 1.0, 36], [120.0, 1.0, 48], [120.0, 1.0, 75], [120.0, 1.0, 87], [120.25, 1.0, 72], [120.5, 3.25, 55], [121.0, 0.75, 75], [121.0, 0.75, 87], [121.0, 3.25, 36], [121.0, 3.25, 48], [121.25, 4.5, 72], [121.5, 5.25, 86], [121.75, 1.25, 75], [121.75, 1.25, 87], [122.0, 1.0, 32], [122.0, 1.0, 44], [122.25, 4.25, 68], [123.0, 3.25, 32], [123.0, 3.25, 44], [123.0, 4.0, 75], [123.0, 4.0, 87], [124.0, 1.0, 27], [124.0, 1.0, 39], [124.25, 5.0, 46], [124.5, 0.75, 63], [124.75, 4.25, 70], [125.0, 3.25, 27], [125.0, 3.25, 39], [125.25, 3.25, 63], [125.5, 3.25, 82], [125.5, 3.25, 94], [126.0, 1.0, 34], [126.0, 3.25, 89], [126.25, 1.0, 65], [126.5, 1.0, 74], [126.5, 3.25, 50], [127.0, 2.75, 75], [127.0, 2.75, 87], [127.0, 3.25, 34], [127.25, 3.25, 65], [127.5, 0.75, 74], [127.5, 2.0, 86], [128.0, 1.0, 36], [128.0, 1.0, 48], [128.25, 4.5, 74], [128.5, 3.75, 84], [129.0, 3.25, 36], [129.0, 3.25, 48], [129.5, 4.0, 86], [129.75, 1.25, 75], [129.75, 1.25, 87], [130.0, 4.25, 32], [130.0, 4.25, 44], [130.25, 4.25, 68], [130.5, 3.25, 72], [131.0, 3.25, 75], [131.0, 3.25, 87], [131.5, 4.25, 70], [131.5, 5.75, 89], [131.75, 5.0, 79], [131.75, 5.0, 91], [132.0, 4.25, 27], [132.0, 4.25, 39], [132.25, 4.25, 63], [132.5, 4.25, 67], [133.0, 3.25, 80], [133.0, 3.25, 92], [134.0, 3.25, 77], [134.0, 4.25, 34], [134.0, 4.25, 46], [136.0, 3.25, 36], [136.0, 3.25, 43], [136.0, 3.25, 48], [137.5, 0.5, 75], [138.0, 3.0, 75], [138.0, 4.25, 32], [138.0, 4.25, 44], [138.0, 4.25, 72], [138.0, 4.25, 80], [139.5, 5.75, 70], [139.5, 6.75, 79], [140.0, 4.25, 27], [140.0, 4.25, 39], [141.0, 4.0, 75], [142.0, 3.25, 34], [142.0, 3.25, 46], [142.0, 3.25, 74], [142.0, 3.25, 77], [143.0, 5.25, 36], [143.0, 5.25, 48], [145.0, 3.25, 87], [146.0, 4.25, 32], [146.0, 4.25, 44], [146.0, 4.25, 72], [147.5, 5.75, 70], [148.0, 3.25, 79], [148.0, 4.25, 27], [148.0, 4.25, 39], [149.0, 3.25, 87], [150.0, 3.25, 62], [150.0, 3.75, 34], [150.0, 3.75, 46], [151.0, 4.25, 36], [151.0, 4.25, 48], [152.0, 1.0, 75], [152.25, 3.25, 67], [152.25, 5.75, 72], [152.5, 3.75, 63], [153.0, 3.75, 75], [154.0, 3.75, 32], [154.0, 3.75, 44], [154.0, 6.5, 80], [154.25, 3.75, 68], [155.0, 0.5, 79], [155.25, 1.0, 70], [155.5, 1.0, 67], [155.5, 1.0, 79], [156.25, 1.0, 70], [156.5, 1.0, 79], [156.5, 3.75, 67], [157.25, 1.5, 70], [157.5, 3.25, 79], [158.0, 3.75, 34], [158.0, 3.75, 46], [158.0, 3.75, 77], [158.75, 3.75, 70], [159.0, 1.0, 36], [159.0, 1.0, 48], [159.0, 1.0, 75], [159.5, 3.25, 74], [160.0, 0.75, 36], [160.0, 0.75, 48], [160.0, 1.5, 75], [160.25, 1.0, 72], [160.75, 3.75, 36], [160.75, 3.75, 48], [161.25, 1.0, 72], [161.5, 1.75, 75], [162.0, 3.75, 32], [162.0, 3.75, 44], [162.0, 3.75, 84], [162.25, 3.75, 68], [162.25, 3.75, 72], [163.0, 2.5, 82], [163.25, 1.0, 75], [163.5, 1.25, 70], [163.5, 1.5, 39], [163.5, 1.5, 51], [164.0, 4.25, 67], [164.0, 4.25, 79], [171.25, 0.5, 27], [171.25, 0.5, 46], [174.0, 1.0, 62], [174.0, 1.0, 65], [174.0, 1.0, 70], [174.0, 1.0, 74], [175.0, 1.0, 60], [175.0, 1.0, 63], [175.0, 1.0, 67], [175.0, 1.0, 72], [176.0, 2.0, 60], [176.0, 3.0, 63], [176.0, 3.0, 72], [178.0, 1.0, 68], [178.0, 1.0, 80], [179.0, 0.75, 63], [179.0, 0.75, 79], [179.0, 3.0, 67], [179.0, 5.0, 70], [182.0, 2.0, 62], [182.0, 2.0, 65], [184.0, 2.0, 60], [184.0, 2.0, 67], [184.0, 3.0, 63], [184.0, 3.0, 72], [186.0, 1.0, 68], [186.0, 1.0, 80], [187.0, 0.75, 63], [187.0, 3.0, 67], [187.0, 3.0, 70], [190.0, 1.0, 62], [190.0, 1.0, 65], [190.0, 1.0, 70], [191.0, 1.0, 60], [191.0, 1.0, 63], [191.0, 1.0, 67], [191.0, 1.0, 72], [192.0, 0.75, 36], [192.0, 0.75, 48], [192.0, 1.0, 60], [192.0, 1.0, 63], [192.0, 1.0, 67], [192.0, 1.0, 72], [192.75, 0.5, 36], [192.75, 0.5, 48], [193.0, 1.0, 60], [193.0, 1.0, 63], [193.0, 1.0, 67], [193.0, 1.0, 72], [193.25, 0.25, 36], [193.25, 0.25, 48], [193.5, 0.5, 36], [193.5, 0.5, 48], [194.0, 0.25, 32], [194.0, 0.25, 44], [194.0, 1.0, 60], [194.0, 1.0, 68], [194.0, 1.0, 72], [194.0, 4.0, 63], [194.25, 0.25, 32], [194.25, 0.25, 44], [194.5, 0.5, 32], [194.5, 0.5, 44], [195.0, 0.5, 39], [195.0, 0.5, 51], [195.0, 3.0, 58], [195.0, 3.0, 67], [195.0, 3.0, 79], [195.0, 4.0, 70], [195.5, 1.0, 39], [195.5, 1.0, 51], [196.5, 0.75, 39], [196.5, 0.75, 51], [197.25, 0.25, 39], [197.5, 0.5, 39], [197.5, 0.5, 51], [198.0, 0.5, 34], [198.0, 0.5, 46], [198.0, 1.0, 58], [198.0, 1.0, 62], [198.0, 1.0, 65], [198.5, 0.5, 34], [198.5, 0.5, 46], [199.0, 0.5, 36], [199.0, 0.5, 48], [199.0, 1.0, 70], [199.0, 1.0, 72], [199.0, 2.0, 60], [199.0, 2.0, 63], [199.5, 0.75, 36], [199.5, 0.75, 48], [200.0, 1.0, 67], [200.0, 1.0, 75], [200.25, 0.25, 36], [200.25, 0.25, 48], [200.5, 0.5, 36], [200.5, 0.5, 48], [200.75, 0.25, 74], [201.0, 0.5, 36], [201.0, 0.5, 48], [201.0, 0.5, 75], [201.0, 1.0, 60], [201.0, 1.0, 63], [201.0, 1.0, 67], [201.0, 1.0, 75], [201.5, 0.25, 36], [201.5, 0.25, 48], [201.5, 0.25, 74], [201.75, 0.25, 36], [201.75, 0.25, 48], [201.75, 2.25, 75], [202.0, 0.5, 32], [202.0, 0.5, 44], [202.0, 0.5, 51], [202.0, 1.0, 60], [202.0, 1.0, 63], [202.0, 1.0, 68], [202.5, 0.25, 32], [202.5, 0.25, 44], [202.5, 0.25, 51], [202.75, 0.75, 32], [202.75, 0.75, 44], [202.75, 0.75, 51], [203.0, 1.0, 60], [203.0, 1.0, 63], [203.0, 1.0, 68], [203.0, 1.0, 72], [203.5, 0.25, 32], [203.5, 0.25, 44], [203.5, 0.25, 51], [203.75, 0.25, 32], [203.75, 0.25, 44], [203.75, 0.75, 51], [204.0, 0.5, 39], [204.0, 0.5, 46], [204.0, 1.0, 58], [204.0, 1.0, 63], [204.0, 1.0, 67], [204.0, 2.0, 79], [204.5, 0.25, 39], [204.5, 0.25, 46], [204.5, 0.25, 51], [204.5, 0.25, 75], [204.75, 0.25, 70], [204.75, 0.75, 39], [204.75, 0.75, 46], [205.0, 1.0, 58], [205.0, 1.0, 63], [205.0, 1.0, 67], [205.0, 1.0, 75], [205.5, 0.25, 39], [205.5, 0.25, 46], [205.75, 0.25, 39], [205.75, 0.75, 46], [206.0, 0.5, 34], [206.0, 1.0, 58], [206.0, 1.0, 62], [206.0, 1.0, 65], [206.0, 1.0, 74], [206.5, 0.25, 34], [206.5, 0.25, 46], [206.75, 0.25, 34], [206.75, 0.25, 46], [207.0, 0.25, 36], [207.0, 0.25, 48], [207.0, 1.0, 60], [207.0, 1.0, 63], [207.0, 1.0, 67], [207.0, 1.0, 75], [207.25, 0.5, 36], [207.25, 0.5, 48], [207.75, 0.5, 36], [207.75, 0.5, 48], [208.0, 0.75, 75], [208.0, 2.0, 60], [208.0, 2.0, 63], [208.0, 2.0, 67], [208.25, 0.5, 36], [208.25, 0.5, 48], [208.75, 0.25, 74], [208.75, 0.5, 36], [208.75, 0.5, 48], [209.0, 0.5, 75], [209.25, 0.75, 36], [209.25, 0.75, 48], [209.5, 0.25, 74], [209.75, 2.25, 75], [210.0, 0.25, 32], [210.0, 0.25, 44], [210.0, 0.25, 51], [210.0, 1.0, 60], [210.0, 1.0, 63], [210.0, 1.0, 68], [210.25, 0.75, 32], [210.25, 0.75, 44], [210.25, 0.75, 51], [211.0, 0.25, 32], [211.0, 0.25, 44], [211.0, 0.25, 51], [211.0, 0.5, 70], [211.0, 1.0, 60], [211.0, 1.0, 63], [211.0, 1.0, 68], [211.0, 1.0, 82], [211.25, 0.75, 32], [211.25, 0.75, 44], [211.25, 0.75, 51], [211.5, 0.5, 68], [211.5, 0.5, 80], [212.0, 0.25, 39], [212.0, 0.25, 46], [212.0, 0.25, 51], [212.0, 1.0, 58], [212.0, 1.0, 63], [212.0, 1.0, 67], [212.0, 1.0, 79], [212.25, 0.5, 39], [212.25, 0.5, 46], [212.75, 0.5, 39], [212.75, 0.5, 46], [213.0, 1.0, 58], [213.0, 1.0, 63], [213.0, 1.0, 67], [213.0, 1.0, 75], [213.0, 1.0, 79], [213.25, 0.5, 39], [213.25, 0.5, 46], [213.75, 0.25, 39], [213.75, 0.5, 46], [214.0, 0.25, 34], [214.0, 0.5, 80], [214.0, 1.0, 58], [214.0, 1.0, 62], [214.0, 1.0, 65], [214.25, 0.5, 34], [214.25, 0.5, 46], [214.5, 0.5, 79], [214.75, 0.25, 34], [214.75, 0.25, 46], [215.0, 0.25, 36], [215.0, 0.25, 48], [215.0, 0.5, 77], [215.0, 1.0, 60], [215.0, 1.0, 63], [215.0, 1.0, 67], [215.25, 0.25, 36], [215.25, 0.25, 48], [215.25, 0.25, 72], [215.5, 0.75, 36], [215.5, 0.75, 48], [215.5, 1.5, 75], [215.5, 1.5, 77], [215.75, 0.25, 62], [216.0, 1.0, 60], [216.0, 1.0, 63], [216.0, 1.0, 67], [216.25, 0.25, 36], [216.25, 0.25, 48], [216.5, 0.75, 36], [216.5, 0.75, 48], [217.0, 1.0, 60], [217.0, 1.0, 63], [217.0, 1.0, 67], [217.0, 1.0, 74], [217.25, 0.25, 36], [217.25, 0.25, 48], [217.5, 0.5, 36], [217.5, 0.5, 48], [218.0, 0.25, 32], [218.0, 0.25, 44], [218.0, 0.25, 51], [218.0, 1.0, 60], [218.0, 1.0, 63], [218.0, 1.0, 68], [218.0, 1.0, 72], [218.25, 0.25, 32], [218.25, 0.25, 44], [218.25, 0.25, 51], [218.5, 0.5, 32], [218.5, 0.5, 44], [218.5, 0.5, 51], [219.0, 0.5, 39], [219.0, 0.5, 46], [219.0, 0.5, 51], [219.0, 1.0, 58], [219.0, 1.0, 63], [219.0, 1.0, 67], [219.5, 0.5, 39], [219.5, 0.5, 46], [219.5, 0.5, 51], [219.5, 1.25, 82], [220.0, 0.5, 39], [220.0, 0.5, 46], [220.0, 0.5, 51], [220.0, 1.0, 58], [220.0, 1.0, 63], [220.0, 1.0, 67], [220.5, 0.25, 39], [220.5, 0.25, 46], [220.5, 0.25, 51], [220.75, 0.75, 39], [220.75, 0.75, 46], [220.75, 0.75, 51], [220.75, 1.25, 82], [221.0, 1.0, 58], [221.0, 1.0, 63], [221.0, 1.0, 67], [221.5, 0.25, 39], [221.5, 0.25, 46], [221.5, 0.25, 51], [221.75, 0.25, 39], [221.75, 0.25, 51], [221.75, 0.75, 46], [222.0, 0.5, 34], [222.0, 1.0, 58], [222.0, 1.0, 62], [222.0, 1.0, 65], [222.0, 1.0, 86], [222.5, 0.25, 34], [222.5, 0.25, 46], [222.75, 0.25, 34], [222.75, 0.25, 46], [223.0, 0.25, 36], [223.0, 0.25, 48], [223.0, 2.0, 60], [223.0, 2.0, 63], [223.0, 2.0, 67], [223.0, 3.0, 87], [223.25, 0.5, 36], [223.25, 0.5, 48], [223.75, 0.5, 36], [223.75, 0.5, 48], [224.25, 0.5, 36], [224.25, 0.5, 48], [224.5, 0.5, 72], [224.75, 0.25, 36], [224.75, 0.25, 48], [225.0, 0.75, 36], [225.0, 0.75, 48], [225.0, 1.0, 60], [225.0, 1.0, 63], [225.0, 1.0, 67], [225.0, 2.0, 72], [225.25, 0.25, 55], [225.5, 0.5, 63], [225.75, 0.25, 36], [225.75, 0.25, 48], [226.0, 0.75, 32], [226.0, 0.75, 44], [226.0, 0.75, 51], [226.0, 1.0, 60], [226.0, 1.0, 63], [226.0, 1.0, 68], [226.0, 1.5, 80], [226.75, 0.25, 32], [226.75, 0.25, 44], [226.75, 0.25, 51], [227.0, 0.5, 39], [227.0, 0.5, 46], [227.0, 0.5, 51], [227.0, 1.0, 58], [227.0, 1.0, 63], [227.0, 1.0, 67], [227.0, 1.0, 70], [227.5, 0.5, 39], [227.5, 0.5, 46], [227.5, 0.5, 51], [227.5, 1.5, 79], [228.0, 0.5, 39], [228.0, 0.5, 46], [228.0, 0.5, 51], [228.0, 1.0, 58], [228.0, 1.0, 63], [228.0, 1.0, 67], [228.0, 2.0, 75], [228.5, 0.5, 39], [228.5, 0.5, 46], [228.5, 0.5, 51], [228.5, 1.0, 70], [229.0, 0.5, 39], [229.0, 0.5, 46], [229.0, 0.5, 51], [229.0, 1.0, 63], [229.0, 1.0, 67], [229.0, 1.0, 79], [229.0, 2.0, 58], [229.5, 0.5, 39], [229.5, 0.5, 46], [229.5, 0.5, 51], [229.5, 0.5, 70], [230.0, 0.5, 34], [230.0, 0.5, 46], [230.0, 0.5, 50], [230.0, 0.5, 77], [230.0, 1.0, 62], [230.0, 1.0, 65], [230.25, 0.25, 70], [230.5, 0.5, 34], [230.5, 0.5, 46], [230.5, 0.5, 50], [230.5, 0.5, 74], [231.0, 0.25, 36], [231.0, 0.25, 48], [231.0, 1.0, 60], [231.0, 1.0, 63], [231.0, 1.0, 67], [231.0, 2.0, 75], [231.25, 0.75, 36], [231.25, 0.75, 48], [232.0, 0.25, 36], [232.0, 0.25, 48], [232.0, 1.0, 60], [232.0, 1.0, 63], [232.0, 1.0, 67], [232.25, 0.5, 36], [232.25, 0.5, 48], [232.75, 0.5, 36], [232.75, 0.5, 48], [233.0, 0.5, 62], [233.0, 0.5, 67], [233.0, 0.5, 86], [233.0, 2.0, 60], [233.0, 2.0, 63], [233.25, 0.25, 36], [233.25, 0.25, 48], [233.5, 0.25, 32], [233.5, 0.25, 44], [233.5, 0.25, 51], [233.5, 1.5, 68], [233.5, 1.5, 72], [233.5, 1.5, 87], [233.75, 0.5, 32], [233.75, 0.5, 44], [233.75, 0.5, 51], [234.25, 0.75, 32], [234.25, 0.75, 44], [234.25, 0.75, 51], [235.0, 0.25, 39], [235.0, 0.25, 51], [235.0, 1.0, 58], [235.0, 1.0, 63], [235.0, 1.0, 67], [235.0, 1.0, 70], [235.0, 1.0, 82], [235.25, 0.75, 39], [235.25, 0.75, 51], [236.5, 1.0, 67], [237.5, 0.5, 51], [237.5, 0.5, 63], [238.0, 1.0, 46], [238.0, 1.0, 50], [238.0, 1.0, 65], [239.0, 2.0, 55], [239.0, 2.0, 63], [239.0, 2.5, 48], [239.5, 0.5, 67], [240.0, 1.25, 72], [241.25, 0.25, 60], [241.25, 0.25, 64], [241.5, 1.0, 44], [241.5, 1.0, 56], [241.5, 1.0, 60], [241.5, 1.0, 63], [242.5, 0.5, 44], [242.5, 0.5, 56], [242.5, 0.75, 60], [242.5, 0.75, 63], [243.0, 0.25, 46], [243.0, 0.25, 55], [243.25, 0.25, 44], [243.25, 0.25, 55], [243.25, 0.25, 60], [243.25, 1.75, 63], [243.5, 1.5, 51], [243.5, 1.5, 58], [243.5, 1.5, 67], [245.0, 0.25, 70], [245.0, 1.5, 58], [245.25, 1.25, 51], [245.25, 1.25, 63], [245.5, 1.0, 67], [246.5, 1.5, 46], [246.5, 1.5, 58], [246.5, 1.5, 65], [247.5, 0.5, 50], [247.5, 0.5, 62], [248.0, 0.5, 62], [248.0, 0.5, 67], [248.0, 1.25, 48], [248.0, 1.25, 55], [248.0, 1.25, 60], [248.0, 1.25, 63], [248.5, 0.5, 87], [249.0, 1.5, 87], [249.25, 0.25, 48], [249.25, 0.25, 55], [249.25, 1.25, 60], [249.25, 1.25, 63], [249.5, 1.0, 56], [250.5, 0.5, 56], [250.5, 1.0, 60], [250.5, 1.0, 87], [250.5, 4.0, 63], [251.0, 3.5, 51], [251.5, 1.5, 94], [251.5, 2.0, 70], [251.5, 3.0, 67], [253.0, 1.0, 103], [253.5, 1.0, 58], [254.0, 0.5, 101], [254.0, 1.0, 46], [254.5, 0.5, 50], [254.5, 0.5, 58], [254.5, 0.5, 62], [254.5, 0.5, 65], [254.5, 0.5, 96], [255.0, 0.5, 55], [255.0, 1.5, 48], [255.0, 1.5, 60], [255.0, 1.5, 63], [255.0, 1.5, 96], [255.5, 1.0, 36], [256.5, 0.25, 75], [256.5, 0.25, 79], [256.5, 0.5, 36], [256.5, 0.5, 48], [256.75, 0.25, 72], [256.75, 0.25, 74], [257.0, 0.25, 70], [257.0, 0.25, 79], [257.0, 0.75, 32], [257.0, 0.75, 44], [257.25, 0.25, 72], [257.25, 0.25, 80], [257.5, 0.25, 72], [257.5, 0.25, 75], [257.75, 0.25, 79], [257.75, 0.25, 80], [257.75, 0.75, 32], [257.75, 0.75, 44], [258.0, 0.25, 72], [258.0, 0.25, 80], [258.25, 0.25, 74], [258.25, 0.25, 75], [258.5, 0.25, 32], [258.5, 0.25, 44], [258.5, 0.25, 82], [258.5, 0.25, 84], [258.75, 0.25, 32], [258.75, 0.25, 44], [258.75, 0.25, 86], [258.75, 0.25, 86], [259.0, 0.25, 27], [259.0, 0.25, 39], [259.0, 0.25, 79], [259.0, 0.25, 79], [259.25, 0.25, 75], [259.25, 0.25, 79], [259.25, 0.5, 27], [259.25, 0.5, 39], [259.5, 0.25, 70], [259.5, 0.25, 77], [259.75, 0.25, 75], [259.75, 0.25, 79], [259.75, 0.75, 27], [259.75, 0.75, 39], [260.0, 0.25, 77], [260.0, 0.25, 79], [260.25, 0.25, 84], [260.5, 0.25, 84], [260.5, 0.25, 87], [260.5, 0.75, 27], [260.5, 0.75, 39], [260.75, 0.25, 87], [260.75, 0.25, 87], [261.0, 0.25, 79], [261.0, 0.25, 87], [261.25, 0.25, 27], [261.25, 0.25, 39], [261.25, 0.25, 82], [261.5, 0.25, 79], [261.5, 0.25, 79], [261.5, 0.5, 27], [261.5, 0.5, 39], [261.75, 0.25, 70], [261.75, 0.25, 77], [262.0, 0.25, 27], [262.0, 0.25, 39], [262.0, 0.25, 74], [262.0, 0.25, 79], [262.25, 0.25, 32], [262.25, 0.25, 44], [262.25, 0.25, 74], [262.25, 0.25, 75], [262.5, 0.25, 34], [262.5, 0.25, 46], [262.5, 0.25, 75], [262.5, 0.25, 77], [262.75, 0.25, 70], [262.75, 0.25, 75], [262.75, 0.75, 34], [262.75, 0.75, 46], [263.0, 0.25, 86], [263.0, 0.25, 87], [263.25, 0.25, 86], [263.25, 0.25, 87], [263.5, 0.25, 31], [263.5, 0.25, 32], [263.5, 0.25, 43], [263.5, 0.25, 44], [263.5, 0.25, 86], [263.5, 0.25, 87], [263.75, 0.25, 27], [263.75, 0.25, 31], [263.75, 0.25, 39], [263.75, 0.25, 43], [263.75, 0.25, 77], [263.75, 0.25, 86], [263.75, 1.25, 87], [264.0, 3.25, 48], [264.25, 3.25, 67], [264.5, 1.75, 75], [264.75, 3.25, 72], [265.0, 3.25, 87], [265.25, 3.25, 86], [265.5, 3.75, 84], [265.75, 1.25, 82], [266.0, 3.25, 56], [266.0, 3.25, 63], [266.25, 2.0, 75], [266.5, 2.75, 80], [267.0, 2.5, 82], [267.5, 1.25, 79], [267.75, 10.25, 77], [268.0, 2.75, 70], [268.25, 4.75, 75], [268.75, 3.5, 79], [269.25, 3.25, 80], [269.5, 3.25, 82], [270.0, 3.25, 58], [270.25, 4.75, 65], [270.5, 5.5, 74], [270.75, 4.0, 70], [272.0, 3.25, 48], [272.25, 3.25, 67], [272.5, 3.25, 72], [273.0, 1.25, 75], [273.5, 2.5, 79], [273.75, 1.5, 82], [274.0, 0.5, 84], [274.0, 3.25, 56], [274.25, 3.25, 75], [274.25, 5.25, 63], [274.5, 3.25, 84], [274.75, 3.25, 86], [275.0, 3.25, 87], [275.25, 2.25, 82], [276.0, 3.25, 58], [276.0, 4.25, 79], [276.5, 3.25, 67], [276.75, 3.25, 70], [277.25, 3.25, 80], [277.5, 3.25, 82], [278.0, 3.0, 77], [322.0, 3.25, 44], [322.0, 3.25, 56], [322.0, 3.25, 60], [323.0, 3.25, 55], [323.0, 3.25, 63], [323.0, 3.25, 67], [323.0, 3.25, 79], [323.0, 3.25, 82], [323.0, 3.75, 58], [323.0, 3.75, 70], [324.5, 1.5, 75], [324.5, 1.5, 87], [326.0, 0.75, 53], [326.0, 0.75, 62], [326.0, 0.75, 65], [326.0, 0.75, 74], [326.0, 0.75, 77], [326.0, 3.25, 46], [326.0, 3.25, 50], [326.0, 3.25, 53], [326.0, 3.25, 58], [326.75, 0.5, 53], [326.75, 0.5, 58], [326.75, 0.5, 62], [326.75, 0.5, 65], [326.75, 0.5, 70], [326.75, 0.5, 74], [326.75, 0.5, 77], [327.25, 0.5, 51], [327.25, 0.5, 58], [327.25, 0.5, 63], [327.25, 0.5, 70], [327.25, 0.5, 72], [327.25, 0.5, 75], [327.75, 0.5, 65], [327.75, 2.0, 53], [327.75, 2.0, 58], [328.25, 1.5, 50], [328.25, 1.5, 62], [328.25, 1.5, 70], [328.25, 1.5, 74], [329.75, 3.25, 48], [329.75, 3.25, 51], [329.75, 3.25, 55], [329.75, 3.25, 60], [329.75, 3.25, 63], [329.75, 3.25, 67], [329.75, 3.25, 72]]}, {"title": "Paper Kings", "key": "b-Moll", "level": 5, "bpm": 113, "bars": 87, "notes": [[5.0, 3.25, 65], [5.0, 3.25, 68], [5.0, 4.0, 84], [5.5, 3.25, 72], [6.0, 3.25, 77], [7.0, 3.25, 63], [7.0, 3.25, 82], [7.5, 3.25, 70], [8.0, 3.25, 87], [9.0, 3.25, 58], [9.0, 3.25, 65], [9.0, 3.25, 84], [9.5, 1.0, 72], [10.0, 1.0, 77], [10.5, 1.0, 72], [11.0, 3.5, 77], [11.5, 3.25, 72], [12.0, 3.25, 80], [12.5, 2.5, 79], [13.0, 3.25, 49], [13.5, 3.25, 56], [14.0, 3.25, 65], [14.5, 3.25, 77], [15.0, 3.25, 58], [15.0, 3.25, 63], [15.0, 4.75, 79], [16.0, 3.25, 75], [16.75, 3.25, 72], [17.0, 3.25, 53], [17.0, 3.25, 80], [17.5, 3.25, 60], [18.0, 3.0, 65], [20.0, 3.25, 48], [20.0, 3.25, 51], [20.0, 3.25, 67], [20.5, 3.25, 44], [20.5, 3.25, 72], [21.0, 1.0, 77], [21.0, 3.25, 49], [21.0, 3.25, 65], [21.5, 3.25, 56], [21.75, 2.25, 75], [22.0, 3.25, 61], [22.0, 3.25, 77], [22.5, 2.5, 84], [23.0, 1.5, 70], [23.0, 3.0, 68], [23.0, 3.25, 39], [23.0, 3.25, 82], [23.5, 3.25, 55], [24.0, 3.25, 51], [24.0, 3.25, 75], [24.0, 3.25, 87], [24.5, 2.5, 70], [25.0, 1.0, 65], [25.0, 3.25, 41], [25.0, 3.25, 84], [25.5, 3.25, 53], [26.0, 2.5, 68], [26.0, 6.25, 65], [26.5, 1.5, 82], [27.0, 3.25, 31], [27.0, 3.25, 43], [27.0, 3.25, 63], [27.0, 3.25, 79], [27.0, 4.25, 70], [27.5, 3.25, 51], [28.0, 3.25, 82], [28.5, 5.75, 68], [29.0, 3.25, 37], [29.0, 3.25, 49], [29.0, 3.25, 77], [29.5, 3.25, 56], [30.0, 3.25, 61], [30.5, 3.25, 63], [31.5, 3.25, 75], [32.0, 3.25, 80], [32.5, 3.25, 87], [33.0, 3.25, 101], [37.0, 3.25, 29], [37.0, 3.25, 41], [37.0, 3.25, 68], [37.5, 4.25, 60], [38.0, 3.25, 53], [39.0, 3.25, 39], [39.0, 3.25, 67], [39.5, 3.25, 58], [40.0, 0.5, 63], [40.5, 3.25, 63], [41.0, 2.0, 65], [41.0, 3.25, 37], [41.0, 3.25, 44], [41.5, 1.0, 56], [42.0, 3.25, 49], [42.5, 5.75, 56], [43.0, 1.75, 65], [44.0, 4.0, 68], [44.5, 2.0, 67], [44.75, 6.25, 65], [45.0, 3.25, 29], [45.0, 3.25, 41], [45.5, 3.25, 60], [46.5, 5.25, 67], [47.0, 3.25, 39], [47.0, 3.25, 55], [48.0, 3.25, 68], [49.0, 3.25, 37], [49.0, 3.25, 44], [49.0, 3.75, 56], [50.0, 5.75, 61], [50.5, 3.25, 63], [51.0, 3.25, 65], [53.0, 3.25, 41], [53.0, 3.25, 72], [53.5, 4.25, 48], [54.0, 3.25, 56], [55.0, 3.25, 39], [55.0, 3.25, 55], [55.0, 6.25, 70], [55.5, 4.75, 46], [56.5, 3.25, 63], [57.0, 3.25, 34], [57.0, 3.25, 73], [57.0, 5.25, 53], [58.5, 2.5, 65], [59.0, 3.25, 41], [59.0, 3.25, 72], [59.0, 3.75, 48], [60.0, 3.25, 68], [60.5, 3.25, 67], [61.0, 3.25, 37], [61.0, 3.25, 65], [61.0, 3.75, 44], [62.0, 3.25, 84], [63.0, 3.25, 39], [63.0, 3.25, 51], [63.0, 3.25, 55], [63.0, 3.25, 82], [64.0, 0.75, 79], [64.75, 3.25, 80], [64.75, 6.0, 79], [65.0, 1.5, 77], [65.0, 3.25, 41], [65.0, 3.25, 53], [66.5, 2.5, 77], [67.0, 1.0, 51], [68.0, 6.25, 51], [69.0, 4.25, 53], [69.0, 4.25, 56], [69.0, 4.25, 65], [69.0, 4.25, 68], [69.0, 4.25, 72], [69.0, 5.0, 77], [71.0, 3.0, 58], [71.0, 3.0, 70], [71.0, 4.25, 63], [71.0, 4.25, 67], [72.0, 0.5, 82], [72.0, 3.25, 55], [72.5, 3.25, 82], [73.0, 1.0, 46], [73.0, 1.0, 61], [74.0, 3.25, 46], [74.0, 3.25, 58], [74.0, 4.25, 70], [74.0, 6.25, 61], [74.0, 6.25, 65], [74.0, 9.0, 77], [75.0, 5.25, 41], [75.0, 5.25, 53], [75.0, 5.25, 68], [76.0, 3.25, 51], [76.0, 3.25, 80], [76.0, 4.0, 55], [76.0, 4.0, 63], [77.0, 4.25, 49], [77.0, 4.25, 56], [79.0, 4.25, 39], [79.0, 4.25, 58], [79.0, 7.25, 67], [79.0, 7.25, 75], [80.0, 3.25, 55], [80.0, 6.25, 63], [81.0, 2.0, 53], [81.0, 2.0, 65], [81.0, 3.25, 60], [83.0, 3.25, 77], [83.0, 5.25, 53], [83.0, 5.25, 65], [83.0, 5.25, 68], [84.0, 3.0, 51], [84.0, 3.0, 70], [84.75, 5.5, 79], [85.0, 1.25, 72], [85.0, 1.5, 72], [85.0, 3.25, 41], [85.0, 3.25, 60], [85.0, 3.25, 84], [86.0, 3.25, 44], [86.0, 3.25, 56], [86.0, 3.25, 80], [86.25, 3.5, 72], [86.5, 3.25, 72], [87.0, 1.0, 75], [87.0, 3.25, 39], [87.0, 3.25, 70], [87.0, 3.25, 70], [87.0, 3.25, 79], [87.0, 3.25, 82], [87.0, 4.25, 51], [87.0, 4.25, 55], [87.0, 4.25, 63], [87.0, 4.25, 75], [87.0, 4.75, 58], [88.0, 3.25, 75], [89.0, 1.0, 61], [89.0, 1.0, 73], [89.0, 2.0, 84], [89.0, 3.0, 77], [89.0, 3.25, 46], [89.0, 4.25, 73], [89.0, 5.25, 53], [89.0, 5.25, 65], [89.0, 5.25, 68], [90.0, 4.25, 61], [90.0, 6.25, 73], [91.0, 3.25, 41], [91.0, 3.25, 72], [91.0, 3.25, 72], [91.0, 3.25, 80], [91.0, 3.75, 60], [91.0, 6.25, 84], [92.0, 4.25, 77], [92.5, 3.25, 75], [93.0, 3.25, 37], [93.0, 3.25, 49], [93.5, 3.25, 56], [95.0, 3.25, 39], [95.0, 3.25, 67], [95.0, 3.25, 70], [95.0, 3.25, 82], [95.0, 4.25, 51], [95.0, 4.25, 63], [95.0, 4.75, 75], [95.0, 6.0, 79], [96.5, 5.25, 75], [97.0, 2.0, 77], [97.0, 3.25, 60], [97.0, 3.25, 65], [97.0, 7.75, 41], [97.0, 7.75, 53], [99.0, 3.25, 77], [99.0, 5.75, 48], [100.5, 3.25, 72], [103.0, 1.75, 39], [103.0, 1.75, 46], [103.0, 1.75, 51], [103.0, 1.75, 55], [103.0, 1.75, 58], [103.0, 1.75, 63], [103.0, 1.75, 67], [103.0, 1.75, 70], [116.5, 0.75, 39], [116.5, 0.75, 51], [116.5, 0.75, 58], [116.5, 0.75, 63], [116.5, 0.75, 65], [116.5, 0.75, 67], [124.5, 0.5, 37], [124.5, 0.5, 44], [124.5, 0.5, 49], [124.5, 3.25, 60], [124.5, 3.25, 68], [124.5, 5.75, 63], [124.5, 5.75, 65], [125.0, 0.5, 37], [125.0, 0.5, 44], [125.0, 0.5, 49], [125.5, 0.5, 37], [125.5, 0.5, 44], [125.5, 0.5, 49], [126.0, 0.5, 37], [126.0, 0.5, 44], [126.0, 0.5, 49], [126.5, 3.25, 37], [126.5, 3.25, 49], [126.5, 3.25, 72], [126.5, 3.5, 44], [127.0, 4.25, 39], [127.0, 4.25, 46], [127.0, 4.25, 51], [127.0, 4.25, 58], [127.0, 5.25, 70], [129.0, 1.0, 41], [129.0, 1.0, 48], [129.0, 1.0, 53], [129.0, 1.0, 56], [129.0, 3.25, 60], [129.0, 3.25, 68], [130.0, 3.25, 44], [130.0, 3.25, 48], [130.0, 3.25, 56], [130.0, 6.25, 41], [130.0, 6.25, 53], [133.0, 3.25, 29], [133.0, 3.25, 80], [133.5, 3.25, 56], [133.5, 3.25, 60], [134.5, 2.5, 77], [135.0, 3.25, 39], [135.0, 3.25, 51], [135.0, 3.25, 58], [135.0, 3.25, 79], [136.5, 3.25, 75], [137.0, 2.5, 77], [137.0, 3.25, 37], [137.0, 3.25, 49], [137.0, 3.25, 56], [137.0, 3.25, 61], [137.0, 3.25, 65], [139.5, 3.25, 77], [140.0, 10.0, 80], [140.5, 9.25, 79], [141.0, 3.25, 29], [141.0, 3.25, 41], [141.0, 3.25, 53], [142.75, 2.0, 77], [143.0, 3.25, 39], [143.0, 3.25, 51], [143.0, 3.25, 58], [144.75, 5.5, 77], [145.0, 3.25, 37], [145.0, 3.25, 49], [145.0, 3.25, 56], [145.0, 3.25, 65], [145.0, 5.25, 61], [147.5, 4.5, 82], [148.5, 4.75, 72], [149.0, 1.0, 68], [149.0, 1.5, 41], [149.0, 1.5, 48], [149.0, 1.5, 53], [149.0, 3.25, 84], [150.0, 3.25, 68], [150.5, 2.5, 53], [150.5, 3.25, 41], [150.5, 3.25, 48], [151.0, 0.5, 63], [151.0, 4.75, 39], [151.0, 4.75, 51], [151.0, 4.75, 67], [151.0, 4.75, 70], [151.0, 7.25, 46], [151.5, 0.5, 63], [152.0, 3.75, 63], [153.0, 3.25, 73], [153.0, 3.5, 53], [153.0, 5.25, 61], [153.0, 15.25, 65], [155.0, 3.25, 49], [155.0, 5.75, 68], [156.5, 1.0, 70], [156.5, 3.25, 67], [156.5, 5.75, 39], [156.5, 5.75, 51], [156.5, 5.75, 63], [157.0, 0.5, 72], [157.0, 1.5, 41], [157.0, 1.5, 48], [157.0, 1.5, 53], [157.5, 3.75, 72], [157.5, 4.75, 70], [158.5, 2.5, 41], [158.5, 3.25, 48], [158.5, 9.75, 53], [159.0, 2.0, 46], [161.0, 3.25, 46], [161.0, 5.25, 61], [163.0, 2.0, 68], [163.0, 3.25, 49], [164.5, 1.5, 84], [164.75, 7.0, 75], [165.0, 3.25, 48], [165.0, 3.25, 68], [165.0, 3.25, 77], [166.0, 3.25, 84], [167.0, 3.25, 39], [167.0, 3.25, 51], [167.0, 3.25, 82], [167.0, 5.25, 70], [167.0, 11.25, 46], [168.0, 3.25, 79], [169.0, 3.25, 61], [169.0, 3.25, 73], [169.0, 3.25, 77], [169.0, 7.25, 53], [169.0, 7.25, 65], [170.0, 3.25, 85], [171.0, 2.0, 80], [171.0, 3.25, 41], [171.0, 3.25, 48], [171.0, 3.25, 72], [171.0, 5.25, 68], [171.0, 6.25, 84], [172.0, 6.25, 39], [172.0, 6.25, 51], [172.5, 2.5, 75], [173.0, 3.25, 49], [173.0, 3.25, 77], [175.0, 1.5, 75], [175.0, 3.25, 70], [175.0, 3.25, 82], [176.0, 5.0, 79], [176.5, 5.25, 75], [177.0, 2.0, 77], [177.0, 3.25, 65], [179.0, 3.25, 77], [180.0, 3.25, 41], [180.0, 3.25, 48], [180.0, 3.25, 53], [192.0, 1.0, 70], [192.0, 1.0, 75], [192.0, 1.0, 79], [192.0, 1.0, 82], [193.0, 2.0, 34], [193.0, 2.0, 46], [194.0, 0.25, 70], [194.0, 0.25, 73], [194.5, 0.5, 68], [194.5, 0.5, 80], [195.0, 0.5, 67], [195.0, 0.5, 79], [195.0, 1.0, 37], [195.0, 1.0, 49], [195.5, 0.5, 68], [195.5, 0.5, 80], [196.0, 0.5, 67], [196.0, 0.5, 79], [196.0, 1.0, 39], [196.0, 1.0, 51], [196.5, 0.5, 63], [196.5, 0.5, 75], [197.0, 0.25, 65], [197.0, 0.25, 77], [197.0, 2.0, 41], [197.0, 2.0, 53], [197.75, 0.25, 72], [197.75, 0.25, 84], [198.0, 0.5, 72], [198.0, 0.5, 84], [198.5, 0.25, 68], [198.5, 0.25, 80], [199.0, 1.0, 70], [199.0, 1.0, 82], [199.0, 2.0, 39], [199.0, 2.0, 51], [200.0, 0.25, 72], [200.0, 0.25, 84], [200.5, 0.25, 67], [200.5, 0.25, 79], [201.0, 0.5, 65], [201.0, 0.5, 77], [201.0, 2.0, 34], [201.0, 2.0, 46], [201.75, 0.25, 73], [201.75, 0.25, 85], [202.0, 0.75, 73], [202.0, 0.75, 85], [203.0, 0.25, 72], [203.0, 0.25, 84], [203.0, 2.0, 41], [203.0, 2.0, 53], [203.5, 0.25, 72], [203.5, 0.25, 84], [203.75, 0.25, 72], [203.75, 0.25, 84], [204.0, 0.25, 70], [204.0, 0.25, 82], [204.25, 0.25, 73], [204.25, 0.25, 85], [204.5, 0.5, 72], [204.5, 0.5, 84], [205.0, 2.0, 37], [205.0, 2.0, 49], [205.75, 0.75, 72], [205.75, 0.75, 84], [206.5, 0.25, 68], [206.5, 0.25, 80], [207.0, 1.0, 70], [207.0, 1.0, 82], [207.0, 2.0, 39], [207.0, 2.0, 51], [207.75, 0.25, 72], [207.75, 0.25, 84], [208.25, 0.25, 67], [208.25, 0.25, 79], [208.75, 1.5, 65], [208.75, 1.5, 77], [208.75, 2.0, 34], [208.75, 2.0, 46], [210.5, 0.5, 68], [210.5, 0.5, 80], [211.0, 0.5, 67], [211.0, 0.5, 79], [211.0, 1.0, 37], [211.0, 1.0, 49], [211.5, 0.5, 68], [211.5, 0.5, 80], [212.0, 0.5, 67], [212.0, 0.5, 79], [212.0, 1.0, 39], [212.0, 1.0, 51], [212.5, 0.5, 63], [212.5, 0.5, 75], [213.0, 0.25, 65], [213.0, 3.25, 29], [213.0, 3.25, 41], [213.0, 3.25, 53], [221.0, 1.0, 77], [222.0, 0.25, 79], [222.5, 0.25, 77], [222.75, 0.25, 79], [223.0, 0.25, 80], [223.5, 0.25, 77], [223.75, 0.25, 80], [224.0, 0.25, 82], [224.25, 0.25, 72], [224.5, 0.25, 77], [224.75, 0.25, 82], [225.0, 2.0, 84], [241.0, 2.0, 37], [241.0, 2.0, 49], [241.5, 0.25, 65], [241.75, 0.25, 67], [242.0, 0.25, 68], [242.25, 0.25, 65], [242.5, 0.25, 67], [242.75, 0.25, 68], [243.0, 0.25, 70], [243.0, 2.0, 39], [243.0, 2.0, 51], [243.25, 0.25, 67], [243.5, 0.25, 68], [243.75, 0.25, 70], [244.0, 0.25, 72], [244.25, 0.25, 75], [244.5, 0.25, 77], [244.75, 0.25, 79], [245.0, 1.0, 80], [245.0, 1.5, 72], [245.0, 2.0, 41], [245.0, 2.0, 53], [246.0, 0.5, 84], [246.5, 0.5, 68], [246.5, 0.5, 80], [247.0, 1.0, 70], [247.0, 1.0, 82], [247.0, 2.0, 39], [247.0, 2.0, 51], [248.0, 0.5, 67], [248.0, 0.5, 79], [248.5, 0.5, 63], [248.5, 0.5, 75], [249.0, 1.0, 65], [249.0, 1.0, 77], [249.0, 2.0, 46], [249.0, 2.0, 61], [250.0, 1.0, 73], [250.0, 1.0, 85], [251.0, 1.0, 41], [251.0, 1.5, 72], [251.0, 1.5, 84], [251.0, 2.0, 60], [252.0, 1.0, 31], [252.0, 1.0, 43], [252.5, 0.5, 63], [252.5, 0.5, 75], [252.5, 0.5, 87], [253.0, 1.0, 65], [253.0, 1.0, 77], [253.0, 1.0, 89], [253.0, 2.0, 37], [253.0, 2.0, 56], [254.0, 1.0, 72], [254.0, 1.0, 84], [255.0, 1.5, 70], [255.0, 1.5, 82], [255.0, 2.0, 39], [255.0, 2.0, 51], [261.0, 2.0, 41], [261.0, 3.25, 29], [261.0, 3.25, 41], [261.0, 3.25, 48], [261.0, 3.25, 53], [261.0, 3.25, 56], [262.0, 2.0, 72], [262.0, 2.0, 84], [262.0, 3.25, 68], [262.5, 4.5, 65], [263.0, 3.25, 39], [263.0, 3.25, 39], [263.0, 3.25, 51], [263.0, 3.25, 51], [263.0, 3.25, 70], [263.0, 3.25, 82], [263.0, 4.0, 46], [264.0, 3.25, 63], [264.0, 3.25, 75], [264.0, 6.25, 72], [264.0, 6.25, 84], [265.0, 2.0, 49], [265.0, 2.75, 53], [265.0, 3.25, 34], [265.0, 3.25, 46], [265.0, 3.25, 77], [265.0, 4.25, 73], [266.0, 3.25, 85], [267.0, 0.75, 41], [267.0, 2.0, 48], [267.0, 2.0, 53], [267.0, 3.25, 29], [267.0, 3.25, 41], [267.0, 3.25, 65], [268.0, 3.25, 48], [268.0, 6.25, 39], [268.5, 3.25, 75], [269.0, 2.0, 49], [269.0, 2.0, 56], [269.0, 3.25, 25], [269.0, 3.25, 37], [269.0, 3.25, 77], [271.0, 2.0, 51], [271.0, 3.25, 27], [271.0, 3.25, 82], [271.0, 4.0, 58], [272.0, 5.0, 79], [272.5, 2.0, 75], [273.0, 2.0, 61], [273.0, 2.0, 77], [273.0, 3.25, 34], [273.0, 3.25, 46], [274.5, 3.25, 75], [275.0, 3.25, 77], [275.0, 4.0, 53], [275.0, 5.25, 41], [275.5, 0.5, 60], [276.0, 3.0, 65], [276.5, 2.5, 60], [277.0, 2.0, 68], [277.0, 3.25, 29], [279.0, 2.0, 51], [279.0, 2.0, 67], [279.0, 3.25, 27], [279.0, 3.25, 39], [281.0, 3.25, 29], [281.0, 3.25, 41], [281.0, 3.25, 53], [281.0, 3.25, 68], [283.0, 3.25, 80], [283.5, 3.25, 79], [284.0, 4.25, 77], [284.5, 2.5, 75], [285.0, 3.25, 37], [285.0, 3.25, 49], [287.0, 2.0, 39], [287.0, 2.0, 67], [287.0, 2.0, 70], [287.0, 2.0, 75], [289.0, 1.0, 29], [289.0, 1.0, 41], [290.5, 0.5, 41], [291.0, 1.5, 41], [292.5, 1.5, 41], [293.0, 1.0, 65], [293.0, 1.0, 68], [293.0, 1.0, 72], [293.0, 1.0, 77], [294.0, 0.5, 84], [294.0, 1.0, 41], [294.0, 1.0, 65], [294.0, 1.0, 68], [294.0, 1.0, 72], [294.5, 0.5, 80], [295.0, 0.5, 39], [295.0, 1.0, 82], [295.0, 2.0, 63], [295.0, 2.0, 67], [295.0, 4.0, 70], [295.5, 1.5, 39], [296.0, 0.5, 72], [296.0, 0.5, 84], [296.5, 0.5, 79], [297.0, 1.0, 77], [297.0, 2.0, 46], [297.0, 2.0, 73], [297.0, 5.0, 65], [298.0, 1.0, 85], [299.0, 0.5, 49], [299.0, 1.0, 84], [299.0, 1.5, 37], [299.0, 3.0, 68], [299.0, 3.0, 72], [299.5, 1.5, 49], [300.0, 0.25, 70], [300.0, 0.25, 82], [300.25, 0.25, 73], [300.25, 0.25, 85], [300.5, 0.5, 84], [301.0, 1.0, 41], [301.0, 1.0, 77], [302.0, 0.5, 84], [302.0, 1.0, 41], [302.0, 1.0, 65], [302.0, 1.0, 68], [302.0, 1.0, 72], [302.5, 0.5, 80], [303.0, 1.0, 82], [303.0, 1.5, 39], [303.0, 1.5, 63], [303.0, 1.5, 67], [303.0, 1.5, 70], [304.0, 0.5, 72], [304.0, 0.5, 84], [304.5, 0.5, 39], [304.5, 0.5, 63], [304.5, 0.5, 67], [304.5, 0.5, 79], [304.5, 2.0, 70], [305.0, 0.75, 77], [305.0, 1.5, 46], [305.0, 1.5, 65], [305.0, 1.5, 73], [305.75, 0.75, 79], [306.5, 0.25, 68], [306.5, 0.25, 80], [306.5, 0.5, 46], [306.5, 1.5, 65], [306.5, 1.5, 73], [306.5, 2.0, 70], [306.75, 0.25, 68], [306.75, 0.25, 80], [307.0, 0.5, 82], [307.0, 1.0, 49], [307.5, 0.5, 80], [308.0, 0.25, 67], [308.0, 0.25, 79], [308.0, 0.5, 39], [308.0, 0.5, 63], [308.25, 0.25, 67], [308.25, 0.25, 79], [308.5, 0.5, 39], [308.5, 0.5, 63], [308.5, 0.5, 67], [308.5, 0.5, 70], [308.5, 1.5, 77], [309.0, 2.0, 41], [309.0, 2.0, 65], [309.0, 2.0, 68], [309.0, 2.0, 72], [310.0, 0.5, 84], [310.5, 0.5, 80], [311.0, 1.0, 39], [311.0, 1.0, 63], [311.0, 1.0, 67], [311.0, 1.0, 70], [311.0, 1.0, 82], [312.0, 0.5, 72], [312.0, 0.5, 84], [312.0, 1.0, 39], [312.0, 1.0, 63], [312.0, 1.0, 67], [312.0, 3.0, 70], [312.5, 0.5, 79], [313.0, 1.0, 77], [313.0, 2.0, 46], [313.0, 3.0, 61], [313.0, 3.0, 73], [313.0, 6.0, 65], [314.0, 1.0, 85], [315.0, 1.0, 84], [315.0, 2.0, 49], [315.0, 4.0, 68], [315.0, 4.0, 72], [316.0, 0.25, 77], [316.0, 1.0, 61], [316.25, 0.25, 70], [316.25, 0.25, 82], [316.5, 0.5, 75], [316.5, 0.5, 87], [317.0, 1.0, 77], [317.0, 2.0, 41], [318.0, 0.5, 84], [318.5, 0.5, 80], [319.0, 1.0, 82], [319.0, 2.0, 39], [319.0, 2.0, 63], [319.0, 2.0, 67], [319.0, 3.0, 70], [325.0, 2.0, 53], [325.0, 2.0, 68], [325.0, 2.0, 72], [325.0, 3.0, 77], [325.0, 4.0, 70], [326.0, 2.0, 84], [326.5, 3.0, 80], [327.0, 2.0, 51], [327.0, 2.0, 67], [327.0, 3.0, 82], [327.5, 1.5, 63], [328.0, 7.75, 84], [328.5, 3.0, 79], [329.0, 2.0, 58], [329.0, 3.0, 73], [329.0, 3.0, 77], [329.5, 3.0, 65], [330.0, 2.5, 85], [331.0, 2.0, 61], [331.5, 1.5, 68], [332.0, 1.0, 70], [332.5, 2.75, 85], [333.0, 2.0, 53], [333.5, 1.5, 60], [334.0, 2.75, 77], [334.5, 2.75, 80], [335.0, 2.0, 51], [335.0, 2.0, 70], [335.0, 2.0, 75], [335.0, 2.75, 82], [335.5, 1.5, 58], [336.0, 1.0, 63], [336.0, 2.75, 79], [337.0, 2.25, 49], [337.0, 2.75, 77], [337.5, 1.75, 56], [338.25, 1.25, 65], [338.75, 0.5, 68], [339.25, 2.75, 51], [339.25, 2.75, 80], [340.0, 2.75, 55], [340.0, 2.75, 79], [340.5, 0.75, 75], [341.25, 1.5, 70], [341.5, 2.75, 75], [342.75, 0.25, 67], [343.0, 2.75, 53], [343.0, 2.75, 65], [343.0, 2.75, 68], [343.0, 2.75, 72], [343.25, 2.75, 77]]}];
+const EXERCISES = [{"title": "1 · Die Lage finden", "bpm": 70, "tip": "Leg die rechte Hand auf C4 (das C in der Mitte, unter dem Namen auf der Klaviatur). Daumen = C, jeder Finger eine Taste. Spiel im Warte-Modus: gelbe Taste suchen, drücken, weiter.", "notes": [[0, 1, 60], [1, 1, 62], [2, 1, 64], [3, 1, 65], [4, 1, 67], [5, 1, 65], [6, 1, 64], [7, 1, 62], [8, 2, 60]]}, {"title": "2 · C-Dur-Tonleiter rechts", "bpm": 70, "tip": "Aufwärts: nach dem 3. Finger (E) den Daumen unter der Hand durchsetzen. Abwärts: 3. Finger über den Daumen. Langsam, gleichmässig.", "notes": [[0, 1, 60], [1, 1, 62], [2, 1, 64], [3, 1, 65], [4, 1, 67], [5, 1, 69], [6, 1, 71], [7, 1, 72], [8, 1, 71], [9, 1, 69], [10, 1, 67], [11, 1, 65], [12, 1, 64], [13, 1, 62], [14, 2, 60]]}, {"title": "3 · Basstöne links", "bpm": 70, "tip": "Die linke Hand spielt in den Nulltag-Songs meist lange Basstöne. Kleiner Finger führt. Töne voll aushalten – erst loslassen, wenn der nächste kommt.", "notes": [[0, 4, 48], [4, 4, 43], [8, 4, 45], [12, 4, 41], [16, 4, 48], [20, 4, 43], [24, 4, 45], [28, 4, 48]]}, {"title": "4 · Beide Hände zusammen", "bpm": 60, "tip": "Links hält, rechts bewegt sich – genau wie in den Songs. Erst RH allein, dann LH allein, dann beide. Der Warte-Modus lässt dir Zeit.", "notes": [[0, 4, 48], [0, 1, 64], [1, 1, 62], [2, 1, 60], [3, 1, 62], [4, 4, 43], [4, 1, 62], [5, 1, 64], [6, 2, 67], [8, 4, 45], [8, 1, 64], [9, 1, 62], [10, 1, 60], [11, 1, 62], [12, 4, 48], [12, 4, 60]]}, {"title": "5 · Dreiklänge greifen", "bpm": 60, "tip": "Drei Töne gleichzeitig: Daumen, Mittelfinger, kleiner Finger. C-Dur, F-Dur, G-Dur, zurück zu C. Alle drei Tasten exakt zusammen anschlagen.", "notes": [[0, 4, 60], [0, 4, 64], [0, 4, 67], [4, 4, 60], [4, 4, 65], [4, 4, 69], [8, 4, 62], [8, 4, 67], [8, 4, 71], [12, 4, 60], [12, 4, 64], [12, 4, 67]]}];
+// ================= MIDI-Datei-Parser =================
+function parseMidi(buf){
+  const dv = new DataView(buf); let p = 0;
+  const u32 = () => { const v = dv.getUint32(p); p += 4; return v; };
+  const u16 = () => { const v = dv.getUint16(p); p += 2; return v; };
+  const u8  = () => dv.getUint8(p++);
+  const str = n => { let s = ''; for (let i = 0; i < n; i++) s += String.fromCharCode(u8()); return s; };
+  function vlq(){ let v = 0, b; do { b = u8(); v = (v << 7) | (b & 0x7f); } while (b & 0x80); return v; }
+  if (str(4) !== 'MThd') throw new Error('Keine MIDI-Datei');
+  const hlen = u32(); const fmt = u16(), ntr = u16(), tpb = u16();
+  p += hlen - 6;
+  let bpm = null;
+  const notes = [];   // [beat, durBeats, pitch]
+  for (let t = 0; t < ntr; t++) {
+    if (str(4) !== 'MTrk') break;
+    const len = u32(); const end = p + len;
+    let tick = 0, run = 0, name = '';
+    const active = {};  // key: ch*200+pitch -> [startTicks]
+    const trackNotes = [];
+    while (p < end) {
+      tick += vlq();
+      let st = u8();
+      if (st < 0x80) { p--; st = run; } else if (st < 0xf0) run = st;
+      const type = st & 0xf0, ch = st & 0x0f;
+      if (st === 0xff) {
+        const mt = u8(), ml = vlq();
+        if (mt === 0x51 && ml === 3) { const tempo = (u8() << 16) | (u8() << 8) | u8(); if (bpm === null) bpm = Math.round(60000000 / tempo); }
+        else if (mt === 0x03) { name = str(ml); }
+        else { p += ml; }                          // alles andere (auch kaputte Key-Sigs) einfach ueberspringen
+      } else if (st === 0xf0 || st === 0xf7) { p += vlq(); }
+      else if (type === 0x90 || type === 0x80) {
+        const pitch = u8(), vel = u8();
+        const k = ch * 200 + pitch;
+        if (type === 0x90 && vel > 0) { (active[k] = active[k] || []).push(tick); }
+        else if (active[k] && active[k].length) {
+          const s0 = active[k].shift();
+          if (tick > s0 && ch !== 9) trackNotes.push([s0 / tpb, (tick - s0) / tpb, pitch]);
+        }
       }
-      keyboardEl.appendChild(el);
-      keyEls[note] = el;
+      else if (type === 0xc0 || type === 0xd0) { p += 1; }
+      else { p += 2; }
+    }
+    p = end;
+    if (!/^drum/i.test(name.trim())) notes.push(...trackNotes);
+  }
+  // auf 16tel quantisieren
+  const snap = v => Math.round(v * 4) / 4;
+  const out = notes.map(([o, d, pt]) => [snap(o), Math.max(0.25, snap(d)), pt]).sort((a, b) => a[0] - b[0] || a[2] - b[2]);
+  return { notes: out, bpm: bpm || 120 };
+}
+// ================= Aufbereitung =================
+function splitPoint(ns){
+  const ps = [...new Set(ns.map(n => n[2]))].sort((a, b) => a - b);
+  if (ps.length < 4) return 60;
+  let bestGap = 0, best = 60;
+  for (let i = 1; i < ps.length; i++) {
+    const mid = (ps[i-1] + ps[i]) / 2, gap = ps[i] - ps[i-1];
+    if (mid >= 48 && mid <= 72 && gap > bestGap) { bestGap = gap; best = mid; }
+  }
+  return bestGap >= 3 ? best : 60;
+}
+function makeEasy(ns, split){
+  const fold = (pt, lo, hi) => { while (pt > hi) pt -= 12; while (pt < lo) pt += 12; return pt; };
+  const g = new Map();
+  for (const [o, d, pt] of ns) if (pt >= split) {
+    const k = Math.round(o * 2) / 2;
+    if (!g.has(k)) g.set(k, []);
+    g.get(k).push(pt);
+  }
+  const on = [...g.keys()].sort((a, b) => a - b);
+  let mel = on.map((t, i) => {
+    const pt = fold(Math.max(...g.get(t)), 60, 84);
+    const nxt = i + 1 < on.length ? on[i+1] : t + 2;
+    return [t, Math.min(Math.max(nxt - t, 0.5), 4), pt];
+  });
+  const merged = [];
+  for (const [t, d, pt] of mel) {
+    const L = merged[merged.length - 1];
+    if (L && L[2] === pt && Math.abs(L[0] + L[1] - t) < 0.01 && d <= 0.5 && L[1] <= 1) L[1] += d;
+    else merged.push([t, d, pt]);
+  }
+  const maxB = Math.max(...ns.map(n => n[0] + n[1]), 0);
+  const bass = [];
+  for (let t = 0; t < maxB; t += 2) {
+    const s = ns.filter(n => n[2] < split && n[0] < t + 2 && n[0] + n[1] > t + 0.1);
+    if (s.length) bass.push([t, 2, fold(Math.min(...s.map(n => n[2])), 36, 55)]);
+  }
+  return [...merged, ...bass].sort((a, b) => a[0] - b[0]);
+}
+function makeSteps(ns, split, bars){
+  const steps = [];
+  for (let b = 1; b <= bars; b += 4) {
+    const e = Math.min(b + 3, bars);
+    const ev = ns.filter(n => n[0] >= (b-1)*4 && n[0] < e*4);
+    if (ev.length < 6) continue;
+    const on = new Map();
+    for (const n of ev) {
+      const k = Math.round(n[0] * 2) / 2;
+      if (!on.has(k)) on.set(k, [false, false]);
+      on.get(k)[n[2] >= split ? 0 : 1] = true;
+    }
+    const both = [...on.values()].filter(v => v[0] && v[1]).length;
+    const rng = Math.max(...ev.map(n => n[2])) - Math.min(...ev.map(n => n[2]));
+    steps.push({ a: b, b: e, score: ev.length + 2 * both + 0.3 * rng, n: ev.length });
+  }
+  steps.sort((x, y) => x.score - y.score);
+  return steps;
+}
+// ================= Song-Zustand =================
+const DEFAULT = {"name": "Heat Death (Nulltag)", "bpm": 94, "split": 60, "full": [[4.0, 3.25, 65], [4.0, 3.25, 77], [4.5, 2.0, 72], [5.0, 3.25, 80], [6.0, 3.25, 91], [6.5, 1.0, 72], [7.0, 6.0, 87], [7.5, 3.25, 72], [8.0, 3.25, 61], [8.0, 3.25, 89], [8.5, 1.0, 68], [9.0, 3.25, 77], [9.5, 2.0, 68], [11.0, 3.25, 85], [11.5, 3.25, 68], [12.0, 3.25, 56], [12.0, 3.25, 84], [12.5, 1.0, 63], [13.0, 5.0, 72], [13.5, 1.0, 63], [14.0, 3.25, 75], [14.5, 4.0, 63], [16.0, 3.25, 51], [16.0, 3.25, 82], [16.5, 1.0, 58], [17.0, 2.0, 67], [17.5, 2.0, 58], [18.0, 2.0, 68], [19.0, 3.25, 67], [19.5, 3.25, 58], [20.0, 3.25, 29], [20.0, 3.25, 41], [20.0, 3.25, 68], [20.5, 2.0, 48], [21.0, 2.0, 56], [21.0, 3.25, 80], [21.5, 3.25, 60], [22.0, 3.25, 31], [22.0, 3.25, 43], [22.0, 3.25, 82], [22.5, 3.25, 48], [23.0, 3.25, 84], [23.0, 4.5, 56], [23.5, 9.0, 63], [24.0, 3.25, 25], [24.0, 3.25, 37], [24.0, 3.25, 77], [24.5, 3.25, 44], [25.0, 3.25, 53], [26.0, 3.0, 75], [27.0, 3.0, 61], [27.0, 3.0, 73], [27.5, 3.0, 56], [28.0, 3.0, 72], [28.0, 4.0, 60], [28.0, 5.0, 32], [28.0, 5.0, 44], [28.5, 6.5, 51], [30.0, 2.0, 75], [32.0, 3.0, 27], [32.0, 3.0, 39], [32.0, 3.0, 58], [32.0, 3.0, 67], [32.0, 3.0, 70], [32.0, 3.0, 75], [33.0, 3.0, 55], [36.0, 1.0, 80], [36.0, 3.0, 53], [36.25, 1.0, 72], [36.5, 1.0, 67], [36.75, 3.0, 68], [37.0, 1.0, 80], [37.25, 1.0, 72], [37.5, 5.0, 67], [38.0, 3.0, 80], [38.25, 4.0, 72], [39.75, 1.0, 68], [40.0, 3.25, 49], [40.25, 1.0, 73], [40.5, 5.25, 65], [40.75, 5.25, 68], [41.0, 1.0, 80], [41.25, 5.25, 73], [42.0, 3.25, 80], [43.0, 3.25, 82], [43.5, 4.0, 63], [43.75, 3.25, 70], [44.0, 3.25, 32], [44.0, 3.25, 44], [44.0, 6.25, 84], [44.25, 4.0, 75], [44.75, 6.25, 72], [47.5, 3.0, 63], [48.0, 1.0, 82], [48.0, 3.25, 39], [48.25, 5.0, 75], [48.75, 6.25, 70], [49.0, 9.25, 82], [50.0, 6.25, 80], [50.5, 4.25, 63], [51.0, 3.25, 79], [52.0, 3.25, 41], [52.0, 3.25, 48], [52.25, 4.75, 56], [52.5, 3.25, 67], [52.75, 4.75, 68], [53.25, 3.25, 72], [54.0, 3.25, 43], [54.0, 3.25, 51], [54.25, 0.5, 75], [54.5, 3.25, 55], [54.75, 3.5, 75], [55.0, 4.0, 63], [56.0, 3.25, 37], [56.0, 3.25, 49], [56.0, 7.25, 84], [56.25, 1.0, 77], [56.5, 2.0, 65], [57.25, 1.0, 77], [57.5, 2.25, 73], [58.0, 3.25, 87], [58.25, 1.0, 77], [58.25, 3.0, 75], [58.5, 4.25, 65], [59.25, 3.25, 77], [59.75, 3.25, 73], [60.0, 3.25, 44], [60.0, 3.25, 51], [60.25, 0.5, 72], [60.5, 1.0, 63], [60.75, 3.25, 56], [60.75, 3.25, 72], [61.25, 1.0, 75], [61.5, 5.25, 63], [62.25, 4.75, 75], [63.0, 3.25, 87], [64.0, 3.25, 39], [64.0, 4.25, 82], [64.25, 6.5, 70], [64.5, 4.75, 67], [64.75, 3.25, 58], [67.0, 1.0, 72], [68.0, 1.5, 72], [68.0, 3.25, 41], [68.25, 3.25, 48], [68.5, 5.25, 65], [68.75, 2.0, 56], [69.5, 2.0, 72], [70.75, 3.25, 56], [71.5, 3.5, 72], [72.0, 3.25, 37], [72.0, 4.25, 73], [72.25, 1.25, 44], [72.5, 3.25, 75], [72.75, 3.25, 53], [73.5, 5.75, 44], [73.75, 3.25, 51], [74.0, 8.0, 56], [74.25, 0.5, 60], [74.5, 4.0, 63], [74.75, 3.5, 60], [75.0, 1.0, 72], [75.5, 3.25, 70], [76.0, 1.0, 72], [77.0, 5.25, 72], [78.25, 3.25, 60], [78.5, 5.25, 63], [79.5, 0.5, 70], [80.0, 3.25, 39], [80.0, 3.25, 70], [80.25, 3.25, 46], [80.75, 3.25, 51], [81.0, 3.25, 67], [81.5, 2.5, 41], [81.5, 3.25, 68], [81.75, 2.5, 48], [82.0, 1.75, 53], [82.25, 1.0, 56], [82.5, 2.75, 65], [83.0, 1.0, 72], [83.25, 2.75, 56], [83.5, 3.25, 70], [83.75, 5.0, 53], [84.0, 1.5, 72], [84.0, 3.25, 41], [84.25, 3.25, 48], [85.25, 4.5, 65], [85.5, 2.0, 72], [86.0, 6.5, 56], [87.5, 7.5, 72], [88.0, 3.25, 37], [88.0, 4.25, 73], [88.5, 3.25, 75], [88.75, 3.25, 53], [89.5, 3.25, 32], [89.75, 3.25, 44], [90.0, 5.25, 51], [90.25, 4.0, 60], [90.5, 2.0, 63], [91.5, 3.25, 70], [92.5, 3.5, 63], [93.5, 3.25, 75], [94.25, 3.25, 60], [94.75, 3.25, 56], [95.0, 3.25, 72], [95.25, 0.75, 51], [95.5, 3.75, 70], [96.0, 3.25, 39], [96.0, 3.25, 51], [96.0, 3.25, 63], [96.75, 3.25, 55], [96.75, 3.5, 67], [97.5, 4.75, 68], [97.5, 5.75, 29], [97.5, 5.75, 41], [98.0, 5.0, 53], [98.5, 1.0, 65], [99.5, 3.25, 65], [100.0, 3.25, 77], [100.5, 3.25, 79], [101.0, 3.25, 80], [101.5, 3.25, 31], [101.5, 3.25, 43], [101.5, 3.25, 82], [102.0, 3.25, 32], [102.0, 3.25, 84], [102.0, 4.25, 72], [102.5, 3.0, 63], [103.5, 5.75, 75], [104.0, 1.0, 77], [104.0, 3.25, 37], [104.0, 3.25, 65], [104.5, 4.0, 56], [105.0, 3.25, 77], [105.5, 4.25, 63], [106.0, 3.25, 32], [107.0, 3.25, 31], [107.0, 3.25, 73], [107.0, 3.75, 61], [108.0, 3.25, 29], [108.0, 3.25, 60], [108.0, 3.25, 72], [108.5, 4.0, 53], [110.0, 1.5, 84], [111.5, 3.75, 84], [112.0, 3.25, 39], [112.5, 3.25, 82], [113.0, 4.0, 67], [113.5, 4.0, 58], [114.0, 1.0, 68], [115.0, 3.25, 68], [115.25, 0.5, 63], [115.75, 1.5, 63], [117.0, 3.25, 67], [117.25, 3.75, 63], [117.5, 3.25, 58], [118.0, 0.5, 82], [118.5, 3.75, 82], [119.5, 3.25, 80], [119.75, 3.25, 79], [120.0, 3.25, 29], [120.5, 3.25, 77], [124.25, 3.25, 17], [124.25, 3.25, 29], [127.75, 3.25, 15], [127.75, 3.25, 27], [136.0, 3.25, 15], [136.0, 3.25, 27], [140.25, 3.25, 17], [140.25, 3.25, 29], [148.0, 3.25, 75], [148.0, 3.25, 80], [148.0, 3.25, 84], [148.0, 3.25, 87], [148.0, 3.25, 92], [148.0, 3.25, 96], [148.0, 3.25, 99], [148.0, 3.25, 104], [148.0, 3.25, 108], [148.0, 3.25, 111], [148.0, 3.25, 113], [148.0, 4.0, 72], [152.0, 3.25, 51], [152.0, 3.25, 63], [153.5, 3.75, 82], [154.0, 3.25, 94], [155.5, 3.25, 68], [155.5, 3.25, 80], [155.5, 3.25, 92], [155.75, 3.25, 67], [155.75, 3.25, 79], [155.75, 3.25, 91], [156.5, 3.75, 65], [156.5, 3.75, 77], [156.5, 3.75, 89], [170.0, 3.25, 94], [171.5, 3.0, 89], [171.5, 3.25, 92], [171.75, 3.0, 91], [198.0, 1.75, 84], [199.75, 0.25, 84], [200.0, 3.25, 84], [200.5, 3.25, 82], [204.0, 3.25, 41], [206.0, 3.5, 75], [207.0, 3.25, 79], [207.5, 3.25, 80], [208.0, 3.25, 37], [208.0, 3.25, 49], [210.0, 1.5, 75], [211.0, 3.25, 77], [211.5, 3.25, 75], [211.75, 3.25, 72], [211.75, 4.0, 84], [212.0, 3.25, 32], [212.0, 3.25, 44], [215.75, 3.25, 84], [216.0, 3.25, 39], [216.0, 3.25, 51], [216.5, 3.25, 82], [220.0, 3.25, 41], [220.0, 3.25, 53], [221.0, 2.5, 80], [222.0, 3.25, 75], [223.0, 3.25, 79], [223.5, 1.5, 80], [224.0, 3.25, 49], [225.0, 3.25, 80], [226.0, 3.25, 87], [227.0, 3.25, 85], [227.5, 2.5, 84], [230.0, 4.5, 84], [232.0, 3.25, 79], [232.5, 0.5, 82], [233.0, 3.25, 82], [233.5, 1.5, 75], [234.0, 3.25, 94], [235.0, 3.25, 75], [235.5, 1.5, 80], [235.5, 3.25, 92], [235.75, 3.25, 79], [235.75, 3.25, 91], [236.25, 3.25, 84], [236.5, 0.5, 53], [236.5, 3.25, 89], [237.0, 1.0, 53], [237.0, 2.5, 80], [237.5, 3.25, 77], [238.0, 1.5, 53], [238.0, 3.25, 87], [239.0, 3.25, 79], [239.5, 3.25, 53], [239.5, 4.5, 80], [240.5, 1.0, 49], [241.5, 1.5, 51], [242.0, 3.25, 87], [243.0, 3.25, 89], [243.0, 3.75, 51], [243.5, 3.25, 84], [266.0, 2.0, 39], [266.0, 2.0, 46], [266.0, 2.0, 51], [266.0, 2.0, 55], [266.0, 2.0, 58], [266.0, 2.0, 63], [268.0, 2.0, 41], [268.0, 2.0, 44], [268.0, 2.0, 53], [268.0, 2.0, 56], [268.0, 2.0, 60], [268.0, 2.0, 65], [270.0, 2.0, 39], [270.0, 2.0, 46], [270.0, 2.0, 51], [270.0, 2.0, 55], [270.0, 2.0, 58], [270.0, 2.0, 63], [272.0, 2.0, 41], [272.0, 2.0, 56], [272.0, 4.0, 49], [272.0, 4.0, 53], [272.0, 4.0, 61], [274.0, 2.0, 46], [274.0, 2.0, 58], [276.0, 4.0, 44], [276.0, 4.0, 56], [276.0, 4.0, 60], [276.0, 8.0, 51], [280.0, 3.25, 82], [280.0, 3.25, 84], [280.0, 3.25, 87], [280.0, 3.25, 94], [280.0, 4.0, 39], [280.0, 4.0, 46], [280.0, 4.0, 55], [280.0, 4.0, 58], [280.0, 4.0, 63], [284.0, 3.0, 53], [284.0, 3.0, 65], [284.25, 3.0, 70], [284.5, 3.5, 67], [284.75, 1.5, 72], [285.0, 2.5, 80], [286.0, 2.0, 87], [286.25, 1.75, 72], [287.0, 1.0, 79], [287.5, 0.5, 80], [288.0, 3.0, 49], [288.0, 3.0, 61], [288.0, 3.0, 77], [288.25, 0.5, 73], [288.5, 1.0, 68], [288.75, 1.0, 73], [289.0, 3.0, 80], [289.5, 2.0, 68], [289.75, 0.5, 73], [290.0, 2.0, 87], [290.25, 1.0, 73], [291.0, 1.0, 85], [291.25, 0.5, 73], [291.5, 0.5, 68], [291.5, 2.5, 84], [291.75, 0.25, 73], [292.0, 0.5, 63], [292.0, 3.0, 56], [292.25, 1.5, 72], [292.5, 2.0, 63], [293.0, 2.0, 75], [293.75, 0.5, 72], [294.0, 4.75, 84], [294.25, 1.0, 72], [294.5, 5.75, 63], [295.0, 1.0, 75], [295.25, 0.75, 72], [296.0, 3.0, 39], [296.0, 3.0, 51], [296.5, 0.5, 70], [296.75, 4.75, 82], [297.0, 0.5, 70], [297.5, 0.5, 70], [298.25, 1.25, 70], [299.5, 4.5, 70], [299.75, 3.0, 79], [300.5, 3.0, 75], [302.0, 3.0, 29], [302.0, 3.0, 41], [302.0, 3.0, 77]], "bars": 77};
+let SONG = null;
+function loadSong(name, fullNotes, bpm){
+  const bars = Math.max(1, Math.ceil(Math.max(...fullNotes.map(n => n[0] + n[1]), 4) / 4));
+  const split = splitPoint(fullNotes);
+  SONG = { name, bpm, split, bars, full: fullNotes, easy: makeEasy(fullNotes, split),
+           steps: makeSteps(fullNotes, split, bars) };
+  document.getElementById('songname').textContent = name + ' · ' + bpm + ' BPM · ' + bars + ' Takte';
+  secStart = 0; secEnd = Math.min(8, bars);
+  buildSelectors(); rebuild(); updTempo(); pos = -4; setPlaying(false); draw();
+  document.getElementById('hint').textContent = SONG.steps.length + ' Lernschritte erzeugt (leicht nach schwer). Easy-Fassung: Melodie + 1 Basston pro halben Takt.';
+}
+function buildSelectors(){
+  const st = document.getElementById('step');
+  st.innerHTML = '<option value="">–</option>';
+  SONG.steps.forEach((s, i) => {
+    const o = document.createElement('option');
+    o.value = (s.a - 1) + '-' + s.b;
+    o.textContent = 'Schritt ' + (i + 1) + ' · Takte ' + s.a + '–' + s.b + ' · ' + s.n + ' Noten';
+    st.appendChild(o);
+  });
+  const sel = document.getElementById('section');
+  sel.innerHTML = '<option value=""></option>';
+  for (let b = 0; b < SONG.bars; b += 8) {
+    const e = Math.min(b + 8, SONG.bars);
+    const o = document.createElement('option');
+    o.value = b + '-' + e; o.textContent = (b + 1) + '–' + e; sel.appendChild(o);
+  }
+  const all = document.createElement('option');
+  all.value = '0-' + SONG.bars; all.textContent = 'alle'; sel.appendChild(all);
+  sel.value = '0-' + Math.min(8, SONG.bars);
+}
+// ================= Player/Trainer (wie gehabt) =================
+const cv = document.getElementById('cv'), ctx = cv.getContext('2d');
+const LOW = 21, HIGH = 108;
+let version = 'easy', notes = [], secStart = 0, secEnd = 8;
+let playing = false, pos = -4, tempoPct = 50, playRH = true, playLH = true, looping = true;
+let mode = 'listen', octTolerant = true;
+let ac = null, scheduled = [], rafId = null, timing = null;
+let midiIn = null, userDown = new Set(), flash = {};
+let hits = 0, misses = 0, matched = new Set();
+let groups = [], gIdx = 0, waitPressed = new Set();
+
+function spb(){ return 60 / (SONG.bpm * tempoPct / 100); }
+function fold(p){ while (p < LOW) p += 12; while (p > HIGH) p -= 12; return p; }
+function activeNotes(){ return notes.filter(n => (n[2] >= SONG.split ? playRH : playLH)); }
+function rebuild(){
+  notes = SONG[version].filter(n => n[0] >= secStart * 4 && n[0] < secEnd * 4);
+  buildGroups(); resetScore();
+}
+function buildGroups(){
+  const m = new Map();
+  for (const n of activeNotes()) {
+    const k = Math.round(n[0] * 4) / 4;
+    if (!m.has(k)) m.set(k, []);
+    m.get(k).push(n);
+  }
+  groups = [...m.entries()].sort((a, b) => a[0] - b[0]).map(([t, ns]) => ({ t, ns }));
+  gIdx = 0; waitPressed.clear();
+}
+function resetScore(){ hits = 0; misses = 0; matched = new Set(); updScore(); }
+function updScore(){
+  const s = document.getElementById('score');
+  if (mode === 'check') s.textContent = 'Treffer: ' + hits + ' · daneben: ' + misses;
+  else if (mode === 'wait') s.textContent = 'Schritt ' + Math.min(gIdx + 1, groups.length) + ' / ' + groups.length;
+  else s.textContent = '';
+}
+let whites = [];
+for (let p = LOW; p <= HIGH; p++) if ([0,2,4,5,7,9,11].includes(p % 12)) whites.push(p);
+function geom(){ const W = cv.width, ww = W / whites.length; const wx = {}; whites.forEach((p,i)=>wx[p]=i*ww); return {W, ww, wx}; }
+function keyX(p, g){
+  if ([0,2,4,5,7,9,11].includes(p % 12)) return [g.wx[p], g.ww];
+  let lw = p - 1; while (!([0,2,4,5,7,9,11].includes(lw % 12))) lw--;
+  return [g.wx[lw] + g.ww * 0.65, g.ww * 0.7];
+}
+function draw(){
+  const dpr = window.devicePixelRatio || 1;
+  const r = cv.getBoundingClientRect();
+  if (cv.width !== Math.round(r.width * dpr)) { cv.width = Math.round(r.width * dpr); cv.height = Math.round(r.height * dpr); }
+  const g = geom(), H = cv.height, KEY_H = Math.min(150 * dpr, H * 0.3), FALL = H - KEY_H;
+  ctx.fillStyle = '#121218'; ctx.fillRect(0, 0, g.W, H);
+  const pxPerSec = FALL / 2.6;
+  const pressed = new Set();
+  const expectSet = (mode === 'wait' && groups[gIdx]) ? new Set(groups[gIdx].ns.map(n => fold(n[2]))) : null;
+  for (const [s, d, p] of activeNotes()) {
+    const startS = (s - pos) * spb(), endS = (s + d - pos) * spb();
+    const pf = fold(p), isRH = p >= SONG.split;
+    if (startS <= 0 && endS > 0 && mode !== 'wait') pressed.add(pf);
+    const yB = FALL + (-startS) * pxPerSec, yT = FALL + (-endS) * pxPerSec;
+    if (yB < 0 || yT > FALL) continue;
+    const [x, w] = keyX(pf, g);
+    ctx.fillStyle = isRH ? '#40c8dc' : '#f0a046';
+    ctx.strokeStyle = isRH ? '#1e96aa' : '#be6e1e';
+    ctx.beginPath(); ctx.roundRect(x + 1, Math.max(0, yT), w - 2, Math.max(2, Math.min(FALL, yB) - Math.max(0, yT)), 3 * dpr);
+    ctx.fill(); ctx.stroke();
+  }
+  ctx.fillStyle = '#0a0a0c'; ctx.fillRect(0, FALL, g.W, KEY_H);
+  const now = performance.now();
+  function keyCol(p, black){
+    if (flash[p] && flash[p].until > now) return flash[p].ok ? '#4cd964' : '#ff5a5a';
+    if (userDown.has(p)) return '#9090ff';
+    if (expectSet && expectSet.has(p)) return black ? '#8a7a20' : '#ffe27a';
+    if (pressed.has(p)) return p >= SONG.split ? (black ? '#1e96aa' : '#40c8dc') : (black ? '#be6e1e' : '#f0a046');
+    return black ? '#141414' : '#ffffff';
+  }
+  for (const p of whites) {
+    ctx.fillStyle = keyCol(p, false);
+    ctx.fillRect(g.wx[p] + 1, FALL, g.ww - 2, KEY_H - 2);
+    if (p % 12 === 0) { ctx.fillStyle = '#909090'; ctx.font = (10 * dpr) + 'px sans-serif'; ctx.fillText('C' + (Math.floor(p/12)-1), g.wx[p] + 2, FALL + KEY_H - 6); }
+  }
+  for (let p = LOW; p <= HIGH; p++) if ([1,3,6,8,10].includes(p % 12)) {
+    const [x, w] = keyX(p, g);
+    ctx.fillStyle = keyCol(p, true);
+    ctx.fillRect(x, FALL, w, KEY_H * 0.62);
+  }
+  ctx.fillStyle = '#c8c8d0'; ctx.font = (13 * dpr) + 'px sans-serif';
+  const bar = Math.floor(Math.max(0, pos) / 4) + 1;
+  ctx.fillText('Takt ' + Math.min(bar, SONG.bars) + ' / ' + SONG.bars + '   ' + Math.round(SONG.bpm * tempoPct / 100) + ' BPM' + (mode === 'wait' ? '   WARTE-MODUS' : ''), 14 * dpr, 22 * dpr);
+}
+function tone(when, dur, midi, gain){
+  const o = ac.createOscillator(), o2 = ac.createOscillator(), gn = ac.createGain(), g2 = ac.createGain();
+  const f = 440 * Math.pow(2, (midi - 69) / 12);
+  o.type = 'triangle'; o.frequency.value = f; o2.type = 'sine'; o2.frequency.value = f * 2; g2.gain.value = 0.25;
+  o.connect(gn); o2.connect(g2); g2.connect(gn); gn.connect(ac.destination);
+  const d = Math.max(0.18, Math.min(dur, 3));
+  gn.gain.setValueAtTime(0, when);
+  gn.gain.linearRampToValueAtTime(gain, when + 0.012);
+  gn.gain.exponentialRampToValueAtTime(0.001, when + d);
+  o.start(when); o.stop(when + d + 0.05); o2.start(when); o2.stop(when + d + 0.05);
+  scheduled.push(o, o2);
+}
+function click(when){
+  const o = ac.createOscillator(), g = ac.createGain();
+  o.type = 'square'; o.frequency.value = 1500; o.connect(g); g.connect(ac.destination);
+  g.gain.setValueAtTime(0.12, when); g.gain.exponentialRampToValueAtTime(0.001, when + 0.06);
+  o.start(when); o.stop(when + 0.08); scheduled.push(o);
+}
+function ensureAC(){ if (!ac) ac = new (window.AudioContext || window.webkitAudioContext)(); ac.resume(); }
+function schedule(){
+  const base = ac.currentTime + 0.1, s = spb();
+  for (let i = 0; i < 4; i++) click(base + i * s);
+  const off = base + 4 * s;
+  for (const [st, d, p] of activeNotes()) tone(off + (st - secStart * 4) * s, d * s, p, p >= SONG.split ? 0.22 : 0.16);
+  return { base, off, s };
+}
+function stopAudio(){ scheduled.forEach(n => { try { n.stop(); } catch(e){} }); scheduled = []; }
+function loopFrame(){
+  if (!playing) return;
+  if (mode !== 'wait') {
+    pos = secStart * 4 + (ac.currentTime - timing.off) / timing.s;
+    if (pos >= secEnd * 4 + 0.05) {
+      stopAudio();
+      if (mode === 'check') document.getElementById('hint').textContent = 'Runde fertig: ' + hits + ' Treffer, ' + misses + ' daneben.';
+      if (looping) { timing = schedule(); pos = secStart * 4 - 4; resetScore(); }
+      else { setPlaying(false); return; }
     }
   }
+  draw();
+  rafId = requestAnimationFrame(loopFrame);
 }
-buildKeyboard();
+function setPlaying(v){
+  playing = v;
+  document.getElementById('play').textContent = v ? '⏸ Stopp' : '▶ Start';
+  if (v) {
+    ensureAC();
+    if (mode === 'wait') { buildGroups(); pos = groups.length ? groups[0].t : secStart * 4; updScore(); }
+    else { timing = schedule(); pos = secStart * 4 - 4; resetScore(); }
+    rafId = requestAnimationFrame(loopFrame);
+  } else { stopAudio(); if (rafId) cancelAnimationFrame(rafId); draw(); }
+}
+function waitAdvance(){
+  const g = groups[gIdx];
+  ensureAC();
+  for (const [s, d, p] of g.ns) tone(ac.currentTime, d * spb(), p, p >= SONG.split ? 0.22 : 0.16);
+  gIdx++; waitPressed.clear();
+  if (gIdx >= groups.length) {
+    document.getElementById('hint').textContent = 'Abschnitt geschafft!';
+    if (looping) gIdx = 0; else { setPlaying(false); }
+  }
+  pos = groups[Math.min(gIdx, groups.length - 1)].t;
+  updScore(); draw();
+}
+function matchPitch(played, expected){
+  return octTolerant ? (played % 12) === (expected % 12) : played === fold(expected);
+}
+function onNote(cmd, p, vel){
+  if (cmd === 0x90 && vel > 0) { userDown.add(fold(p)); handlePress(p); }
+  else if (cmd === 0x80 || (cmd === 0x90 && vel === 0)) userDown.delete(fold(p));
+  if (!playing) draw();
+}
+function handlePress(p){
+  const now = performance.now();
+  if (mode === 'wait' && playing && groups[gIdx]) {
+    const exp = groups[gIdx].ns.map(n => n[2]);
+    const hit = exp.find(e => matchPitch(p, e) && !waitPressed.has(e));
+    if (hit !== undefined) {
+      waitPressed.add(hit);
+      flash[fold(hit)] = { ok: true, until: now + 350 };
+      if (exp.every(e => waitPressed.has(e))) waitAdvance();
+    } else flash[fold(p)] = { ok: false, until: now + 350 };
+  } else if (mode === 'check' && playing) {
+    const cand = activeNotes().find(n => !matched.has(n) && matchPitch(p, n[2]) && Math.abs(n[0] - pos) <= 0.6);
+    if (cand) { matched.add(cand); hits++; flash[fold(cand[2])] = { ok: true, until: now + 300 }; }
+    else { misses++; flash[fold(p)] = { ok: false, until: now + 300 }; }
+    updScore();
+  }
+}
+async function midiConnect(){
+  const st = document.getElementById('midistat');
+  if (!navigator.requestMIDIAccess) { st.textContent = 'Web-MIDI nicht verfügbar (Chrome/Edge nutzen)'; return; }
+  try {
+    const acc = await navigator.requestMIDIAccess();
+    function pick(){
+      const ins = [...acc.inputs.values()];
+      if (!ins.length) { st.textContent = 'Kein MIDI-Gerät gefunden'; st.classList.remove('on'); midiIn = null; return; }
+      midiIn = ins.find(i => /flkey|novation/i.test(i.name)) || ins[0];
+      ins.forEach(i => i.onmidimessage = null);
+      midiIn.onmidimessage = m => { const [s, p2, v] = m.data; const cmd = s & 0xf0; if (cmd === 0x90 || cmd === 0x80) onNote(cmd, p2, v); };
+      st.textContent = 'MIDI: ' + midiIn.name; st.classList.add('on');
+    }
+    acc.onstatechange = pick; pick();
+  } catch (e) { st.textContent = 'MIDI-Zugriff abgelehnt'; }
+}
+window._testNote = p => { onNote(0x90, p, 100); setTimeout(() => onNote(0x80, p, 0), 120); };
+// ================= Datei laden =================
+function loadFile(file){
+  const rd = new FileReader();
+  rd.onload = () => {
+    try {
+      const { notes, bpm } = parseMidi(rd.result);
+      if (!notes.length) { document.getElementById('hint').textContent = 'Keine spielbaren Noten gefunden (nur Drums?).'; return; }
+      loadSong(file.name.replace(/\.(mid|midi)$/i, ''), notes, bpm); go('trainer');
+    } catch (e) { document.getElementById('hint').textContent = 'Fehler: ' + e.message; }
+  };
+  rd.readAsArrayBuffer(file);
+}
 
-/* ── App state ────────────────────────────────────────────── */
-const trackSelect = document.getElementById("track-select");
-const modeSelect = document.getElementById("mode-select");
-const tempoInput = document.getElementById("tempo");
-const tempoVal = document.getElementById("tempo-val");
-const btnStart = document.getElementById("btn-start");
-const btnReset = document.getElementById("btn-reset");
-const hintEl = document.getElementById("hint");
-const statCorrect = document.getElementById("stat-correct");
-const statWrong = document.getElementById("stat-wrong");
-const statProgress = document.getElementById("stat-progress");
-const progressFill = document.getElementById("progress-fill");
-
-TRACKS.forEach(t => {
-  const opt = document.createElement("option");
-  opt.value = t.id;
-  opt.textContent = t.name;
-  trackSelect.appendChild(opt);
+document.getElementById('file').onchange = e => { if (e.target.files[0]) loadFile(e.target.files[0]); };
+const dropEl = document.getElementById('drop');
+window.addEventListener('dragover', e => { e.preventDefault(); dropEl.style.display = 'flex'; });
+window.addEventListener('dragleave', e => { if (!e.relatedTarget) dropEl.style.display = 'none'; });
+window.addEventListener('drop', e => {
+  e.preventDefault(); dropEl.style.display = 'none';
+  if (e.dataTransfer.files[0]) loadFile(e.dataTransfer.files[0]);
 });
-
-const state = {
-  running: false,
-  mode: "learn",
-  track: TRACKS[0],
-  pos: 0,
-  correct: 0,
-  wrong: 0,
-  playTimer: null,
+// ================= UI =================
+document.getElementById('midibtn').onclick = midiConnect;
+document.getElementById('mode').onchange = e => { mode = e.target.value; setPlaying(false); rebuild(); updScore(); draw(); };
+document.getElementById('play').onclick = () => setPlaying(!playing);
+document.getElementById('version').onchange = e => { version = e.target.value; setPlaying(false); rebuild(); draw(); };
+document.getElementById('step').onchange = e => {
+  if (!e.target.value) return;
+  const [a, b] = e.target.value.split('-').map(Number);
+  secStart = a; secEnd = b; setPlaying(false); rebuild(); draw();
+  document.getElementById('section').value = '';
 };
+document.getElementById('section').onchange = e => {
+  if (!e.target.value) return;
+  document.getElementById('step').value = '';
+  const [a, b] = e.target.value.split('-').map(Number);
+  secStart = a; secEnd = b; setPlaying(false); rebuild(); draw();
+};
+const tv = document.getElementById('tempoval');
+function updTempo(){ tv.textContent = tempoPct + '% = ' + Math.round(SONG.bpm * tempoPct / 100) + ' BPM'; }
+document.getElementById('tempo').oninput = e => { tempoPct = +e.target.value; updTempo(); if (playing && mode !== 'wait') setPlaying(false); };
+document.getElementById('bRH').onclick = e => { playRH = !playRH; e.target.classList.toggle('active'); setPlaying(false); buildGroups(); draw(); };
+document.getElementById('bLH').onclick = e => { playLH = !playLH; e.target.classList.toggle('lhactive'); setPlaying(false); buildGroups(); draw(); };
+document.getElementById('loop').onclick = e => { looping = !looping; e.target.textContent = looping ? 'Loop an' : 'Loop aus'; e.target.classList.toggle('active'); };
+document.getElementById('oct').onclick = e => { octTolerant = !octTolerant; e.target.classList.toggle('okactive'); };
+window.onresize = () => draw();
 
-function currentTrack() {
-  return TRACKS.find(t => t.id === trackSelect.value) || TRACKS[0];
+// ---------- Views ----------
+function go(v){
+  for (const el of document.querySelectorAll('main > div')) el.classList.add('hide');
+  document.getElementById('view-' + v).classList.remove('hide');
+  for (const b of document.querySelectorAll('nav button')) b.classList.toggle('here', b.dataset.v === v);
+  if (v === 'trainer') draw();
 }
-function beatMs() { return 60000 / parseInt(tempoInput.value, 10); }
-
-function clearHighlights() {
-  Object.values(keyEls).forEach(el => el.classList.remove("target", "active", "wrong"));
-}
-
-function updateStats() {
-  statCorrect.textContent = state.correct;
-  statWrong.textContent = state.wrong;
-  statProgress.textContent = state.pos + " / " + state.track.notes.length;
-  const pct = state.track.notes.length ? (state.pos / state.track.notes.length) * 100 : 0;
-  progressFill.style.width = pct + "%";
-}
-
-function flashKey(note, cls, ms) {
-  const el = keyEls[note];
-  if (!el) return;
-  el.classList.add(cls);
-  setTimeout(() => el.classList.remove(cls), ms);
-}
-
-function highlightTarget() {
-  clearHighlights();
-  const step = state.track.notes[state.pos];
-  if (!step) return;
-  const el = keyEls[step[0]];
-  if (el) el.classList.add("target");
-}
-
-function finish() {
-  state.running = false;
-  clearTimeout(state.playTimer);
-  clearHighlights();
-  btnStart.disabled = false;
-  const total = state.correct + state.wrong;
-  if (state.mode === "learn" && total > 0) {
-    const acc = Math.round((state.correct / total) * 100);
-    hintEl.innerHTML = "Fertig! Genauigkeit: <strong>" + acc + "%</strong> (" +
-      state.correct + " richtig, " + state.wrong + " Fehler). Nochmal? Drücke <strong>Start</strong>.";
-  } else {
-    hintEl.innerHTML = "Track beendet. Drücke <strong>Start</strong> zum Wiederholen.";
-  }
-}
-
-function startSession() {
-  ensureAudio();
-  state.track = currentTrack();
-  state.mode = modeSelect.value;
-  state.pos = 0;
-  state.correct = 0;
-  state.wrong = 0;
-  state.running = true;
-  btnStart.disabled = true;
-  updateStats();
-  if (state.mode === "listen") {
-    hintEl.innerHTML = "Autoplay läuft — schau zu, welche Tasten gespielt werden.";
-    autoplayStep();
-  } else {
-    hintEl.innerHTML = "Spiele die <strong>leuchtende Taste</strong> — per Klick oder Computertastatur.";
-    highlightTarget();
-  }
-}
-
-function autoplayStep() {
-  if (!state.running) return;
-  const step = state.track.notes[state.pos];
-  if (!step) { finish(); return; }
-  const [note, beats] = step;
-  const durMs = beats * beatMs();
-  clearHighlights();
-  const el = keyEls[note];
-  if (el) el.classList.add("active");
-  playNote(note, Math.min(durMs / 1000, 1.5));
-  state.pos++;
-  updateStats();
-  state.playTimer = setTimeout(autoplayStep, durMs);
-}
-
-function handleInput(note) {
-  playNote(note, 0.4);
-  flashKey(note, "active", 160);
-  if (!state.running || state.mode !== "learn") return;
-  const step = state.track.notes[state.pos];
-  if (!step) return;
-  if (note === step[0]) {
-    state.correct++;
-    state.pos++;
-    updateStats();
-    if (state.pos >= state.track.notes.length) { finish(); return; }
-    highlightTarget();
-  } else {
-    state.wrong++;
-    updateStats();
-    flashKey(note, "wrong", 300);
-  }
-}
-
-/* ── Events ───────────────────────────────────────────────── */
-keyboardEl.addEventListener("pointerdown", e => {
-  const el = e.target.closest(".key");
-  if (el) handleInput(el.dataset.note);
+document.querySelectorAll('nav button').forEach(b => b.onclick = () => go(b.dataset.v));
+// Songkarten
+const grid = document.getElementById('songgrid');
+SONGS.forEach((s, i) => {
+  const d = document.createElement('div');
+  d.className = 'song';
+  d.innerHTML = '<h3>' + s.title + '</h3><div class="meta">' + s.key + ' · ' + s.bpm + ' BPM · ' + s.bars +
+    ' Takte</div><div class="lvl">Level <b>' + '●'.repeat(s.level) + '○'.repeat(5 - s.level) + '</b></div>';
+  d.onclick = () => { loadSong(s.title, s.notes, s.bpm); go('trainer'); };
+  grid.appendChild(d);
 });
-document.addEventListener("keydown", e => {
-  if (e.repeat) return;
-  if (e.target.tagName === "SELECT" || e.target.tagName === "INPUT") return;
-  const note = KEY_MAP[e.key.toLowerCase()];
-  if (note) handleInput(note);
+// Grundkurs
+const les = document.getElementById('lessons');
+EXERCISES.forEach((ex, i) => {
+  const d = document.createElement('div');
+  d.className = 'lesson';
+  d.innerHTML = '<h3>' + ex.title + '</h3><p>' + ex.tip + '</p>';
+  const b = document.createElement('button');
+  b.className = 'btn'; b.textContent = 'Übung starten';
+  b.onclick = () => {
+    loadSong(ex.title, ex.notes, ex.bpm);
+    document.getElementById('mode').value = 'wait'; mode = 'wait';
+    rebuild(); updScore(); go('trainer');
+    document.getElementById('hint').textContent = 'Warte-Modus: gelbe Taste drücken. Start drücken!';
+  };
+  d.appendChild(b);
+  les.appendChild(d);
 });
-tempoInput.addEventListener("input", () => {
-  tempoVal.textContent = tempoInput.value + " BPM";
-});
-btnStart.addEventListener("click", startSession);
-btnReset.addEventListener("click", () => {
-  state.running = false;
-  clearTimeout(state.playTimer);
-  clearHighlights();
-  state.pos = 0; state.correct = 0; state.wrong = 0;
-  state.track = currentTrack();
-  updateStats();
-  btnStart.disabled = false;
-  hintEl.innerHTML = "Wähle einen Track und drücke <strong>Start</strong>.";
-});
-trackSelect.addEventListener("change", () => {
-  state.track = currentTrack();
-  state.pos = 0;
-  updateStats();
-});
-
-state.track = currentTrack();
-updateStats();
+// Start: leichtester Song vorladen
+loadSong(SONGS[0].title, SONGS[0].notes, SONGS[0].bpm);
+go('start');
 </script>
 </body>
 </html>
