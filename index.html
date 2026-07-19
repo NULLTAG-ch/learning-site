@@ -752,18 +752,25 @@ function setMidiUi(text, on){
 }
 async function midiConnect(){
   if (!navigator.requestMIDIAccess) { setMidiUi('Web-MIDI nicht verfügbar (Chrome/Edge nutzen)', false); return; }
+  setMidiUi('MIDI wird angefragt … (Browser-Abfrage bestätigen)', false);
   try {
-    const acc = await navigator.requestMIDIAccess();
+    const acc = await navigator.requestMIDIAccess({ sysex: false });
     function pick(){
       const ins = [...acc.inputs.values()];
-      if (!ins.length) { midiIn = null; setMidiUi('Kein MIDI-Gerät gefunden', false); return; }
+      if (!ins.length) { midiIn = null; setMidiUi('Berechtigung ok, aber kein MIDI-Gerät gefunden – Kabel/Einschalten prüfen, Gerät wird bei Anschluss automatisch erkannt', false); return; }
       midiIn = ins.find(i => /flkey|novation/i.test(i.name)) || ins[0];
       ins.forEach(i => i.onmidimessage = null);
       midiIn.onmidimessage = m => { const [s, p2, v] = m.data; const cmd = s & 0xf0; if (cmd === 0x90 || cmd === 0x80) onNote(cmd, p2, v); };
       setMidiUi('MIDI: ' + midiIn.name, true);
     }
     acc.onstatechange = pick; pick();
-  } catch (e) { setMidiUi('MIDI-Zugriff abgelehnt', false); }
+  } catch (e) { setMidiUi('MIDI-Zugriff fehlgeschlagen (' + (e && e.name ? e.name : 'abgelehnt') + ') – in den Website-Einstellungen MIDI erlauben', false); }
+}
+// Automatisch verbinden, wenn die MIDI-Berechtigung schon erteilt wurde
+if (navigator.permissions && navigator.permissions.query) {
+  navigator.permissions.query({ name: 'midi', sysex: false })
+    .then(st => { if (st.state === 'granted') midiConnect(); })
+    .catch(() => {});
 }
 window._testNote = p => { onNote(0x90, p, 100); setTimeout(() => onNote(0x80, p, 0), 120); };
 // ================= Eingabe ohne MIDI: Klaviatur anklicken =================
@@ -883,7 +890,14 @@ function go(v){
   if (v === 'songs') renderSongs();
   if (v === 'start') renderStart();
 }
-document.querySelectorAll('nav button').forEach(b => b.onclick = () => go(b.dataset.v));
+document.querySelectorAll('nav button').forEach(b => { if (b.dataset.v) b.onclick = () => go(b.dataset.v); });
+// Maus-Klicks sollen keinen Dauer-Fokus auf Buttons hinterlassen, sonst
+// re-aktiviert die Leertaste den Button statt Start/Stopp zu togglen
+// (Tastatur-Aktivierung hat e.detail === 0 und behaelt den Fokus)
+document.addEventListener('click', e => {
+  const b = e.target.closest('button');
+  if (b && e.detail > 0) b.blur();
+});
 // Songkarten: jeder Song in drei Fassungen (Flowkey/Simply-Piano-Prinzip), Sterne aus dem Kontrolle-Modus
 const STARS_KEY = 'nulltag-trainer-stars';
 let starMap;
@@ -891,8 +905,8 @@ try { starMap = JSON.parse(localStorage.getItem(STARS_KEY) || '{}'); } catch (e)
 function saveStars(){ try { localStorage.setItem(STARS_KEY, JSON.stringify(starMap)); } catch (e) {} }
 function openSong(s, ver){
   loadSong(s.title, s.notes, s.bpm);
-  version = ver;
-  document.getElementById('version').value = ver;
+  version = ['easy', 'normal', 'full'].includes(ver) ? ver : 'easy';
+  document.getElementById('version').value = version;
   rebuild(); go('trainer'); draw();
 }
 const COVERS = {
@@ -963,8 +977,9 @@ function renderStart(){
         sub = vl + ' · ' + ml + ' · Takte ' + (last.a + 1) + '–' + last.b;
         open = () => {
           openSong(s, last.version);
-          document.getElementById('mode').value = last.mode; mode = last.mode;
-          secStart = last.a; secEnd = last.b;
+          if (['listen', 'wait', 'check'].includes(last.mode)) { document.getElementById('mode').value = last.mode; mode = last.mode; }
+          secStart = Math.max(0, Math.min(last.a || 0, SONG.bars - 1));
+          secEnd = Math.max(secStart + 1, Math.min(last.b || 8, SONG.bars));
           rebuild(); updScore(); draw();
         };
       }
