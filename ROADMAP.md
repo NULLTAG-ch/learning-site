@@ -1,6 +1,6 @@
 # learn.nulltag.ch – Roadmap & Status
 
-Stand: 2026-07-19 · 16 PRs gemerged · Gesamt-Audit 36/36 gruen
+Stand: 2026-07-19 · 22 PRs gemerged · Gesamt-Audit gruen (36 Basis-Checks + 83 Feature-Checks)
 
 ## Erreicht (live auf learn.nulltag.ch)
 
@@ -11,6 +11,9 @@ Stand: 2026-07-19 · 16 PRs gemerged · Gesamt-Audit 36/36 gruen
   auf den Tonumfang des Songs
 - Klang: Salamander Grand Piano (15 Samples, selbst gehostet, CC BY 3.0), Synth-Fallback
 - Fingersatz-Berechnung (DP mit klassischen Regeln) in Noten + auf der Zieltaste
+- Notenschrift-Ansicht: Grand Staff oben im Trainer (Toggle «Noten», persistiert),
+  eigener leichter Renderer statt VexFlow (Single-File bleibt schlank), Vorzeichen
+  tonartabhaengig (`spellPitch`), Hilfslinien, Playhead, RH/LH-Farben
 - NULLTAG-Designsystem komplett (Tokens aus nulltag-cd, Claude-Design 1a umgesetzt)
 
 **Lernen**
@@ -23,7 +26,16 @@ Stand: 2026-07-19 · 16 PRs gemerged · Gesamt-Audit 36/36 gruen
 - Trainer-Presets (1 Klick, startet sofort): Anhoeren Original, Easy lernen,
   Lernschritt 1, Kontrolle 60%, Trainieren 50->100%
 - Auto-Tempo-Trainer: saubere Runde stuft +10% bis Zieltempo, Fehler-Takt-Loop
-- Tages-Session (Warm-up in Songtonart -> Lektion -> Song-Lernschritt) + Streak-Karte
+- Tages-Session (Warm-up in Songtonart -> Auffrischer -> Lektion -> Song-Lernschritt)
+  + Streak-Karte
+- Spaced Repetition: Lektions-/Sterne-Abschluesse setzen Zeitstempel
+  (`nulltag-review`), Intervalle 3/7/14 Tage, faellige Auffrischer (max. 2)
+  landen vorn in der Tages-Session, Startseite zeigt Anzahl
+- Gehoertraining im Analyse-Tab: 4 Levels (Intervalle I/II, Akkorde I/II),
+  10 Fragen/Runde, Bestwerte (`nulltag-ear`), zaehlt als Uebezeit/Streak,
+  Ergebnis mit «Auf der Klaviatur nachspielen» (Trainer-Drill)
+- Verlaufs-Statistik auf der Startseite: 14-Tage-Balken aus `nulltag-practice`,
+  heutiger Tag TIEFROT, Hover-Tooltips, aria-labels
 - Aufnahme & Vergleich: eigene Performance anhoeren, Overlay ueber Original,
   Timing-Abweichung in ms, Export als .mid
 - Analyse-Tab: MIDI hochladen -> Tonart (Krumhansl), Tonleiter, Stufenakkorde,
@@ -32,35 +44,37 @@ Stand: 2026-07-19 · 16 PRs gemerged · Gesamt-Audit 36/36 gruen
 
 **Infra**
 - GitHub Pages (branch-basiert, main, CNAME learn.nulltag.ch, .nojekyll)
+- PWA: `manifest.json`, Icons (192/512/maskable, NULLTAG-Stil), `sw.js`
+  (Navigation network-first, Assets cache-first, Demo-Videos ausgenommen) –
+  App installierbar, laeuft offline inkl. Samples.
+  WICHTIG: bei Asset-Aenderungen (z.B. neue Cover) die `CACHE`-Konstante in
+  `sw.js` hochzaehlen, sonst liefern installierte Clients alte Assets.
 - Demo-Videos: 16:9 (Startseite verlinkt) + 9:16 Social-Teaser (assets/demo/)
-- Testbarkeit: Playwright-Audits (zuletzt audit-final: 36 Checks)
+- Testbarkeit: Playwright-Audits (audit-final 36 Checks; Feature-Suites
+  test-ear 23, test-sr 15, test-stats 12, test-pwa 17, test-staff 16 – alle gruen)
 
 ## Offen / Todos
 
-1. **HTTPS-Zertifikat learn.nulltag.ch**: Provisionierung wurde neu angestossen
-   (CNAME neu gesetzt). Sobald aktiv: in Settings -> Pages «Enforce HTTPS» anhaken.
-   DNS ist verifiziert korrekt (CNAME -> nulltag-ch.github.io).
+1. **HTTPS-Zertifikat learn.nulltag.ch**: Sobald aktiv: in Settings -> Pages
+   «Enforce HTTPS» anhaken. DNS ist verifiziert korrekt (CNAME -> nulltag-ch.github.io).
 2. **4 Piano-Arrangements ausstehend**: Burn the Void, Fifteen Years,
    Pilze Plaene und Panik, Paper Kings (Export mit «Piano RH»/«Piano LH»-Tracks,
    Einbau je ein Durchlauf ueber die bestehende Pipeline).
 3. **Echte Cover** fuer 6 Songs (aktuell generierte Platzhalter im CINETEKK-Stil):
-   Dateien nach assets/covers/ + COVERS-Map in index.html.
+   Dateien nach assets/covers/ + COVERS-Map in index.html + `CACHE` in sw.js bumpen.
 4. **Higher Ground Meta pruefen**: Level 2 und c-Moll sind geschaetzt.
 
-## Naechste Features (priorisiert, recherchiert)
+## Naechste Features (Ideen)
 
-1. **Gehoertraining** (Ausbau Analyse-Tab): Intervalle/Akkorde hoeren und auf der
-   Klaviatur nachspielen, mit Levels und Streak-Anbindung.
-2. **Spaced Repetition fuer Lektionen/Songs**: Abgeschlossenes nach 3/7/14 Tagen
-   als «Auffrischen»-Baustein in die Tages-Session mischen (practiceDays +
-   doneSet sind vorhanden, nur Scheduling-Logik noetig).
-3. **Notenschrift-Ansicht** (VexFlow, groesserer Brocken): klassische Notation
-   parallel zu den fallenden Noten, umschaltbar.
-4. **PWA/Offline**: Manifest + Service Worker, App installierbar, Samples gecacht.
-5. **Verlaufs-Statistik**: Uebezeit/Genauigkeit ueber Zeit als Chart auf der
-   Startseite (Daten in localStorage bereits vorhanden).
-6. **Video-Pipeline pro Song**: Render-Skripte (scratchpad: render-video.js /
+1. **Video-Pipeline pro Song**: Render-Skripte (scratchpad: render-video.js /
    render-teaser.js) fuer alle Songs ausrollen, z.B. als Release-Begleitmaterial.
+2. **Gehoertraining ausbauen**: melodische Diktate (Tonfolge nachspielen),
+   Akkordfolgen hoeren und bestimmen, Levels an Streak koppeln.
+3. **Notenschrift vertiefen**: Notenhals/Balken, Pausen, Taktart-Anzeige;
+   optional VexFlow als getrennt geladenes Asset, falls volle Notation gewuenscht.
+4. **Statistik ausbauen**: Genauigkeit pro Song ueber Zeit, beste Streaks,
+   Wochenziel mit Fortschrittsring.
+5. **Lehrer-/Share-Modus**: Uebe-Stand als Link teilen (URL-Parameter, kein Backend).
 
 ## Architektur-Notizen fuer Weiterarbeit
 
@@ -69,5 +83,6 @@ Stand: 2026-07-19 · 16 PRs gemerged · Gesamt-Audit 36/36 gruen
 - Songs: `const SONGS = [...]`-Zeile (JSON, per Skript ersetzbar wie in PR #8/#11/#12).
 - Lektionen: LIBRARY-Array mit Generatoren (mkLine/updown/scaleLesson), optional `split`.
 - localStorage-Keys: nulltag-trainer-done, nulltag-trainer-stars,
-  nulltag-trainer-last, nulltag-practice.
+  nulltag-trainer-last, nulltag-practice, nulltag-review, nulltag-ear, nulltag-staff.
 - Tests: Playwright gegen lokalen http.server (Samples brauchen HTTP, nicht file://).
+  Fuer SW-/Offline-Tests frisches Browser-Profil verwenden (Cache haengt sonst nach).
