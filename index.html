@@ -115,6 +115,10 @@ main { flex:1; overflow:auto; }
 #hint a:hover { text-decoration:underline; text-underline-offset:3px; }
 /* Trainer */
 #view-trainer { display:flex; flex-direction:column; height:100%; }
+#tpresets { display:flex; gap:8px; flex-wrap:wrap; align-items:center; padding:10px 16px 2px; }
+#tpresets .plabel { font-family:var(--mono); font-size:10.5px; letter-spacing:0.18em; text-transform:uppercase; color:var(--dim); }
+#tpresets button { background:var(--panel2); color:var(--bone); border:1px solid var(--border); border-radius:4px; padding:7px 13px; font-family:var(--mono); font-size:11px; letter-spacing:0.08em; text-transform:uppercase; cursor:pointer; transition:border-color 150ms var(--ease); }
+#tpresets button:hover { border-color:var(--tiefrot); }
 #tcontrols { padding:8px 16px; display:flex; gap:8px; flex-wrap:wrap; align-items:center; border-bottom:1px solid var(--border); }
 #tcontrols button, #tcontrols select { background:var(--panel); color:var(--bone); border:1px solid var(--border); border-radius:4px; padding:7px 12px; font-family:var(--mono); font-size:11px; letter-spacing:0.06em; text-transform:uppercase; cursor:pointer; transition:border-color 150ms var(--ease), background 150ms var(--ease); }
 #tcontrols button:hover { border-color:var(--border-warm); }
@@ -217,6 +221,13 @@ canvas { display:block; width:100%; flex:1; touch-action:none; cursor:pointer; }
   </div>
   <!-- TRAINER -->
   <div id="view-trainer" class="hide">
+    <div id="tpresets">
+      <span class="plabel">Presets</span>
+      <button data-preset="listen">▶ Anhören Original</button>
+      <button data-preset="easy">Easy lernen</button>
+      <button data-preset="step">Lernschritt 1</button>
+      <button data-preset="check">Kontrolle 60%</button>
+    </div>
     <div id="tcontrols">
       <button id="midibtn">MIDI-Keyboard verbinden</button>
       <div class="grp"><label>Modus</label>
@@ -1084,6 +1095,49 @@ window.addEventListener('drop', e => {
 // ================= UI =================
 document.getElementById('midibtn').onclick = midiConnect;
 document.getElementById('midipill').onclick = midiConnect;
+// ================= Trainer-Presets: ein Klick stellt alles ein und startet =================
+function syncToggleUi(){
+  document.getElementById('bRH').classList.toggle('active', playRH);
+  document.getElementById('bLH').classList.toggle('lhactive', playLH);
+  const lb = document.getElementById('loop');
+  lb.textContent = looping ? 'Loop an' : 'Loop aus';
+  lb.classList.toggle('active', looping);
+}
+function applyPreset(p){
+  if (!SONG) return;
+  setPlaying(false);
+  const easyV = currentLesson ? 'full' : 'easy';   // Lektionen haben nur die volle Fassung
+  const setSec = (a, b) => {
+    secStart = a; secEnd = Math.min(b, SONG.bars);
+    const sel = document.getElementById('section');
+    sel.value = a + '-' + secEnd;
+    if (sel.value !== a + '-' + secEnd) sel.value = '';
+    document.getElementById('step').value = '';
+  };
+  playRH = true; playLH = true;
+  if (p === 'listen') {
+    version = 'full'; mode = 'listen'; tempoPct = 100; looping = false;
+    setSec(0, SONG.bars);
+  } else if (p === 'easy') {
+    version = easyV; mode = 'wait'; tempoPct = 50; looping = true;
+    setSec(0, 8);
+  } else if (p === 'step') {
+    version = easyV; mode = 'wait'; tempoPct = 50; looping = true;
+    const st = SONG.steps[0];
+    if (st) { secStart = st.a - 1; secEnd = st.b; document.getElementById('step').value = (st.a - 1) + '-' + st.b; document.getElementById('section').value = ''; }
+    else setSec(0, 8);
+  } else if (p === 'check') {
+    version = easyV; mode = 'check'; tempoPct = 60; looping = true;
+    setSec(0, 8);
+  }
+  document.getElementById('version').value = version;
+  document.getElementById('mode').value = mode;
+  document.getElementById('tempo').value = tempoPct; updTempo();
+  syncToggleUi();
+  rebuild(); updScore(); draw();
+  setPlaying(true);
+}
+document.querySelectorAll('#tpresets button[data-preset]').forEach(b => b.onclick = () => applyPreset(b.dataset.preset));
 document.getElementById('mode').onchange = e => { mode = e.target.value; setPlaying(false); rebuild(); updScore(); draw(); };
 document.getElementById('play').onclick = () => setPlaying(!playing);
 document.getElementById('version').onchange = e => { version = e.target.value; setPlaying(false); rebuild(); draw(); };
