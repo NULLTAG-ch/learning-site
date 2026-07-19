@@ -55,8 +55,8 @@ Stand: 2026-07-19 · 22 PRs gemerged · Gesamt-Audit gruen (36 Basis-Checks + 83
 
 ## Offen / Todos
 
-1. **HTTPS-Zertifikat learn.nulltag.ch**: Sobald aktiv: in Settings -> Pages
-   «Enforce HTTPS» anhaken. DNS ist verifiziert korrekt (CNAME -> nulltag-ch.github.io).
+1. ~~HTTPS-Zertifikat learn.nulltag.ch~~ ERLEDIGT 2026-07-19: Zertifikat aktiv,
+   «Enforce HTTPS» ist gesetzt – http leitet auf https um, Web-MIDI laeuft ueberall.
 2. **4 Piano-Arrangements ausstehend**: Burn the Void, Fifteen Years,
    Pilze Plaene und Panik, Paper Kings (Export mit «Piano RH»/«Piano LH»-Tracks,
    Einbau je ein Durchlauf ueber die bestehende Pipeline).
