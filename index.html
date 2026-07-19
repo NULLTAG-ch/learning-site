@@ -725,7 +725,7 @@ function keyX(p, g){
 function draw(){
   const dpr = window.devicePixelRatio || 1;
   const r = cv.getBoundingClientRect();
-  if (cv.width !== Math.round(r.width * dpr)) { cv.width = Math.round(r.width * dpr); cv.height = Math.round(r.height * dpr); }
+  if (cv.width !== Math.round(r.width * dpr) || cv.height !== Math.round(r.height * dpr)) { cv.width = Math.round(r.width * dpr); cv.height = Math.round(r.height * dpr); }
   const g = geom(), H = cv.height, KEY_H = Math.min(150 * dpr, H * 0.3), FALL = H - KEY_H;
   ctx.fillStyle = '#0a0a0a'; ctx.fillRect(0, 0, g.W, H);
   const pxPerSec = FALL / 2.6;
