@@ -54,6 +54,16 @@ main { flex:1; overflow:auto; }
 .resume-meta { font-family:var(--mono); font-size:10px; letter-spacing:0.14em; text-transform:uppercase; color:var(--dim); margin-top:4px; }
 .kurs-card { flex:1; min-width:240px; background:var(--panel); border:1px solid var(--border); border-radius:6px; padding:16px 20px; box-shadow:0 1px 0 rgba(255,255,255,0.04) inset; cursor:pointer; transition:border-color 150ms var(--ease); }
 .kurs-card:hover { border-color:var(--tiefrot); }
+.statcard { cursor:default; }
+.statcard:hover { border-color:var(--border); }
+.statbars { display:flex; gap:2px; align-items:flex-end; height:46px; margin-top:10px; }
+.sbarw { flex:1; position:relative; display:flex; align-items:flex-end; height:100%; }
+.sbarw .sbar { width:100%; min-height:2px; background:var(--bone); border-radius:2px 2px 0 0; opacity:0.85; transition:opacity 150ms var(--ease); }
+.sbarw.zero .sbar { background:var(--border); }
+.sbarw.today .sbar { background:var(--tiefrot); opacity:1; }
+.sbarw:hover .sbar { opacity:1; }
+.sbarw .tip { display:none; position:absolute; bottom:calc(100% + 6px); left:50%; transform:translateX(-50%); white-space:nowrap; background:var(--panel2); border:1px solid var(--border); border-radius:4px; padding:4px 8px; font-family:var(--mono); font-size:10px; letter-spacing:0.06em; color:var(--bone); z-index:3; pointer-events:none; }
+.sbarw:hover .tip { display:block; }
 .segbar { display:flex; gap:4px; margin-top:10px; }
 .segbar div { height:3px; flex:1; background:var(--border); }
 .segbar div.on { background:var(--bone); }
@@ -1836,6 +1846,33 @@ function renderStart(){
     (dueReviews().length ? ' · ' + dueReviews().length + ' zum Auffrischen' : '') + ' · Klick = 10-Min.-Session</div>';
   st.onclick = () => startSession();
   row.appendChild(st);
+  // Verlaufs-Statistik: Uebezeit der letzten 14 Tage
+  const WD = ['So','Mo','Di','Mi','Do','Fr','Sa'];
+  const days = Array.from({ length: 14 }, (_, i) => {
+    const off = 13 - i;
+    const d = new Date(); d.setDate(d.getDate() - off);
+    return { min: Math.round(practiceDays[dayKey(off)] || 0), today: off === 0,
+      label: WD[d.getDay()] + ' ' + d.getDate() + '.' + (d.getMonth() + 1) + '.' };
+  });
+  const tot = days.reduce((a, d) => a + d.min, 0);
+  const max = Math.max(1, ...days.map(d => d.min));
+  const sc = document.createElement('div');
+  sc.className = 'kurs-card statcard';
+  sc.innerHTML = '<div class="resume-eyebrow">Verlauf</div><div class="resume-title">' + tot +
+    ' Min.</div><div class="statbars" id="statchart"></div><div class="resume-meta">' +
+    (tot ? 'Letzte 14 Tage · Ø ' + Math.round(tot / 14 * 10) / 10 + ' Min. pro Tag'
+         : 'Noch keine Übezeit – Klick auf die Streak-Karte startet eine Session') + '</div>';
+  const bx = sc.querySelector('#statchart');
+  days.forEach(d => {
+    const w = document.createElement('div');
+    w.className = 'sbarw' + (d.today ? ' today' : '') + (d.min ? '' : ' zero');
+    w.setAttribute('aria-label', d.label + ' · ' + d.min + ' Min.');
+    w.innerHTML = '<span class="tip"></span><div class="sbar"></div>';
+    w.querySelector('.tip').textContent = d.label + ' · ' + d.min + ' Min.';
+    w.querySelector('.sbar').style.height = Math.max(4, d.min / max * 100) + '%';
+    bx.appendChild(w);
+  });
+  row.appendChild(sc);
 }
 renderStart();
 // Bibliothek initial rendern
