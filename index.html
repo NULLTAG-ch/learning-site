@@ -125,6 +125,7 @@ main { flex:1; overflow:auto; }
 #tcontrols button.active { background:var(--rhd); border-color:var(--rh); }
 #tcontrols button.lhactive { background:var(--lhd); border-color:var(--lh); }
 #tcontrols button.okactive { background:#14201a; border-color:#4a8a4a; }
+#tcontrols button.recon { background:var(--tiefrot-dim); border-color:var(--tiefrot); }
 #tcontrols button#play { min-width:96px; font-weight:700; letter-spacing:0.18em; background:transparent; border-color:var(--tiefrot); color:var(--bone); }
 #tcontrols button#play:hover { background:var(--tiefrot); color:var(--void); }
 .grp { display:flex; gap:5px; align-items:center; }
@@ -227,6 +228,7 @@ canvas { display:block; width:100%; flex:1; touch-action:none; cursor:pointer; }
       <button data-preset="easy">Easy lernen</button>
       <button data-preset="step">Lernschritt 1</button>
       <button data-preset="check">Kontrolle 60%</button>
+      <button data-preset="train">Trainieren 50→100%</button>
     </div>
     <div id="tcontrols">
       <button id="midibtn">MIDI-Keyboard verbinden</button>
@@ -248,6 +250,8 @@ canvas { display:block; width:100%; flex:1; touch-action:none; cursor:pointer; }
       <button id="metro">Metronom</button>
       <button id="names" class="active">Notennamen</button>
       <button id="fing" class="active">Fingersatz</button>
+      <button id="autot">Auto-Tempo</button>
+      <button id="rec">● Aufnahme</button>
     </div>
     <canvas id="cv"></canvas>
     <div id="tstatus">
@@ -386,7 +390,11 @@ function lessonDone(){
   const total = ALL_LESSONS.length;
   document.getElementById('ldonemeta').textContent = 'Lektion abgeschlossen · ' + doneSet.size + ' / ' + total;
   const nb = document.getElementById('ldnext');
-  if (nxt) { nb.textContent = 'Nächste: ' + nxt.title; nb.classList.remove('hide'); nb.onclick = () => { hideLdone(); openLesson(nxt.id); }; }
+  if (sessionActive && sessionQueue.length) {
+    nb.textContent = 'Weiter: ' + sessionQueue[0].title;
+    nb.classList.remove('hide');
+    nb.onclick = () => { hideLdone(); sessionAdvance(); };
+  } else if (nxt) { nb.textContent = 'Nächste: ' + nxt.title; nb.classList.remove('hide'); nb.onclick = () => { hideLdone(); openLesson(nxt.id); }; }
   else nb.classList.add('hide');
   document.getElementById('ldone').classList.remove('hide');
 }
@@ -611,6 +619,9 @@ let LOW = 21, HIGH = 108;
 let version = 'easy', notes = [], secStart = 0, secEnd = 8;
 let playing = false, pos = -4, tempoPct = 50, playRH = true, playLH = true, looping = true;
 let mode = 'listen', octTolerant = true, metro = false, showNames = true, showFinger = true;
+let autoTempo = false, barErrs = {};
+let recArm = false, recActive = false, recEvents = [], recNotes = [], recPerfOff = 0, recSpb = 0.6, showRec = false;
+let sessionQueue = [], sessionActive = false;
 let ac = null, scheduled = [], rafId = null, timing = null;
 let midiIn = null, userDown = new Set(), flash = {};
 let hits = 0, misses = 0, matched = new Set();
@@ -728,7 +739,7 @@ function buildGroups(){
   groups = [...m.entries()].sort((a, b) => a[0] - b[0]).map(([t, ns]) => ({ t, ns }));
   gIdx = 0; waitPressed.clear();
 }
-function resetScore(){ hits = 0; misses = 0; matched = new Set(); updScore(); }
+function resetScore(){ hits = 0; misses = 0; matched = new Set(); barErrs = {}; updScore(); }
 function updScore(){
   const s = document.getElementById('score');
   if (mode === 'check') s.textContent = 'Treffer: ' + hits + ' · daneben: ' + misses;
@@ -790,6 +801,20 @@ function draw(){
         ctx.fillText(nm, x + w / 2 - ctx.measureText(nm).width / 2, Math.min(FALL, yB) - 15 * dpr);
       }
     }
+  }
+  if (showRec && recNotes.length) {
+    // eigene Aufnahme als Bone-Umrisse ueber den Originalnoten
+    ctx.strokeStyle = '#e8e3da'; ctx.globalAlpha = 0.8;
+    for (const [s, d, p] of recNotes) {
+      const startS = (s - pos) * spb(), endS = (s + d - pos) * spb();
+      const pf = fold(p);
+      const yB = FALL + (-startS) * pxPerSec, yT = FALL + (-endS) * pxPerSec;
+      if (yB < 0 || yT > FALL) continue;
+      const [x, w] = keyX(pf, g);
+      ctx.beginPath(); ctx.roundRect(x + 3, Math.max(0, yT), w - 6, Math.max(2, Math.min(FALL, yB) - Math.max(0, yT)), 3 * dpr);
+      ctx.stroke();
+    }
+    ctx.globalAlpha = 1;
   }
   ctx.fillStyle = '#050505'; ctx.fillRect(0, FALL, g.W, KEY_H);
   const now = performance.now();
@@ -906,7 +931,31 @@ function loopFrame(){
           if ((starMap[k] || 0) < stars) { starMap[k] = stars; saveStars(); }
           msg += ' ' + '★'.repeat(stars) + '☆'.repeat(3 - stars);
         }
-        document.getElementById('hint').textContent = msg;
+        // verpasste Noten den Takten zuschreiben
+        for (const n of activeNotes()) if (!matched.has(n)) { const b = Math.floor(n[0] / 4) + 1; barErrs[b] = (barErrs[b] || 0) + 1; }
+        const failBars = Object.entries(barErrs).sort((a, b) => b[1] - a[1]);
+        if (autoTempo && cov >= 0.85 && acc >= 0.85 && tempoPct < 100) {
+          tempoPct = Math.min(100, tempoPct + 10);
+          document.getElementById('tempo').value = tempoPct; updTempo();
+          msg += ' · Sauber! Tempo rauf: ' + tempoPct + ' %';
+        } else if (autoTempo && tempoPct >= 100 && cov >= 0.85 && acc >= 0.85) {
+          msg += ' · Zieltempo erreicht ✓';
+        }
+        const h = document.getElementById('hint');
+        h.textContent = msg + ' ';
+        if (stars < 3 && failBars.length && failBars[0][1] >= 2) {
+          const worst = parseInt(failBars[0][0], 10);
+          const a = document.createElement('a');
+          a.href = '#';
+          a.textContent = 'Takt ' + worst + ' loopen →';
+          a.onclick = e => {
+            e.preventDefault(); setPlaying(false);
+            secStart = Math.max(0, worst - 1); secEnd = Math.min(SONG.bars, worst + 1);
+            document.getElementById('section').value = ''; document.getElementById('step').value = '';
+            looping = true; syncToggleUi(); rebuild(); draw(); setPlaying(true);
+          };
+          h.appendChild(a);
+        }
         if (currentLesson && tot > 0 && hits >= Math.ceil(tot * 0.8) && misses <= Math.ceil(tot * 0.25)) { lessonDone(); return; }
       }
       if (looping) { timing = schedule(); pos = secStart * 4 - 4; resetScore(); }
@@ -919,13 +968,15 @@ function loopFrame(){
 function setPlaying(v){
   playing = v;
   document.getElementById('play').textContent = v ? '⏸ Stopp' : '▶ Start';
+  if (v) { if (playStartTs === null) playStartTs = Date.now(); }
+  else if (playStartTs !== null) { addPractice((Date.now() - playStartTs) / 60000); playStartTs = null; }
   if (v) {
     ensureAC();
     if (typeof saveLast === 'function') saveLast();
     if (mode === 'wait') { buildGroups(); pos = groups.length ? groups[0].t : secStart * 4; updScore(); }
-    else { timing = schedule(); pos = secStart * 4 - 4; resetScore(); }
+    else { timing = schedule(); pos = secStart * 4 - 4; resetScore(); if (recArm) recStart(); }
     rafId = requestAnimationFrame(loopFrame);
-  } else { stopAudio(); if (rafId) cancelAnimationFrame(rafId); draw(); }
+  } else { stopAudio(); if (rafId) cancelAnimationFrame(rafId); recStop(); draw(); }
 }
 function waitAdvance(){
   const g = groups[gIdx];
@@ -935,6 +986,8 @@ function waitAdvance(){
   if (gIdx >= groups.length) {
     if (currentLesson) {
       lessonDone();   // stoppt und zeigt das Abschluss-Menue - Lektionen loopen nie
+    } else if (sessionActive) {
+      showSessionOverlay();   // Tages-Session: weiter zum naechsten Baustein
     } else {
       document.getElementById('hint').textContent = 'Abschnitt geschafft!';
       if (looping) gIdx = 0; else { setPlaying(false); }
@@ -947,9 +1000,85 @@ function matchPitch(played, expected){
   return octTolerant ? (played % 12) === (expected % 12) : played === fold(expected);
 }
 function onNote(cmd, p, vel){
+  if (recActive) recEvents.push({ t: performance.now(), cmd, p, v: vel });
   if (cmd === 0x90 && vel > 0) { userDown.add(fold(p)); handlePress(p); }
   else if (cmd === 0x80 || (cmd === 0x90 && vel === 0)) userDown.delete(fold(p));
   if (!playing) draw();
+}
+// ================= Aufnahme & Vergleich =================
+function recStart(){
+  recEvents = []; recNotes = []; showRec = false;
+  recActive = true;
+  recPerfOff = performance.now() + (timing.off - ac.currentTime) * 1000;
+  recSpb = timing.s;
+}
+function recStop(){
+  if (!recActive) return;
+  recActive = false;
+  // Events zu Noten paaren: [beat, dur, pitch, vel]
+  const open = {};
+  for (const e of recEvents) {
+    const beat = (e.t - recPerfOff) / 1000 / recSpb + secStart * 4;
+    if (e.cmd === 0x90 && e.v > 0) (open[e.p] = open[e.p] || []).push({ beat, v: e.v });
+    else if (open[e.p] && open[e.p].length) {
+      const o = open[e.p].shift();
+      recNotes.push([o.beat, Math.max(0.25, beat - o.beat), e.p, o.v]);
+    }
+  }
+  for (const p in open) for (const o of open[p]) recNotes.push([o.beat, 0.5, +p, o.v]);
+  recNotes.sort((a, b) => a[0] - b[0]);
+  if (!recNotes.length) return;
+  // Timing-Statistik: naechstliegende Originalnote gleicher Taste
+  const diffs = [];
+  for (const rn of recNotes) {
+    let best = null, bd = 1e9;
+    for (const n of activeNotes()) {
+      if (fold(n[2]) !== fold(rn[2])) continue;
+      const d = Math.abs(n[0] - rn[0]);
+      if (d < bd) { bd = d; best = n; }
+    }
+    if (best && bd <= 1) diffs.push(bd * recSpb * 1000);
+  }
+  const avg = diffs.length ? Math.round(diffs.reduce((a, x) => a + x, 0) / diffs.length) : null;
+  const h = document.getElementById('hint');
+  h.textContent = 'Aufnahme: ' + recNotes.length + ' Noten' + (avg !== null ? ' · Ø Timing-Abweichung ' + avg + ' ms' : '') + ' ';
+  const mk = (label, fn) => { const a = document.createElement('a'); a.href = '#'; a.textContent = label; a.style.marginRight = '12px'; a.onclick = e => { e.preventDefault(); fn(); }; h.appendChild(a); };
+  mk('▶ Anhören', recPlay);
+  mk('Vergleich ein/aus', () => { showRec = !showRec; draw(); });
+  mk('.mid speichern', recExport);
+}
+function recPlay(){
+  ensureAC();
+  const t0 = ac.currentTime + 0.2, base = recNotes[0][0];
+  for (const [b, d, p, v] of recNotes) tone(t0 + (b - base) * recSpb, d * recSpb, p, 0.1 + (v / 127) * 0.25);
+}
+function recExport(){
+  const tpb = 480, spb = recSpb;
+  const bytes = [];
+  const str = s => { for (const c of s) bytes.push(c.charCodeAt(0)); };
+  const u32 = n => bytes.push(n >>> 24 & 255, n >>> 16 & 255, n >>> 8 & 255, n & 255);
+  const u16 = n => bytes.push(n >>> 8 & 255, n & 255);
+  str('MThd'); u32(6); u16(0); u16(1); u16(tpb);
+  const ev = [];
+  const base = recNotes[0][0];
+  for (const [b, d, p, v] of recNotes) {
+    ev.push({ tick: Math.round((b - base) * tpb), msg: [0x90, p, Math.max(1, v)] });
+    ev.push({ tick: Math.round((b - base + d) * tpb), msg: [0x80, p, 0] });
+  }
+  ev.sort((a, b) => a.tick - b.tick);
+  const tr = [];
+  const vlq = n => { const out = [n & 0x7f]; while (n >>= 7) out.unshift(n & 0x7f | 0x80); return out; };
+  tr.push(0, 0xff, 0x51, 3, ...(m => [m >>> 16 & 255, m >>> 8 & 255, m & 255])(Math.round(spb * 1e6)));
+  let last = 0;
+  for (const e of ev) { tr.push(...vlq(e.tick - last), ...e.msg); last = e.tick; }
+  tr.push(0, 0xff, 0x2f, 0);
+  str('MTrk'); u32(tr.length); bytes.push(...tr);
+  const blob = new Blob([new Uint8Array(bytes)], { type: 'audio/midi' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = (SONG ? SONG.name.replace(/\W+/g, '_') : 'aufnahme') + '_aufnahme.mid';
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 5000);
 }
 function handlePress(p){
   const now = performance.now();
@@ -964,7 +1093,11 @@ function handlePress(p){
   } else if (mode === 'check' && playing) {
     const cand = activeNotes().find(n => !matched.has(n) && matchPitch(p, n[2]) && Math.abs(n[0] - pos) <= 0.6);
     if (cand) { matched.add(cand); hits++; flash[fold(cand[2])] = { ok: true, until: now + 300 }; }
-    else { misses++; flash[fold(p)] = { ok: false, until: now + 300 }; }
+    else {
+      misses++; flash[fold(p)] = { ok: false, until: now + 300 };
+      const bar = Math.floor(Math.max(0, pos) / 4) + 1;
+      barErrs[bar] = (barErrs[bar] || 0) + 1;
+    }
     updScore();
   }
 }
@@ -1129,7 +1262,12 @@ function applyPreset(p){
   } else if (p === 'check') {
     version = easyV; mode = 'check'; tempoPct = 60; looping = true;
     setSec(0, 8);
+  } else if (p === 'train') {
+    version = easyV; mode = 'check'; tempoPct = 50; looping = true;
+    autoTempo = true; document.getElementById('autot').classList.add('okactive');
+    setSec(0, 8);
   }
+  if (p !== 'train' && autoTempo) { autoTempo = false; document.getElementById('autot').classList.remove('okactive'); }
   document.getElementById('version').value = version;
   document.getElementById('mode').value = mode;
   document.getElementById('tempo').value = tempoPct; updTempo();
@@ -1161,6 +1299,8 @@ document.getElementById('bLH').onclick = e => { playLH = !playLH; e.target.class
 document.getElementById('loop').onclick = e => { looping = !looping; e.target.textContent = looping ? 'Loop an' : 'Loop aus'; e.target.classList.toggle('active'); };
 document.getElementById('oct').onclick = e => { octTolerant = !octTolerant; e.target.classList.toggle('okactive'); };
 document.getElementById('metro').onclick = e => { metro = !metro; e.target.classList.toggle('active'); if (playing && mode !== 'wait') setPlaying(false); };
+document.getElementById('autot').onclick = e => { autoTempo = !autoTempo; e.target.classList.toggle('okactive'); };
+document.getElementById('rec').onclick = e => { recArm = !recArm; e.target.classList.toggle('recon'); };
 document.getElementById('names').onclick = e => { showNames = !showNames; e.target.classList.toggle('active'); draw(); };
 document.getElementById('fing').onclick = e => { showFinger = !showFinger; e.target.classList.toggle('active'); draw(); };
 window.onresize = () => draw();
@@ -1398,6 +1538,63 @@ function renderSongs(){
 }
 renderSongs();
 // ---------- Weiter-ueben + Bibliothek-Fortschritt auf der Startseite (Design 1a) ----------
+// ---------- Uebezeit, Streak + Tages-Session ----------
+const PRACTICE_KEY = 'nulltag-practice';
+let practiceDays;
+try { practiceDays = JSON.parse(localStorage.getItem(PRACTICE_KEY) || '{}'); } catch (e) { practiceDays = {}; }
+let playStartTs = null;
+function dayKey(offset){ const d = new Date(); d.setDate(d.getDate() - (offset || 0)); return d.toISOString().slice(0, 10); }
+function addPractice(min){
+  const k = dayKey(0);
+  practiceDays[k] = (practiceDays[k] || 0) + min;
+  try { localStorage.setItem(PRACTICE_KEY, JSON.stringify(practiceDays)); } catch (e) {}
+}
+function streakDays(){
+  let s = 0;
+  for (let i = 0; i < 999; i++) {
+    if (practiceDays[dayKey(i)] > 0) s++;
+    else if (i === 0) continue;   // heute noch nicht geuebt bricht den Streak nicht
+    else break;
+  }
+  return s;
+}
+function startSession(){
+  sessionActive = true;
+  sessionQueue = [];
+  // Baustein 2: naechste offene Lektion
+  const nl = ALL_LESSONS.find(l => !doneSet.has(l.id));
+  if (nl) sessionQueue.push({ title: 'Lektion: ' + nl.title, open: () => openLesson(nl.id) });
+  // Baustein 3: Lernschritt des zuletzt geuebten Songs (oder Heat Death)
+  let s = SONGS[0];
+  try { const last = JSON.parse(localStorage.getItem(LAST_KEY) || 'null'); if (last && last.kind === 'song') s = SONGS.find(x => x.title === last.ref) || s; } catch (e) {}
+  sessionQueue.push({ title: 'Song: ' + s.title + ' (Lernschritt)', open: () => { openSong(s, 'easy'); applyPreset('step'); } });
+  // Baustein 1 startet sofort: Warm-up-Tonleiter in der Tonart des Songs
+  const key = detectKey(s.notes);
+  const rootPitch = pcToPitch(key.root, 60);
+  const steps = key.minor ? [0,2,3,5,7,8,10,12] : [0,2,4,5,7,9,11,12];
+  openDrill('Warm-up: Tonleiter ' + key.label, scaleLesson(rootPitch, steps), 70);
+}
+function sessionAdvance(){
+  const nxt = sessionQueue.shift();
+  if (nxt) nxt.open();
+}
+function showSessionOverlay(){
+  setPlaying(false);
+  document.getElementById('ldonetitle').textContent = SONG ? SONG.name : '';
+  document.getElementById('ldonemeta').textContent = 'Geschafft · Tages-Session';
+  const nb = document.getElementById('ldnext');
+  if (sessionQueue.length) {
+    nb.textContent = 'Weiter: ' + sessionQueue[0].title;
+    nb.classList.remove('hide');
+    nb.onclick = () => { hideLdone(); sessionAdvance(); };
+  } else {
+    sessionActive = false;
+    nb.textContent = 'Session geschafft – zur Startseite';
+    nb.classList.remove('hide');
+    nb.onclick = () => { hideLdone(); go('start'); };
+  }
+  document.getElementById('ldone').classList.remove('hide');
+}
 const LAST_KEY = 'nulltag-trainer-last';
 function saveLast(){
   if (!SONG) return;
@@ -1459,6 +1656,16 @@ function renderStart(){
   k.querySelector('#kursnext').textContent = nxt ? 'Nächste: ' + nxt.title : 'Alle abgeschlossen';
   k.onclick = () => go('bib');
   row.appendChild(k);
+  // Streak + Tages-Session
+  const st = document.createElement('div');
+  st.className = 'kurs-card';
+  const todayMin = Math.round(practiceDays[dayKey(0)] || 0);
+  const week = Array.from({length: 7}, (_, i) => practiceDays[dayKey(6 - i)] > 0);
+  st.innerHTML = '<div class="resume-eyebrow">Streak</div><div class="resume-title">' + streakDays() + ' Tage</div>' +
+    '<div class="segbar">' + week.map(w => '<div class="' + (w ? 'on' : '') + '"></div>').join('') + '</div>' +
+    '<div class="resume-meta">Heute: ' + todayMin + ' Min. · Klick = 10-Min.-Session</div>';
+  st.onclick = () => startSession();
+  row.appendChild(st);
 }
 renderStart();
 // Bibliothek initial rendern
