@@ -398,6 +398,7 @@ function openLesson(id){
 function lessonDone(){
   if (!currentLesson) return;
   if (!doneSet.has(currentLesson)) { doneSet.add(currentLesson); saveDone(); }
+  reviewDone('lesson|' + currentLesson);
   const i = ALL_LESSONS.findIndex(l => l.id === currentLesson);
   const les = ALL_LESSONS[i], nxt = ALL_LESSONS[i + 1];
   setPlaying(false);
@@ -947,6 +948,7 @@ function loopFrame(){
         if (!currentLesson && stars) {
           const k = SONG.name + '|' + version;
           if ((starMap[k] || 0) < stars) { starMap[k] = stars; saveStars(); }
+          reviewDone('song|' + SONG.name + '|' + version);
           msg += ' ' + '★'.repeat(stars) + '☆'.repeat(3 - stars);
         }
         // verpasste Noten den Takten zuschreiben
@@ -1693,9 +1695,40 @@ function streakDays(){
   }
   return s;
 }
+// ---------- Spaced Repetition: Auffrischen nach 3/7/14 Tagen ----------
+const REVIEW_KEY = 'nulltag-review';
+const REVIEW_IVL = [3, 7, 14];
+let reviewMap = {};
+try { reviewMap = JSON.parse(localStorage.getItem(REVIEW_KEY) || '{}'); } catch (e) { reviewMap = {}; }
+function daysSince(d){ return Math.round((Date.parse(dayKey(0)) - Date.parse(d)) / 86400000); }
+function reviewIsDue(r){ return daysSince(r.d) >= REVIEW_IVL[Math.min(r.n, REVIEW_IVL.length - 1)]; }
+function reviewDone(id){
+  const r = reviewMap[id];
+  const step = r && reviewIsDue(r) ? 1 : 0;
+  reviewMap[id] = { d: dayKey(0), n: r ? Math.min(r.n + step, REVIEW_IVL.length - 1) : 0 };
+  try { localStorage.setItem(REVIEW_KEY, JSON.stringify(reviewMap)); } catch (e) {}
+}
+function dueReviews(){
+  const out = [];
+  for (const [id, r] of Object.entries(reviewMap)) {
+    if (!reviewIsDue(r)) continue;
+    const [kind, a, b] = id.split('|');
+    if (kind === 'lesson') {
+      const l = ALL_LESSONS.find(x => x.id === a);
+      if (l && doneSet.has(l.id)) out.push({ id, title: 'Auffrischen: ' + l.title, open: () => openLesson(l.id) });
+    } else if (kind === 'song') {
+      const s = SONGS.find(x => x.title === a);
+      if (s) out.push({ id, title: 'Auffrischen: ' + s.title + ' (' + ({ easy: 'Easy', normal: 'Normal', full: 'Pro' }[b] || b) + ')',
+        open: () => { openSong(s, b); applyPreset('check'); } });
+    }
+  }
+  return out;
+}
 function startSession(){
   sessionActive = true;
   sessionQueue = [];
+  // Baustein 1b: faellige Auffrischer (Spaced Repetition, max. 2 pro Session)
+  dueReviews().slice(0, 2).forEach(it => sessionQueue.push(it));
   // Baustein 2: naechste offene Lektion
   const nl = ALL_LESSONS.find(l => !doneSet.has(l.id));
   if (nl) sessionQueue.push({ title: 'Lektion: ' + nl.title, open: () => openLesson(nl.id) });
@@ -1799,7 +1832,8 @@ function renderStart(){
   const week = Array.from({length: 7}, (_, i) => practiceDays[dayKey(6 - i)] > 0);
   st.innerHTML = '<div class="resume-eyebrow">Streak</div><div class="resume-title">' + streakDays() + ' Tage</div>' +
     '<div class="segbar">' + week.map(w => '<div class="' + (w ? 'on' : '') + '"></div>').join('') + '</div>' +
-    '<div class="resume-meta">Heute: ' + todayMin + ' Min. · Klick = 10-Min.-Session</div>';
+    '<div class="resume-meta">Heute: ' + todayMin + ' Min.' +
+    (dueReviews().length ? ' · ' + dueReviews().length + ' zum Auffrischen' : '') + ' · Klick = 10-Min.-Session</div>';
   st.onclick = () => startSession();
   row.appendChild(st);
 }
