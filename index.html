@@ -3,67 +3,96 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>learn.nulltag.ch – Piano Trainer</title>
+<title>learn.nulltag.ch – NULLTAG Piano Trainer</title>
+<meta name="description" content="Klavier lernen mit NULLTAG – alle Songs als interaktive Lernversionen: fallende Noten, Grundkurs, Web-MIDI-Support und MIDI-Import. Läuft komplett im Browser.">
+<meta name="theme-color" content="#0a0a0a">
+<meta property="og:title" content="learn.nulltag.ch – NULLTAG Piano Trainer">
+<meta property="og:description" content="Klavier lernen mit NULLTAG – fallende Noten, Warte-Modus, Web-MIDI. Kein Konto, keine Installation.">
+<meta property="og:url" content="https://learn.nulltag.ch/">
+<meta property="og:type" content="website">
+<link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2064%2064'%3E%3Crect%20width='64'%20height='64'%20fill='%230a0a0a'/%3E%3Ctext%20x='32'%20y='42'%20font-family='monospace'%20font-size='34'%20font-weight='700'%20fill='%23e8e3da'%20text-anchor='middle'%3EN%3C/text%3E%3Crect%20x='20'%20y='50'%20width='24'%20height='4'%20fill='%23ff2a55'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
 <style>
-:root { --rh:#40c8dc; --rhd:#1e96aa; --lh:#f0a046; --lhd:#be6e1e; --ok:#4cd964; --bad:#ff5a5a;
-        --bg:#0e0e14; --panel:#191922; --panel2:#20202c; --txt:#eaeaee; --dim:#8f8f9a; --acc:#40c8dc; }
+/* NULLTAG design system — tokens from nulltag-cd/colors_and_type.css */
+:root { --rh:#5fc8e0; --rhd:#3a8896; --lh:#e8703a; --lhd:#8a4220; --ok:#5ae082; --bad:#ff2a55;
+        --void:#0a0a0a; --panel:#141414; --panel2:#1a1a1a; --border:#2a2a2a; --border-warm:#3a3a3a;
+        --bone:#e8e3da; --dim:#8a8580; --muted-deep:#5a5550; --tiefrot:#ff2a55; --tiefrot-dim:#3a0000;
+        --mono:"JetBrains Mono","SF Mono",ui-monospace,Menlo,Consolas,monospace;
+        --grotesk:"Space Grotesk",system-ui,sans-serif;
+        --body:-apple-system,BlinkMacSystemFont,"SF Pro Text","Helvetica Neue",system-ui,sans-serif;
+        --ease:cubic-bezier(0.2,0.6,0.2,1); }
 * { margin:0; padding:0; box-sizing:border-box; }
 html, body { height:100%; }
-body { background:var(--bg); color:var(--txt); font-family:-apple-system,'Segoe UI',Roboto,sans-serif; display:flex; flex-direction:column; overflow:hidden; }
-nav { display:flex; align-items:center; gap:4px; padding:10px 18px; border-bottom:1px solid #26262f; flex-wrap:wrap; }
-nav .logo { font-weight:800; letter-spacing:0.06em; margin-right:14px; }
-nav .logo span { color:var(--acc); }
-nav button { background:none; border:none; color:var(--dim); font-size:0.95rem; padding:8px 12px; border-radius:8px; cursor:pointer; }
-nav button.here { color:var(--txt); background:var(--panel2); }
+body { background:var(--void); color:var(--bone); font-family:var(--body); display:flex; flex-direction:column; overflow:hidden; -webkit-font-smoothing:antialiased; }
+:focus-visible { outline:2px solid var(--tiefrot); outline-offset:2px; }
+nav { display:flex; align-items:center; gap:4px; padding:12px 20px; border-bottom:1px solid var(--border); flex-wrap:wrap; }
+nav .logo { font-family:var(--mono); font-weight:700; font-size:13px; letter-spacing:0.4em; text-transform:uppercase; margin-right:16px; white-space:nowrap; }
+nav .logo span { color:var(--dim); font-weight:500; letter-spacing:0.18em; }
+nav button { background:none; border:none; color:var(--dim); font-family:var(--mono); font-size:11px; letter-spacing:0.08em; text-transform:uppercase; padding:8px 12px; border-radius:4px; cursor:pointer; transition:color 150ms var(--ease), background 150ms var(--ease); }
+nav button.here { color:var(--bone); background:var(--panel2); }
+nav button:hover { color:var(--bone); }
 main { flex:1; overflow:auto; }
-.page { max-width:980px; margin:0 auto; padding:28px 20px 60px; }
-.hero h2 { font-size:2rem; margin-bottom:10px; }
-.hero p { color:var(--dim); max-width:640px; line-height:1.55; }
-.cards { display:grid; grid-template-columns:repeat(auto-fill,minmax(260px,1fr)); gap:14px; margin-top:22px; }
-.card { background:var(--panel); border:1px solid #26262f; border-radius:14px; padding:18px; }
-.card h3 { font-size:1.02rem; margin-bottom:6px; }
-.card p { font-size:0.88rem; color:var(--dim); line-height:1.5; }
-.card .num { display:inline-flex; width:26px; height:26px; border-radius:50%; background:var(--rhd); color:#fff; align-items:center; justify-content:center; font-weight:700; font-size:0.85rem; margin-bottom:10px; }
-.btn { display:inline-block; background:var(--rhd); border:none; color:#fff; font-weight:600; padding:11px 18px; border-radius:10px; cursor:pointer; font-size:0.95rem; margin-top:16px; }
-.btn.ghost { background:var(--panel2); color:var(--txt); }
-.songgrid { display:grid; grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); gap:14px; margin-top:18px; }
-.song { background:var(--panel); border:1px solid #26262f; border-radius:14px; padding:18px; cursor:pointer; transition:border-color 0.15s; }
-.song:hover { border-color:var(--acc); }
-.song h3 { margin-bottom:4px; }
-.song .meta { color:var(--dim); font-size:0.85rem; }
-.lvl { margin-top:8px; font-size:0.8rem; color:var(--dim); }
-.lvl b { color:var(--lh); letter-spacing:2px; }
-.lesson { background:var(--panel); border:1px solid #26262f; border-radius:14px; padding:18px; margin-top:14px; }
-.lesson h3 { margin-bottom:6px; }
-.lesson p { color:var(--dim); font-size:0.92rem; line-height:1.55; max-width:720px; }
-.lesson button { margin-top:10px; }
+.page { max-width:980px; margin:0 auto; padding:32px 20px 64px; }
+.eyebrow { font-family:var(--mono); font-size:11px; letter-spacing:0.28em; text-transform:uppercase; color:var(--dim); margin-bottom:12px; }
+.hero h2 { font-family:var(--grotesk); font-weight:700; font-size:2.2rem; letter-spacing:-0.02em; margin-bottom:12px; }
+.hero p { color:var(--dim); max-width:640px; line-height:1.6; }
+.cards { display:grid; grid-template-columns:repeat(auto-fill,minmax(260px,1fr)); gap:14px; margin-top:24px; }
+.card { background:var(--panel); border:1px solid var(--border); border-radius:6px; padding:20px 22px; box-shadow:0 1px 0 rgba(255,255,255,0.04) inset; }
+.card h3 { font-family:var(--grotesk); font-weight:600; font-size:1rem; margin-bottom:6px; }
+.card p { font-size:0.86rem; color:var(--dim); line-height:1.55; }
+.card .num { display:block; font-family:var(--mono); font-size:11px; letter-spacing:0.18em; color:var(--dim); margin-bottom:10px; }
+.card .num::before { content:'0'; }
+.card .num::after { content:' ·'; }
+.btn { display:inline-block; background:var(--tiefrot); border:1px solid var(--tiefrot); color:var(--void); font-family:var(--mono); font-weight:500; font-size:11px; letter-spacing:0.08em; text-transform:uppercase; padding:11px 18px; border-radius:4px; cursor:pointer; margin-top:18px; transition:background 150ms var(--ease), border-color 150ms var(--ease), color 150ms var(--ease); }
+.btn:hover { background:var(--bone); border-color:var(--bone); }
+.btn:active { transform:translateY(1px); }
+.btn.ghost { background:transparent; color:var(--bone); border-color:var(--border); }
+.btn.ghost:hover { border-color:var(--border-warm); background:var(--panel); }
+.songgrid { display:grid; grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); gap:14px; margin-top:20px; }
+.song { background:var(--panel); border:1px solid var(--border); border-radius:6px; padding:20px 22px; cursor:pointer; box-shadow:0 1px 0 rgba(255,255,255,0.04) inset; transition:border-color 150ms var(--ease); }
+.song:hover { border-color:var(--tiefrot); }
+.song h3 { font-family:var(--grotesk); font-weight:600; margin-bottom:6px; }
+.song .meta { color:var(--dim); font-family:var(--mono); font-size:12px; letter-spacing:0.06em; }
+.lvl { margin-top:10px; font-family:var(--mono); font-size:11px; letter-spacing:0.12em; text-transform:uppercase; color:var(--dim); }
+.lvl b { color:var(--bone); letter-spacing:3px; font-weight:500; }
+.lesson { background:var(--panel); border:1px solid var(--border); border-radius:6px; padding:20px 22px; margin-top:14px; box-shadow:0 1px 0 rgba(255,255,255,0.04) inset; }
+.lesson h3 { font-family:var(--grotesk); font-weight:600; margin-bottom:6px; }
+.lesson p { color:var(--dim); font-size:0.9rem; line-height:1.55; max-width:720px; }
+.lesson button { margin-top:12px; }
+.stamp { font-family:var(--mono); font-size:10.5px; letter-spacing:0.28em; text-transform:uppercase; color:var(--muted-deep); margin-top:56px; }
 /* Trainer */
 #view-trainer { display:flex; flex-direction:column; height:100%; }
-#tcontrols { padding:8px 16px; display:flex; gap:8px; flex-wrap:wrap; align-items:center; border-bottom:1px solid #26262f; }
-#tcontrols button, #tcontrols select { background:var(--panel); color:var(--txt); border:1px solid #333340; border-radius:8px; padding:7px 12px; font-size:0.86rem; cursor:pointer; }
+#tcontrols { padding:8px 16px; display:flex; gap:8px; flex-wrap:wrap; align-items:center; border-bottom:1px solid var(--border); }
+#tcontrols button, #tcontrols select { background:var(--panel); color:var(--bone); border:1px solid var(--border); border-radius:4px; padding:7px 12px; font-family:var(--mono); font-size:11px; letter-spacing:0.06em; text-transform:uppercase; cursor:pointer; transition:border-color 150ms var(--ease), background 150ms var(--ease); }
+#tcontrols button:hover { border-color:var(--border-warm); }
 #tcontrols button.active { background:var(--rhd); border-color:var(--rh); }
 #tcontrols button.lhactive { background:var(--lhd); border-color:var(--lh); }
-#tcontrols button.okactive { background:#2c7a3c; border-color:var(--ok); }
-#play { min-width:86px; font-weight:700; }
-.grp { display:flex; gap:4px; align-items:center; }
-label { font-size:0.76rem; color:var(--dim); }
-input[type=range] { width:110px; }
-#tempoval { min-width:86px; font-variant-numeric:tabular-nums; font-size:0.8rem; }
-canvas { display:block; width:100%; flex:1; }
-#tstatus { padding:5px 16px 8px; font-size:0.83rem; color:var(--dim); display:flex; gap:16px; flex-wrap:wrap; }
-#midistat { color:var(--bad); } #midistat.on { color:var(--ok); }
-#score { color:var(--txt); font-variant-numeric:tabular-nums; }
-#songname { color:var(--txt); font-weight:600; }
-#drop { position:fixed; inset:0; background:rgba(30,150,170,0.25); border:4px dashed var(--rh); display:none; align-items:center; justify-content:center; font-size:1.3rem; z-index:9; pointer-events:none; }
+#tcontrols button.okactive { background:#14201a; border-color:#4a8a4a; }
+#tcontrols button#play { min-width:96px; font-weight:700; background:var(--tiefrot); border-color:var(--tiefrot); color:var(--void); }
+#tcontrols button#play:hover { background:var(--bone); border-color:var(--bone); }
+.grp { display:flex; gap:5px; align-items:center; }
+label { font-family:var(--mono); font-size:10.5px; letter-spacing:0.18em; text-transform:uppercase; color:var(--dim); }
+input[type=range] { width:110px; accent-color:var(--tiefrot); }
+#tempoval { min-width:96px; font-family:var(--mono); font-variant-numeric:tabular-nums; font-size:11px; color:var(--dim); }
+canvas { display:block; width:100%; flex:1; touch-action:none; cursor:pointer; }
+#tstatus { padding:6px 16px 9px; font-family:var(--mono); font-size:11.5px; color:var(--dim); display:flex; gap:16px; flex-wrap:wrap; align-items:baseline; }
+#midistat { color:var(--dim); } #midistat.on { color:var(--ok); }
+#score { color:var(--bone); font-variant-numeric:tabular-nums; }
+#songname { color:var(--bone); font-weight:500; }
+#drop { position:fixed; inset:0; background:rgba(10,10,10,0.88); border:2px dashed var(--bone); display:none; align-items:center; justify-content:center; font-family:var(--mono); font-size:1.1rem; letter-spacing:0.08em; z-index:9; pointer-events:none; }
 #file { display:none; }
 .hide { display:none !important; }
-.kbdlegend { font-size:0.78rem; color:var(--dim); }
+.kbdlegend { font-size:11px; color:var(--muted-deep); }
 .kbdlegend b.r{color:var(--rh)} .kbdlegend b.l{color:var(--lh)} .kbdlegend b.g{color:var(--ok)} .kbdlegend b.y{color:#ffe27a}
+@media (max-width:640px){ .page{padding:24px 16px 48px} .hero h2{font-size:1.7rem} nav{padding:10px 12px}
+  #tcontrols{padding:8px 10px} #tcontrols select{max-width:56vw} #tstatus{font-size:10.5px} }
 </style>
 </head>
 <body>
 <nav>
-  <div class="logo">NULLTAG <span>·</span> Piano Trainer</div>
+  <div class="logo">NULLTAG <span>· Piano Trainer</span></div>
   <button data-v="start" class="here">Start</button>
   <button data-v="kurs">Grundkurs</button>
   <button data-v="songs">Songs</button>
@@ -73,16 +102,17 @@ canvas { display:block; width:100%; flex:1; }
   <!-- START -->
   <div id="view-start" class="page">
     <div class="hero">
-      <h2>Klavier lernen mit Nulltag.</h2>
-      <p>Alle Nulltag-Songs als interaktive Lernversionen: fallende Noten, echter Sound, und wenn du ein
+      <div class="eyebrow">learn.nulltag.ch · MMXXVI</div>
+      <h2>Klavier lernen mit NULLTAG.</h2>
+      <p>Alle NULLTAG-Songs als interaktive Lernversionen: fallende Noten, echter Sound, und wenn du ein
       MIDI-Keyboard anschliesst, hört die App mit und sagt dir, ob du richtig spielst. Kein Konto, keine
       Installation – alles läuft in deinem Browser.</p>
     </div>
     <div class="cards">
       <div class="card"><span class="num">1</span><h3>Keyboard anschliessen</h3>
         <p>MIDI-Keyboard (z.B. Novation FLkey) per USB verbinden, im Trainer auf «MIDI-Keyboard verbinden»
-        klicken und die Browser-Abfrage bestätigen. Funktioniert in Chrome und Edge. Ohne Keyboard kannst du
-        alles anhören und mitlesen.</p></div>
+        klicken und die Browser-Abfrage bestätigen. Funktioniert in Chrome und Edge. Ohne MIDI-Keyboard
+        spielst du direkt per Klick auf die Klaviatur – oder mit der Computertastatur (Reihe A–Ö ab C4).</p></div>
       <div class="card"><span class="num">2</span><h3>Einsteigen</h3>
         <p>Noch nie Klavier gespielt? Der Grundkurs bringt dir in fünf kurzen Übungen alles bei, was du für
         die Songs brauchst. Schon Erfahrung? Direkt zu den Songs – Heat Death ist der leichteste Einstieg.</p></div>
@@ -93,6 +123,7 @@ canvas { display:block; width:100%; flex:1; }
     </div>
     <button class="btn" onclick="go('kurs')">Grundkurs starten</button>
     <button class="btn ghost" onclick="go('songs')">Zu den Songs</button>
+    <div class="stamp">NULLTAG · MMXXVI · Buchs SG, Switzerland</div>
   </div>
   <!-- GRUNDKURS -->
   <div id="view-kurs" class="page hide">
@@ -105,7 +136,7 @@ canvas { display:block; width:100%; flex:1; }
   </div>
   <!-- SONGS -->
   <div id="view-songs" class="page hide">
-    <h2>Nulltag-Songs</h2>
+    <h2>NULLTAG-Songs</h2>
     <p style="color:var(--dim); margin-top:8px">Sortiert nach Schwierigkeit. Jeder Song hat eine automatisch
     erzeugte Easy-Fassung und Lernschritte in 4-Takt-Häppchen.</p>
     <div class="songgrid" id="songgrid"></div>
@@ -134,9 +165,9 @@ canvas { display:block; width:100%; flex:1; }
     <canvas id="cv"></canvas>
     <div id="tstatus">
       <span id="songname"></span>
-      <span id="midistat">Kein MIDI-Keyboard</span>
+      <span id="midistat">Kein MIDI – Klick/Tastatur geht auch</span>
       <span id="score"></span>
-      <span class="kbdlegend"><b class="r">türkis RH</b> · <b class="l">orange LH</b> · <b class="y">gelb erwartet</b> · <b class="g">grün richtig</b></span>
+      <span class="kbdlegend"><b class="r">eisblau RH</b> · <b class="l">orange LH</b> · <b class="y">gelb erwartet</b> · <b class="g">grün richtig</b> · Klaviatur anklicken oder Tastenreihe A–Ö spielen · Leertaste = Start/Stopp</span>
       <span id="hint"></span>
     </div>
   </div>
@@ -263,6 +294,7 @@ function loadSong(name, fullNotes, bpm){
   const split = splitPoint(fullNotes);
   SONG = { name, bpm, split, bars, full: fullNotes, easy: makeEasy(fullNotes, split),
            steps: makeSteps(fullNotes, split, bars) };
+  setRange(SONG.full.concat(SONG.easy));
   document.getElementById('songname').textContent = name + ' · ' + bpm + ' BPM · ' + bars + ' Takte';
   secStart = 0; secEnd = Math.min(8, bars);
   buildSelectors(); rebuild(); updTempo(); pos = -4; setPlaying(false); draw();
@@ -290,7 +322,7 @@ function buildSelectors(){
 }
 // ================= Player/Trainer (wie gehabt) =================
 const cv = document.getElementById('cv'), ctx = cv.getContext('2d');
-const LOW = 21, HIGH = 108;
+let LOW = 21, HIGH = 108;
 let version = 'easy', notes = [], secStart = 0, secEnd = 8;
 let playing = false, pos = -4, tempoPct = 50, playRH = true, playLH = true, looping = true;
 let mode = 'listen', octTolerant = true;
@@ -324,7 +356,18 @@ function updScore(){
   else s.textContent = '';
 }
 let whites = [];
-for (let p = LOW; p <= HIGH; p++) if ([0,2,4,5,7,9,11].includes(p % 12)) whites.push(p);
+function setRange(ns){
+  // Klaviatur auf den Tonumfang des Songs beschneiden (3%-Ausreisser gefaltet), damit die Tasten gross bleiben
+  const ps = ns.map(n => n[2]).sort((a, b) => a - b);
+  let lo = ps[Math.floor(ps.length * 0.03)], hi = ps[Math.min(ps.length - 1, Math.ceil(ps.length * 0.97))];
+  lo = Math.floor(lo / 12) * 12;
+  hi = Math.ceil((hi + 1) / 12) * 12 - 1;
+  while (hi - lo < 27) { if (lo >= 33) lo -= 12; else if (hi <= 96) hi += 12; else break; }
+  LOW = Math.max(21, lo); HIGH = Math.min(108, hi);
+  whites = [];
+  for (let p = LOW; p <= HIGH; p++) if ([0,2,4,5,7,9,11].includes(p % 12)) whites.push(p);
+}
+setRange([[0,1,48],[0,1,84]]);
 function geom(){ const W = cv.width, ww = W / whites.length; const wx = {}; whites.forEach((p,i)=>wx[p]=i*ww); return {W, ww, wx}; }
 function keyX(p, g){
   if ([0,2,4,5,7,9,11].includes(p % 12)) return [g.wx[p], g.ww];
@@ -336,7 +379,7 @@ function draw(){
   const r = cv.getBoundingClientRect();
   if (cv.width !== Math.round(r.width * dpr)) { cv.width = Math.round(r.width * dpr); cv.height = Math.round(r.height * dpr); }
   const g = geom(), H = cv.height, KEY_H = Math.min(150 * dpr, H * 0.3), FALL = H - KEY_H;
-  ctx.fillStyle = '#121218'; ctx.fillRect(0, 0, g.W, H);
+  ctx.fillStyle = '#0a0a0a'; ctx.fillRect(0, 0, g.W, H);
   const pxPerSec = FALL / 2.6;
   const pressed = new Set();
   const expectSet = (mode === 'wait' && groups[gIdx]) ? new Set(groups[gIdx].ns.map(n => fold(n[2]))) : null;
@@ -347,31 +390,31 @@ function draw(){
     const yB = FALL + (-startS) * pxPerSec, yT = FALL + (-endS) * pxPerSec;
     if (yB < 0 || yT > FALL) continue;
     const [x, w] = keyX(pf, g);
-    ctx.fillStyle = isRH ? '#40c8dc' : '#f0a046';
-    ctx.strokeStyle = isRH ? '#1e96aa' : '#be6e1e';
+    ctx.fillStyle = isRH ? '#5fc8e0' : '#e8703a';
+    ctx.strokeStyle = isRH ? '#3a8896' : '#8a4220';
     ctx.beginPath(); ctx.roundRect(x + 1, Math.max(0, yT), w - 2, Math.max(2, Math.min(FALL, yB) - Math.max(0, yT)), 3 * dpr);
     ctx.fill(); ctx.stroke();
   }
-  ctx.fillStyle = '#0a0a0c'; ctx.fillRect(0, FALL, g.W, KEY_H);
+  ctx.fillStyle = '#050505'; ctx.fillRect(0, FALL, g.W, KEY_H);
   const now = performance.now();
   function keyCol(p, black){
-    if (flash[p] && flash[p].until > now) return flash[p].ok ? '#4cd964' : '#ff5a5a';
-    if (userDown.has(p)) return '#9090ff';
+    if (flash[p] && flash[p].until > now) return flash[p].ok ? '#5ae082' : '#ff2a55';
+    if (userDown.has(p)) return '#8a8580';
     if (expectSet && expectSet.has(p)) return black ? '#8a7a20' : '#ffe27a';
-    if (pressed.has(p)) return p >= SONG.split ? (black ? '#1e96aa' : '#40c8dc') : (black ? '#be6e1e' : '#f0a046');
-    return black ? '#141414' : '#ffffff';
+    if (pressed.has(p)) return p >= SONG.split ? (black ? '#3a8896' : '#5fc8e0') : (black ? '#8a4220' : '#e8703a');
+    return black ? '#1a1a1a' : '#e8e3da';
   }
   for (const p of whites) {
     ctx.fillStyle = keyCol(p, false);
     ctx.fillRect(g.wx[p] + 1, FALL, g.ww - 2, KEY_H - 2);
-    if (p % 12 === 0) { ctx.fillStyle = '#909090'; ctx.font = (10 * dpr) + 'px sans-serif'; ctx.fillText('C' + (Math.floor(p/12)-1), g.wx[p] + 2, FALL + KEY_H - 6); }
+    if (p % 12 === 0) { ctx.fillStyle = '#5a5550'; ctx.font = (10 * dpr) + 'px "JetBrains Mono",monospace'; ctx.fillText('C' + (Math.floor(p/12)-1), g.wx[p] + 3, FALL + KEY_H - 7); }
   }
   for (let p = LOW; p <= HIGH; p++) if ([1,3,6,8,10].includes(p % 12)) {
     const [x, w] = keyX(p, g);
     ctx.fillStyle = keyCol(p, true);
     ctx.fillRect(x, FALL, w, KEY_H * 0.62);
   }
-  ctx.fillStyle = '#c8c8d0'; ctx.font = (13 * dpr) + 'px sans-serif';
+  ctx.fillStyle = '#8a8580'; ctx.font = '500 ' + (12 * dpr) + 'px "JetBrains Mono",monospace';
   const bar = Math.floor(Math.max(0, pos) / 4) + 1;
   ctx.fillText('Takt ' + Math.min(bar, SONG.bars) + ' / ' + SONG.bars + '   ' + Math.round(SONG.bpm * tempoPct / 100) + ' BPM' + (mode === 'wait' ? '   WARTE-MODUS' : ''), 14 * dpr, 22 * dpr);
 }
@@ -480,6 +523,63 @@ async function midiConnect(){
   } catch (e) { st.textContent = 'MIDI-Zugriff abgelehnt'; }
 }
 window._testNote = p => { onNote(0x90, p, 100); setTimeout(() => onNote(0x80, p, 0), 120); };
+// ================= Eingabe ohne MIDI: Klaviatur anklicken =================
+function pitchAt(cx, cy){
+  const dpr = window.devicePixelRatio || 1;
+  const r = cv.getBoundingClientRect();
+  const px = (cx - r.left) * dpr, py = (cy - r.top) * dpr;
+  const g = geom(), H = cv.height, KEY_H = Math.min(150 * dpr, H * 0.3), FALL = H - KEY_H;
+  if (py < FALL || py > H) return null;
+  if (py <= FALL + KEY_H * 0.62) {
+    for (let p = LOW; p <= HIGH; p++) if ([1,3,6,8,10].includes(p % 12)) {
+      const [bx, bw] = keyX(p, g);
+      if (px >= bx && px <= bx + bw) return p;
+    }
+  }
+  const i = Math.floor(px / g.ww);
+  if (i < 0 || i >= whites.length) return null;
+  return whites[i];
+}
+const ptrNotes = new Map();
+function manualDown(p){
+  ensureAC();
+  tone(ac.currentTime, 0.35, fold(p), 0.2);
+  onNote(0x90, p, 100);
+}
+cv.addEventListener('pointerdown', e => {
+  const p = pitchAt(e.clientX, e.clientY);
+  if (p === null) return;
+  e.preventDefault();
+  try { cv.setPointerCapture(e.pointerId); } catch(err){}
+  ptrNotes.set(e.pointerId, p);
+  manualDown(p);
+});
+function ptrUp(e){
+  const p = ptrNotes.get(e.pointerId);
+  if (p !== undefined) { onNote(0x80, p, 0); ptrNotes.delete(e.pointerId); }
+}
+cv.addEventListener('pointerup', ptrUp);
+cv.addEventListener('pointercancel', ptrUp);
+// ================= Eingabe ohne MIDI: Computertastatur =================
+// Physische Tasten (layout-unabhaengig): A-Reihe = weisse Tasten ab C4, W/E/T/Z/U = schwarze
+const KEYCODE = { KeyA:60, KeyW:61, KeyS:62, KeyE:63, KeyD:64, KeyF:65, KeyT:66, KeyG:67, KeyY:68,
+                  KeyH:69, KeyU:70, KeyJ:71, KeyK:72, KeyO:73, KeyL:74, KeyP:75, Semicolon:76 };
+const keysDown = new Set();
+window.addEventListener('keydown', e => {
+  if (document.getElementById('view-trainer').classList.contains('hide')) return;
+  const t = e.target.tagName;
+  if (t === 'SELECT' || t === 'INPUT' || e.metaKey || e.ctrlKey || e.altKey) return;
+  if (e.code === 'Space') { if (t === 'BUTTON') return; e.preventDefault(); setPlaying(!playing); return; }
+  const p = KEYCODE[e.code];
+  if (p === undefined || e.repeat || keysDown.has(e.code)) return;
+  e.preventDefault();
+  keysDown.add(e.code);
+  manualDown(p);
+});
+window.addEventListener('keyup', e => {
+  const p = KEYCODE[e.code];
+  if (p !== undefined) { keysDown.delete(e.code); onNote(0x80, p, 0); }
+});
 // ================= Datei laden =================
 function loadFile(file){
   const rd = new FileReader();
