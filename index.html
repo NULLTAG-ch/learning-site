@@ -57,6 +57,10 @@ main { flex:1; overflow:auto; }
 .song .meta { color:var(--dim); font-family:var(--mono); font-size:12px; letter-spacing:0.06em; }
 .lvl { margin-top:10px; font-family:var(--mono); font-size:11px; letter-spacing:0.12em; text-transform:uppercase; color:var(--dim); }
 .lvl b { color:var(--bone); letter-spacing:3px; font-weight:500; }
+.vrow { display:flex; gap:6px; margin-top:14px; flex-wrap:wrap; }
+.vchip { background:var(--panel2); color:var(--dim); border:1px solid var(--border); border-radius:4px; font-family:var(--mono); font-size:10px; letter-spacing:0.08em; text-transform:uppercase; padding:5px 10px; cursor:pointer; transition:border-color 150ms var(--ease), color 150ms var(--ease); }
+.vchip:hover { border-color:var(--tiefrot); color:var(--bone); }
+.vchip .st { color:#ffe27a; letter-spacing:0; }
 .lesson { background:var(--panel); border:1px solid var(--border); border-radius:6px; padding:20px 22px; margin-top:14px; box-shadow:0 1px 0 rgba(255,255,255,0.04) inset; }
 .lesson h3 { font-family:var(--grotesk); font-weight:600; margin-bottom:6px; }
 .lesson p { color:var(--dim); font-size:0.9rem; line-height:1.55; max-width:720px; }
@@ -154,8 +158,10 @@ canvas { display:block; width:100%; flex:1; touch-action:none; cursor:pointer; }
   <!-- SONGS -->
   <div id="view-songs" class="page hide">
     <h2>NULLTAG-Songs</h2>
-    <p style="color:var(--dim); margin-top:8px">Sortiert nach Schwierigkeit. Jeder Song hat eine automatisch
-    erzeugte Easy-Fassung und Lernschritte in 4-Takt-Häppchen.</p>
+    <p style="color:var(--dim); margin-top:8px; max-width:700px; line-height:1.55">Sortiert nach Schwierigkeit.
+    Jeder Song in drei Fassungen: <b>Easy</b> (Melodie + ein Basston), <b>Normal</b> (echte Register, max. zwei
+    Stimmen rechts, ein Basston pro Schlag), <b>Pro</b> (Original). Der Kontrolle-Modus vergibt bis zu drei
+    Sterne pro Fassung – dazu Lernschritte in 4-Takt-Häppchen.</p>
     <div class="songgrid" id="songgrid"></div>
     <button class="btn ghost" onclick="document.getElementById('file').click()">Eigene MIDI-Datei laden…</button>
   </div>
@@ -171,13 +177,15 @@ canvas { display:block; width:100%; flex:1; touch-action:none; cursor:pointer; }
         </select></div>
       <button id="play">▶ Start</button>
       <div class="grp"><label>Fassung</label>
-        <select id="version"><option value="easy">Easy</option><option value="full">Voll</option></select></div>
+        <select id="version"><option value="easy">Easy</option><option value="normal">Normal</option><option value="full">Pro</option></select></div>
       <div class="grp"><label>Lernschritt</label><select id="step"></select></div>
       <div class="grp"><label>Takte</label><select id="section"></select></div>
       <div class="grp"><label>Tempo</label><input type="range" id="tempo" min="25" max="100" value="50"><span id="tempoval"></span></div>
       <div class="grp"><button id="bRH" class="active">RH</button><button id="bLH" class="lhactive">LH</button></div>
       <button id="loop" class="active">Loop an</button>
       <button id="oct" class="okactive">Oktave egal</button>
+      <button id="metro">Metronom</button>
+      <button id="names">Notennamen</button>
     </div>
     <canvas id="cv"></canvas>
     <div id="tstatus">
@@ -425,6 +433,29 @@ function makeEasy(ns, split){
   }
   return [...merged, ...bass].sort((a, b) => a[0] - b[0]);
 }
+function makeNormal(ns, split){
+  // Mittelstufe: echte Register und Rhythmen, aber ausgeduennt -
+  // rechts max. 2 Stimmen pro Anschlag, links 1 Basston pro Schlag
+  const out = [];
+  const g = new Map();
+  for (const n of ns) if (n[2] >= split) {
+    const k = Math.round(n[0] * 4) / 4;
+    if (!g.has(k)) g.set(k, []);
+    g.get(k).push(n);
+  }
+  for (const arr of g.values()) {
+    arr.sort((a, b) => b[2] - a[2]);
+    for (const [o, d, p] of arr.slice(0, 2)) out.push([Math.round(o * 4) / 4, Math.min(d, 4), p]);
+  }
+  const bass = new Map();
+  for (const [o, d, p] of ns) if (p < split) {
+    const k = Math.floor(o);
+    if (!bass.has(k) || p < bass.get(k)) bass.set(k, p);
+  }
+  const bk = [...bass.keys()].sort((a, b) => a - b);
+  bk.forEach((k, i) => out.push([k, Math.min((i + 1 < bk.length ? bk[i + 1] : k + 2) - k, 4), bass.get(k)]));
+  return out.sort((a, b) => a[0] - b[0] || a[2] - b[2]);
+}
 function makeSteps(ns, split, bars){
   const steps = [];
   for (let b = 1; b <= bars; b += 4) {
@@ -452,7 +483,7 @@ function loadSong(name, fullNotes, bpm){
   const bars = Math.max(1, Math.ceil(Math.max(...fullNotes.map(n => n[0] + n[1]), 4) / 4));
   const split = splitPoint(fullNotes);
   SONG = { name, bpm, split, bars, full: fullNotes, easy: makeEasy(fullNotes, split),
-           steps: makeSteps(fullNotes, split, bars) };
+           normal: makeNormal(fullNotes, split), steps: makeSteps(fullNotes, split, bars) };
   setRange(SONG.full.concat(SONG.easy));
   document.getElementById('songname').textContent = name + ' · ' + bpm + ' BPM · ' + bars + ' Takte';
   secStart = 0; secEnd = Math.min(8, bars);
@@ -484,7 +515,7 @@ const cv = document.getElementById('cv'), ctx = cv.getContext('2d');
 let LOW = 21, HIGH = 108;
 let version = 'easy', notes = [], secStart = 0, secEnd = 8;
 let playing = false, pos = -4, tempoPct = 50, playRH = true, playLH = true, looping = true;
-let mode = 'listen', octTolerant = true;
+let mode = 'listen', octTolerant = true, metro = false, showNames = false;
 let ac = null, scheduled = [], rafId = null, timing = null;
 let midiIn = null, userDown = new Set(), flash = {};
 let hits = 0, misses = 0, matched = new Set();
@@ -563,10 +594,12 @@ function draw(){
     if (pressed.has(p)) return p >= SONG.split ? (black ? '#3a8896' : '#5fc8e0') : (black ? '#8a4220' : '#e8703a');
     return black ? '#1a1a1a' : '#e8e3da';
   }
+  const NN = ['C','','D','','E','F','','G','','A','','H'];
   for (const p of whites) {
     ctx.fillStyle = keyCol(p, false);
     ctx.fillRect(g.wx[p] + 1, FALL, g.ww - 2, KEY_H - 2);
     if (p % 12 === 0) { ctx.fillStyle = '#5a5550'; ctx.font = (10 * dpr) + 'px "JetBrains Mono",monospace'; ctx.fillText('C' + (Math.floor(p/12)-1), g.wx[p] + 3, FALL + KEY_H - 7); }
+    else if (showNames) { ctx.fillStyle = '#5a5550'; ctx.font = (10 * dpr) + 'px "JetBrains Mono",monospace'; ctx.fillText(NN[p % 12], g.wx[p] + g.ww / 2 - 3 * dpr, FALL + KEY_H - 7); }
   }
   for (let p = LOW; p <= HIGH; p++) if ([1,3,6,8,10].includes(p % 12)) {
     const [x, w] = keyX(p, g);
@@ -601,6 +634,7 @@ function schedule(){
   for (let i = 0; i < 4; i++) click(base + i * s);
   const off = base + 4 * s;
   for (const [st, d, p] of activeNotes()) tone(off + (st - secStart * 4) * s, d * s, p, p >= SONG.split ? 0.22 : 0.16);
+  if (metro) { const beats = Math.ceil((secEnd - secStart) * 4); for (let i = 0; i < beats; i++) click(off + i * s); }
   return { base, off, s };
 }
 function stopAudio(){ scheduled.forEach(n => { try { n.stop(); } catch(e){} }); scheduled = []; }
@@ -611,8 +645,16 @@ function loopFrame(){
     if (pos >= secEnd * 4 + 0.05) {
       stopAudio();
       if (mode === 'check') {
-        document.getElementById('hint').textContent = 'Runde fertig: ' + hits + ' Treffer, ' + misses + ' daneben.';
         const tot = activeNotes().length;
+        const acc = (hits + misses) ? hits / (hits + misses) : 0, cov = tot ? hits / tot : 0;
+        const stars = (cov >= 0.9 && acc >= 0.95) ? 3 : (cov >= 0.75 && acc >= 0.85) ? 2 : (cov >= 0.5 && acc >= 0.7) ? 1 : 0;
+        let msg = 'Runde fertig: ' + hits + ' Treffer, ' + misses + ' daneben.';
+        if (!currentLesson && stars) {
+          const k = SONG.name + '|' + version;
+          if ((starMap[k] || 0) < stars) { starMap[k] = stars; saveStars(); }
+          msg += ' ' + '★'.repeat(stars) + '☆'.repeat(3 - stars);
+        }
+        document.getElementById('hint').textContent = msg;
         if (currentLesson && tot > 0 && hits >= Math.ceil(tot * 0.8) && misses <= Math.ceil(tot * 0.25)) lessonDone();
       }
       if (looping) { timing = schedule(); pos = secStart * 4 - 4; resetScore(); }
@@ -789,6 +831,8 @@ document.getElementById('bRH').onclick = e => { playRH = !playRH; e.target.class
 document.getElementById('bLH').onclick = e => { playLH = !playLH; e.target.classList.toggle('lhactive'); setPlaying(false); buildGroups(); draw(); };
 document.getElementById('loop').onclick = e => { looping = !looping; e.target.textContent = looping ? 'Loop an' : 'Loop aus'; e.target.classList.toggle('active'); };
 document.getElementById('oct').onclick = e => { octTolerant = !octTolerant; e.target.classList.toggle('okactive'); };
+document.getElementById('metro').onclick = e => { metro = !metro; e.target.classList.toggle('active'); if (playing && mode !== 'wait') setPlaying(false); };
+document.getElementById('names').onclick = e => { showNames = !showNames; e.target.classList.toggle('active'); draw(); };
 window.onresize = () => draw();
 
 // ---------- Views ----------
@@ -798,18 +842,43 @@ function go(v){
   for (const b of document.querySelectorAll('nav button')) b.classList.toggle('here', b.dataset.v === v);
   if (v === 'trainer') draw();
   if (v === 'bib') renderLibrary();
+  if (v === 'songs') renderSongs();
 }
 document.querySelectorAll('nav button').forEach(b => b.onclick = () => go(b.dataset.v));
-// Songkarten
+// Songkarten: jeder Song in drei Fassungen (Flowkey/Simply-Piano-Prinzip), Sterne aus dem Kontrolle-Modus
+const STARS_KEY = 'nulltag-trainer-stars';
+let starMap;
+try { starMap = JSON.parse(localStorage.getItem(STARS_KEY) || '{}'); } catch (e) { starMap = {}; }
+function saveStars(){ try { localStorage.setItem(STARS_KEY, JSON.stringify(starMap)); } catch (e) {} }
+function openSong(s, ver){
+  loadSong(s.title, s.notes, s.bpm);
+  version = ver;
+  document.getElementById('version').value = ver;
+  rebuild(); go('trainer'); draw();
+}
 const grid = document.getElementById('songgrid');
-SONGS.forEach((s, i) => {
-  const d = document.createElement('div');
-  d.className = 'song';
-  d.innerHTML = '<h3>' + s.title + '</h3><div class="meta">' + s.key + ' · ' + s.bpm + ' BPM · ' + s.bars +
-    ' Takte</div><div class="lvl">Level <b>' + '●'.repeat(s.level) + '○'.repeat(5 - s.level) + '</b></div>';
-  d.onclick = () => { loadSong(s.title, s.notes, s.bpm); go('trainer'); };
-  grid.appendChild(d);
-});
+function renderSongs(){
+  grid.innerHTML = '';
+  SONGS.forEach(s => {
+    const d = document.createElement('div');
+    d.className = 'song';
+    d.innerHTML = '<h3></h3><div class="meta">' + s.key + ' · ' + s.bpm + ' BPM · ' + s.bars +
+      ' Takte</div><div class="lvl">Level <b>' + '●'.repeat(s.level) + '○'.repeat(5 - s.level) + '</b></div><div class="vrow"></div>';
+    d.querySelector('h3').textContent = s.title;
+    const row = d.querySelector('.vrow');
+    [['easy','Easy'],['normal','Normal'],['full','Pro']].forEach(([v, label]) => {
+      const b = document.createElement('button');
+      b.className = 'vchip';
+      const st = starMap[s.title + '|' + v] || 0;
+      b.innerHTML = label + (st ? ' <span class="st">' + '★'.repeat(st) + '</span>' : '');
+      b.onclick = e => { e.stopPropagation(); openSong(s, v); };
+      row.appendChild(b);
+    });
+    d.onclick = () => openSong(s, 'easy');
+    grid.appendChild(d);
+  });
+}
+renderSongs();
 // Bibliothek initial rendern
 renderLibrary();
 // Start: leichtester Song vorladen
