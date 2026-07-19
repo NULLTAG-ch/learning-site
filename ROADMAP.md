@@ -21,8 +21,7 @@ Stand: 2026-07-19 · 22 PRs gemerged · Gesamt-Audit gruen (36 Basis-Checks + 83
   Abschluss-Menue (Naechste/Wiederholen), Fortschritt + naechste-Lektion-Markierung
 - Songs: 8 Titel, je Easy/Normal/Pro (auto-abgeleitet), Sterne im Kontrolle-Modus,
   Cover, Lernschritte in 4-Takt-Bloecken, Fortschrittsbalken
-  - Echte Piano-Arrangements (Hand-Flags aus RH/LH-Tracks): Heat Death,
-    Peace Remains, Lovesong, Higher Ground
+  - Alle 8 Songs als echte Piano-Arrangements (Hand-Flags aus RH/LH-Tracks)
 - Trainer-Presets (1 Klick, startet sofort): Anhoeren Original, Easy lernen,
   Lernschritt 1, Kontrolle 60%, Trainieren 50->100%
 - Auto-Tempo-Trainer: saubere Runde stuft +10% bis Zieltempo, Fehler-Takt-Loop
@@ -57,9 +56,11 @@ Stand: 2026-07-19 · 22 PRs gemerged · Gesamt-Audit gruen (36 Basis-Checks + 83
 
 1. ~~HTTPS-Zertifikat learn.nulltag.ch~~ ERLEDIGT 2026-07-19: Zertifikat aktiv,
    «Enforce HTTPS» ist gesetzt – http leitet auf https um, Web-MIDI laeuft ueberall.
-2. **4 Piano-Arrangements ausstehend**: Burn the Void, Fifteen Years,
-   Pilze Plaene und Panik, Paper Kings (Export mit «Piano RH»/«Piano LH»-Tracks,
-   Einbau je ein Durchlauf ueber die bestehende Pipeline).
+2. ~~4 Piano-Arrangements~~ ERLEDIGT 2026-07-19: Burn the Void, Fifteen Years,
+   Pilze Plaene und Panik, Paper Kings aus RH/LH-MIDIs eingebaut – alle 8 Songs
+   sind jetzt echte Piano-Arrangements mit Hand-Flags. Tonart-Meta bleibt die
+   Kuenstler-Angabe (Erkennung sieht bei Burn the Void die Parallele e-Moll,
+   bei Paper Kings f-Moll – funktional irrelevant, da live erkannt wird).
 3. **Echte Cover** fuer 6 Songs (aktuell generierte Platzhalter im CINETEKK-Stil):
    Dateien nach assets/covers/ + COVERS-Map in index.html + `CACHE` in sw.js bumpen.
 4. **Higher Ground Meta pruefen**: Level 2 und c-Moll sind geschaetzt.
