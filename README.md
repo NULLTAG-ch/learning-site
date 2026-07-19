@@ -25,3 +25,11 @@ Web-MIDI. Web-MIDI funktioniert in Chrome und Edge.
 Alles liegt in `index.html` (HTML + CSS + JS, keine Dependencies). Designtokens
 (Void/Bone/TIEFROT, JetBrains Mono, Space Grotesk) stammen aus
 `nulltag-cd/colors_and_type.css`.
+
+## Credits
+Klavierklang: [Salamander Grand Piano](https://archive.org/details/SalamanderGrandPianoV3)
+von Alexander Holm, CC BY 3.0 - 15 Samples (Tritonus-Raster) via
+[tonejs-instruments](https://github.com/nbrosowsky/tonejs-instruments),
+selbst gehostet unter `assets/piano/`. Fingersatz-Hinweise werden client-seitig
+per dynamischer Programmierung aus klassischen Regeln berechnet
+(Daumenuntersatz, Spannweiten, keine Kreuzung ohne Daumen).

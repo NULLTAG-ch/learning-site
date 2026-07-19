@@ -175,6 +175,7 @@ canvas { display:block; width:100%; flex:1; touch-action:none; cursor:pointer; }
     <button class="btn" onclick="go('bib')">Bibliothek öffnen</button>
     <button class="btn ghost" onclick="go('songs')">Zu den Songs</button>
     <div class="stamp">NULLTAG · MMXXVI · Buchs SG, Switzerland</div>
+    <div class="stamp" style="margin-top:10px; letter-spacing:0.14em">Klavierklang: Salamander Grand Piano · Alexander Holm · CC BY 3.0</div>
   </div>
   <!-- BIBLIOTHEK -->
   <div id="view-bib" class="page hide">
@@ -216,13 +217,14 @@ canvas { display:block; width:100%; flex:1; touch-action:none; cursor:pointer; }
       <button id="oct" class="okactive">Oktave egal</button>
       <button id="metro">Metronom</button>
       <button id="names" class="active">Notennamen</button>
+      <button id="fing" class="active">Fingersatz</button>
     </div>
     <canvas id="cv"></canvas>
     <div id="tstatus">
       <span id="songname"></span>
       <span id="midistat">Kein MIDI – Klick/Tastatur geht auch</span>
       <span id="score"></span>
-      <span class="kbdlegend"><b class="r">türkis RH</b> · <b class="l">orange LH</b> · <b class="y">gelb erwartet</b> · <b class="g">grün richtig</b> · Klaviatur anklicken oder Tastenreihe A–Ö spielen · Leertaste = Start/Stopp</span>
+      <span class="kbdlegend"><b class="r">türkis RH</b> · <b class="l">orange LH</b> · <b class="y">gelb erwartet</b> · <b class="g">grün richtig</b> · Ziffern = Fingersatz (1 = Daumen … 5 = kleiner Finger) · Klaviatur anklicken oder Tastenreihe A–Ö spielen · Leertaste = Start/Stopp</span>
       <span id="hint"></span>
     </div>
   </div>
@@ -263,17 +265,17 @@ const LIBRARY = [
   { id:'e3', title:'Fünf-Finger-Lage links', tip:'Kleiner Finger auf C3 – die linke Hand spiegelt die rechte.', bpm:70,
     notes: mkLine([[1,48],[1,50],[1,52],[1,53],[1,55],[1,53],[1,52],[1,50],[2,48]]) },
   { id:'e4', title:'Schwarze Tasten', tip:'Zweier- und Dreiergruppen: Cis/Dis mit 2-3, Fis/Gis/Ais mit 2-3-4.', bpm:70,
-    notes: mkLine([[1,61],[1,63],[1,61],[1,63],[1,66],[1,68],[1,70],[1,68],[1,66],[3,61]]) },
+    notes: mkLine([[1,61],[1,63],[1,61],[1,63],[1,66],[1,68],[1,70],[1,68],[1,66],[3,61]]), split:55 },
   { id:'e5', title:'C-Dur-Tonleiter rechts', tip:'Aufwärts nach dem 3. Finger den Daumen untersetzen, abwärts übersetzen.', bpm:70,
     notes: scaleLesson(60, MAJ) },
   { id:'e6', title:'C-Dur-Tonleiter links', tip:'Gleiches Prinzip, Oktave tiefer: Fingersatz 5-4-3-2-1-3-2-1.', bpm:70,
-    notes: scaleLesson(48, MAJ) },
+    notes: scaleLesson(48, MAJ), split:61 },
   { id:'e7', title:'Lange Basstöne', tip:'Töne voll aushalten – erst loslassen, wenn der nächste kommt.', bpm:70,
     notes: mkLine([[4,48],[4,43],[4,45],[4,41],[4,48],[4,43],[4,45],[4,48]]) },
   { id:'e8', title:'Beide Hände zusammen', tip:'Links hält, rechts bewegt sich. Erst einzeln (RH/LH-Knopf), dann beide.', bpm:60,
     notes: [[0,4,48],[0,1,64],[1,1,62],[2,1,60],[3,1,62],[4,4,43],[4,1,62],[5,1,64],[6,2,67],[8,4,45],[8,1,64],[9,1,62],[10,1,60],[11,1,62],[12,4,48],[12,4,60]] },
   { id:'e9', title:'Dreiklänge: C – F – G', tip:'Daumen, Mittelfinger, kleiner Finger – alle drei Tasten exakt zusammen.', bpm:60,
-    notes: mkLine([[4,[60,64,67]],[4,[60,65,69]],[4,[59,62,67]],[4,[60,64,67]]]) },
+    notes: mkLine([[4,[60,64,67]],[4,[60,65,69]],[4,[59,62,67]],[4,[60,64,67]]]), split:55 },
   { id:'e10', title:'Ode an die Freude', tip:'Deine erste echte Melodie – bleibt komplett in der Fünf-Finger-Lage.', bpm:80,
     notes: mkLine([[1,64],[1,64],[1,65],[1,67],[1,67],[1,65],[1,64],[1,62],[1,60],[1,60],[1,62],[1,64],[1.5,64],[0.5,62],[2,62],
                    [1,64],[1,64],[1,65],[1,67],[1,67],[1,65],[1,64],[1,62],[1,60],[1,60],[1,62],[1,64],[1.5,62],[0.5,60],[2,60]]) },
@@ -283,18 +285,18 @@ const LIBRARY = [
   { id:'f2', title:'F-Dur-Tonleiter', tip:'Ein B. Rechts: 1-2-3-4 / 1-2-3-4 – Daumen nach dem 4. Finger.', bpm:75, notes: scaleLesson(65, MAJ) },
   { id:'f3', title:'a-Moll natürlich', tip:'Die Moll-Parallele zu C-Dur: gleiche Tasten, anderer Grundton.', bpm:75, notes: scaleLesson(69, NMIN) },
   { id:'f4', title:'Umkehrungen: C-Dur', tip:'Grundstellung, 1. und 2. Umkehrung – hinauf und wieder zurück.', bpm:60,
-    notes: mkLine([[2,[60,64,67]],[2,[64,67,72]],[2,[67,72,76]],[2,[72,76,79]],[2,[67,72,76]],[2,[64,67,72]],[4,[60,64,67]]]) },
+    notes: mkLine([[2,[60,64,67]],[2,[64,67,72]],[2,[67,72,76]],[2,[72,76,79]],[2,[67,72,76]],[2,[64,67,72]],[4,[60,64,67]]]), split:55 },
   { id:'f5', title:'Kadenz I–IV–V–I', tip:'Links der Grundton, rechts der Akkord – das Fundament fast aller Songs.', bpm:60,
     notes: [[0,4,48],[0,4,60],[0,4,64],[0,4,67],[4,4,53],[4,4,60],[4,4,65],[4,4,69],[8,4,55],[8,4,59],[8,4,62],[8,4,67],[12,4,48],[12,4,60],[12,4,64],[12,4,67]] },
   { id:'f6', title:'Arpeggio C-Dur, 2 Oktaven', tip:'Gebrochener Dreiklang – locker im Handgelenk, Daumen untersetzen.', bpm:70,
-    notes: mkLine([[0.5,60],[0.5,64],[0.5,67],[0.5,72],[0.5,76],[0.5,79],[1,84],[0.5,79],[0.5,76],[0.5,72],[0.5,67],[0.5,64],[2,60]]) },
+    notes: mkLine([[0.5,60],[0.5,64],[0.5,67],[0.5,72],[0.5,76],[0.5,79],[1,84],[0.5,79],[0.5,76],[0.5,72],[0.5,67],[0.5,64],[2,60]]), split:55 },
   { id:'f7', title:'Achtel & Synkopen', tip:'Achtel gleichmässig – die Betonung liegt manchmal zwischen den Schlägen.', bpm:70,
     notes: mkLine([[0.5,60],[0.5,62],[1,64],[0.5,64],[0.5,65],[1,67],[0.5,67],[1,69],[0.5,67],[1,65],[1,64],[0.5,62],[0.5,64],[2,60]]) },
   { id:'f8', title:'Handunabhängigkeit', tip:'Links halbe Quinten, rechts Viertel – zwei Rollen gleichzeitig.', bpm:60,
     notes: [[0,2,48],[0,2,55],[0,1,64],[1,1,67],[2,2,48],[2,2,55],[2,1,69],[3,1,67],[4,2,53],[4,2,60],[4,1,65],[5,1,69],[6,2,53],[6,2,60],[6,1,72],[7,1,69],[8,2,55],[8,2,62],[8,1,71],[9,1,67],[10,2,55],[10,2,62],[10,1,74],[11,1,71],[12,2,48],[12,2,55],[12,2,72],[14,2,48],[14,2,55],[14,2,64]] },
   { id:'f9', title:'Hanon Nr. 1', tip:'Das klassische Fingertraining: jede Note gleich laut, gleich lang.', bpm:60,
     notes: mkLine([[0.5,60],[0.5,64],[0.5,65],[0.5,67],[0.5,69],[0.5,67],[0.5,65],[0.5,64],[0.5,62],[0.5,65],[0.5,67],[0.5,69],[0.5,71],[0.5,69],[0.5,67],[0.5,65],[0.5,64],[0.5,67],[0.5,69],[0.5,71],[0.5,72],[0.5,71],[0.5,69],[0.5,67],[2,72]]) },
-  { id:'f10', title:'C-Pentatonik', tip:'Fünf Töne, klingt immer gut – die Basis fürs Improvisieren.', bpm:75, notes: scaleLesson(60, PENTA) },
+  { id:'f10', title:'C-Pentatonik', tip:'Fünf Töne, klingt immer gut – die Basis fürs Improvisieren.', bpm:75, notes: scaleLesson(60, PENTA), split:55 },
  ]},
  { level: 'PRO', sub: 'Quintenzirkel, Moll-Varianten, Septakkorde, II–V–I', lessons: [
   { id:'p1', title:'D-Dur & A-Dur', tip:'Zwei und drei Kreuze – der Quintenzirkel nach rechts.', bpm:80, notes: twoScales(62, 69, MAJ) },
@@ -310,9 +312,9 @@ const LIBRARY = [
   { id:'p7', title:'II–V–I in drei Tonarten', tip:'Die wichtigste Jazz-Verbindung – in C, F und G, links der Grundton.', bpm:60,
     notes: mkLine([[2,[50,62,65,69,72]],[2,[55,67,71,74,77]],[4,[48,60,64,67,71]],[2,[55,67,70,74,77]],[2,[48,60,64,67,70]],[4,[53,65,69,72,76]],[2,[57,69,72,76,79]],[2,[50,62,66,69,72]],[4,[55,67,71,74,78]]]) },
   { id:'p8', title:'Arpeggien-Kette C–Am–F–G', tip:'Vier Harmonien gebrochen, fliessend verbunden – eine Lage.', bpm:75,
-    notes: mkLine([[0.5,60],[0.5,64],[0.5,67],[0.5,64],[0.5,60],[0.5,64],[0.5,69],[0.5,64],[0.5,60],[0.5,65],[0.5,69],[0.5,65],[0.5,59],[0.5,62],[0.5,67],[0.5,62],[2,[60,64,67]]]) },
+    notes: mkLine([[0.5,60],[0.5,64],[0.5,67],[0.5,64],[0.5,60],[0.5,64],[0.5,69],[0.5,64],[0.5,60],[0.5,65],[0.5,69],[0.5,65],[0.5,59],[0.5,62],[0.5,67],[0.5,62],[2,[60,64,67]]]), split:55 },
   { id:'p9', title:'Oktaven', tip:'1 und 5 gleichzeitig, Handgelenk locker – nicht aus dem Arm hämmern.', bpm:60,
-    notes: mkLine([[1,[60,72]],[1,[62,74]],[1,[64,76]],[1,[67,79]],[1,[64,76]],[1,[62,74]],[2,[60,72]]]) },
+    notes: mkLine([[1,[60,72]],[1,[62,74]],[1,[64,76]],[1,[67,79]],[1,[64,76]],[1,[62,74]],[2,[60,72]]]), split:55 },
   { id:'p10', title:'Walking Bass & Akkorde', tip:'Links läuft, rechts setzt Akzente. Danach im Kontrolle-Modus prüfen.', bpm:70,
     notes: [[0,1,48],[1,1,52],[2,1,55],[3,1,52],[0,2,60],[0,2,64],[0,2,67],[2,2,60],[2,2,64],[2,2,67],
             [4,1,53],[5,1,57],[6,1,58],[7,1,57],[4,2,60],[4,2,65],[4,2,69],[6,2,60],[6,2,65],[6,2,69],
@@ -331,6 +333,7 @@ function openLesson(id){
   const les = ALL_LESSONS.find(l => l.id === id);
   if (!les) return;
   loadSong(les.title, les.notes, les.bpm);
+  if (les.split != null) SONG.split = les.split;   // Haendetrennung der Lektion erzwingen
   version = 'full'; document.getElementById('version').value = 'full';
   secStart = 0; secEnd = SONG.bars;
   document.getElementById('section').value = '0-' + SONG.bars;
@@ -562,7 +565,7 @@ const cv = document.getElementById('cv'), ctx = cv.getContext('2d');
 let LOW = 21, HIGH = 108;
 let version = 'easy', notes = [], secStart = 0, secEnd = 8;
 let playing = false, pos = -4, tempoPct = 50, playRH = true, playLH = true, looping = true;
-let mode = 'listen', octTolerant = true, metro = false, showNames = true;
+let mode = 'listen', octTolerant = true, metro = false, showNames = true, showFinger = true;
 let ac = null, scheduled = [], rafId = null, timing = null;
 let midiIn = null, userDown = new Set(), flash = {};
 let hits = 0, misses = 0, matched = new Set();
@@ -573,7 +576,102 @@ function fold(p){ while (p < LOW) p += 12; while (p > HIGH) p -= 12; return p; }
 function activeNotes(){ return notes.filter(n => (n[2] >= SONG.split ? playRH : playLH)); }
 function rebuild(){
   notes = SONG[version].filter(n => n[0] >= secStart * 4 && n[0] < secEnd * 4);
+  fingering = computeFingering(notes, SONG.split);
   buildGroups(); resetScore();
+}
+// ================= Fingersatz-Berechnung =================
+// Klassische Regeln als Kostenfunktion + dynamische Programmierung pro Hand:
+// Daumenuntersatz erlaubt, Fingerkreuzung ohne Daumen teuer, Daumen meidet
+// schwarze Tasten, Spannweiten pro Fingerpaar, Akkorde nach Griffweite.
+let fingering = new Map();
+function isBlackKey(p){ return [1,3,6,8,10].includes(p % 12); }
+const FSPAN = { '1,2':[1,5,9], '1,3':[3,7,11], '1,4':[5,9,12], '1,5':[7,12,15],
+                '2,3':[1,2,4], '2,4':[3,4,6], '2,5':[5,7,9],
+                '3,4':[1,2,3], '3,5':[3,4,6], '4,5':[1,2,3] };
+function transCost(p1, f1, p2, f2, rh){
+  let iv = p2 - p1;
+  if (!rh) iv = -iv;                        // normalisiert: positiv = vom Daumen weg
+  const df = f2 - f1;
+  if (p1 === p2) return f1 === f2 ? 0 : 2;  // Tonrepetition: gleicher Finger ist gut
+  if (f1 === f2) return 12;                 // gleicher Finger, anderer Ton: vermeiden
+  const lo = Math.min(f1, f2), hi = Math.max(f1, f2);
+  const [mn, ideal, mx] = FSPAN[lo + ',' + hi];
+  const dist = Math.abs(iv);
+  let c = 0;
+  if ((iv > 0) === (df > 0)) {
+    c += dist < mn ? (mn - dist) * 2 : dist > mx ? (dist - mx) * 2 : Math.abs(dist - ideal) * 0.3;
+  } else if (f2 === 1 || f1 === 1) {
+    c += 3 + dist * 0.3 + Math.abs((f1 === 1 ? f2 : f1) - 3) * 0.7;  // Unter-/Uebersatz, bevorzugt 3. Finger
+  } else {
+    c += 14;                                // Kreuzung ohne Daumen
+  }
+  if (f2 === 1 && isBlackKey(p2)) c += 5;
+  return c;
+}
+function dpRun(ps, rh, prevP, prevF){
+  const N = ps.length;
+  if (!N) return [];
+  let cur = [];
+  for (let f = 1; f <= 5; f++)
+    cur[f] = prevP != null ? transCost(prevP, prevF, ps[0], f, rh) : (isBlackKey(ps[0]) && f === 1 ? 4 : 0);
+  const back = [];
+  for (let i = 1; i < N; i++) {
+    const nd = [], ch = [];
+    for (let f = 1; f <= 5; f++) {
+      nd[f] = 1e9;
+      for (let g = 1; g <= 5; g++) {
+        const c = cur[g] + transCost(ps[i - 1], g, ps[i], f, rh);
+        if (c < nd[f]) { nd[f] = c; ch[f] = g; }
+      }
+    }
+    cur = nd; back.push(ch);
+  }
+  let best = 1;
+  for (let f = 2; f <= 5; f++) if (cur[f] < cur[best]) best = f;
+  const out = [best];
+  for (let i = back.length - 1; i >= 0; i--) out.unshift(back[i][out[0]]);
+  return out;
+}
+function assignChord(ps, rh){
+  const seq = rh ? ps : [...ps].reverse();  // von der Daumen-Seite aus greifen
+  const out = [1];
+  for (let i = 1; i < seq.length; i++) {
+    const iv = Math.abs(seq[i] - seq[i - 1]);
+    out.push(Math.min(5, out[i - 1] + Math.max(1, Math.min(4, Math.round(iv / 2)))));
+  }
+  for (let i = out.length - 2; i >= 0; i--) if (out[i] >= out[i + 1]) out[i] = Math.max(1, out[i + 1] - 1);
+  return rh ? out : out.reverse();
+}
+function computeFingering(ns, split){
+  const map = new Map();
+  for (const rh of [true, false]) {
+    const hand = ns.filter(n => (n[2] >= split) === rh).sort((a, b) => a[0] - b[0] || a[2] - b[2]);
+    const evs = [];
+    for (const n of hand) {
+      const L = evs[evs.length - 1];
+      if (L && Math.abs(L.t - n[0]) < 0.01) L.notes.push(n); else evs.push({ t: n[0], notes: [n] });
+    }
+    let prevP = null, prevF = null, run = [];
+    const flushRun = () => {
+      if (!run.length) return;
+      const fs = dpRun(run.map(n => n[2]), rh, prevP, prevF);
+      run.forEach((n, i) => map.set(n, fs[i]));
+      prevP = run[run.length - 1][2]; prevF = fs[fs.length - 1];
+      run = [];
+    };
+    for (const ev of evs) {
+      if (ev.notes.length > 1) {
+        flushRun();
+        const sorted = [...ev.notes].sort((a, b) => a[2] - b[2]);
+        const fs = assignChord(sorted.map(n => n[2]), rh);
+        sorted.forEach((n, i) => map.set(n, fs[i]));
+        prevP = rh ? sorted[0][2] : sorted[sorted.length - 1][2];
+        prevF = rh ? fs[0] : fs[fs.length - 1];
+      } else run.push(ev.notes[0]);
+    }
+    flushRun();
+  }
+  return map;
 }
 function buildGroups(){
   const m = new Map();
@@ -621,7 +719,9 @@ function draw(){
   const NLAB = ['C','C♯','D','D♯','E','F','F♯','G','G♯','A','A♯','H'];
   const pressed = new Set();
   const expectSet = (mode === 'wait' && groups[gIdx]) ? new Set(groups[gIdx].ns.map(n => fold(n[2]))) : null;
-  for (const [s, d, p] of activeNotes()) {
+  const expFing = (showFinger && mode === 'wait' && groups[gIdx]) ? new Map(groups[gIdx].ns.map(n => [fold(n[2]), fingering.get(n)])) : null;
+  for (const n of activeNotes()) {
+    const [s, d, p] = n;
     const startS = (s - pos) * spb(), endS = (s + d - pos) * spb();
     const pf = fold(p), isRH = p >= SONG.split;
     if (startS <= 0 && endS > 0 && mode !== 'wait') pressed.add(pf);
@@ -632,11 +732,18 @@ function draw(){
     ctx.strokeStyle = isRH ? '#3a8896' : '#8a4220';
     ctx.beginPath(); ctx.roundRect(x + 1, Math.max(0, yT), w - 2, Math.max(2, Math.min(FALL, yB) - Math.max(0, yT)), 3 * dpr);
     ctx.fill(); ctx.stroke();
-    if (showNames && Math.min(FALL, yB) - Math.max(0, yT) > 16 * dpr && w > 14 * dpr) {
+    const noteH = Math.min(FALL, yB) - Math.max(0, yT);
+    const fg = showFinger ? fingering.get(n) : null;
+    if (noteH > 16 * dpr && w > 14 * dpr && (fg || showNames)) {
       ctx.fillStyle = '#0a0a0a';
       ctx.font = '700 ' + (9 * dpr) + 'px "JetBrains Mono",monospace';
-      const lab = NLAB[pf % 12];
+      const lab = fg ? String(fg) : NLAB[pf % 12];   // Fingersatz hat Vorrang in der Note
       ctx.fillText(lab, x + w / 2 - ctx.measureText(lab).width / 2, Math.min(FALL, yB) - 4 * dpr);
+      if (fg && showNames && noteH > 30 * dpr) {
+        ctx.font = '400 ' + (8 * dpr) + 'px "JetBrains Mono",monospace';
+        const nm = NLAB[pf % 12];
+        ctx.fillText(nm, x + w / 2 - ctx.measureText(nm).width / 2, Math.min(FALL, yB) - 15 * dpr);
+      }
     }
   }
   ctx.fillStyle = '#050505'; ctx.fillRect(0, FALL, g.W, KEY_H);
@@ -654,17 +761,59 @@ function draw(){
     ctx.fillRect(g.wx[p] + 1, FALL, g.ww - 2, KEY_H - 2);
     if (p % 12 === 0) { ctx.fillStyle = '#5a5550'; ctx.font = (10 * dpr) + 'px "JetBrains Mono",monospace'; ctx.fillText('C' + (Math.floor(p/12)-1), g.wx[p] + 3, FALL + KEY_H - 7); }
     else if (showNames) { ctx.fillStyle = '#5a5550'; ctx.font = (10 * dpr) + 'px "JetBrains Mono",monospace'; ctx.fillText(NN[p % 12], g.wx[p] + g.ww / 2 - 3 * dpr, FALL + KEY_H - 7); }
+    if (expFing && expFing.has(p) && expFing.get(p)) {
+      ctx.fillStyle = '#0a0a0a';
+      ctx.font = '700 ' + (16 * dpr) + 'px "JetBrains Mono",monospace';
+      const fl = String(expFing.get(p));
+      ctx.fillText(fl, g.wx[p] + g.ww / 2 - ctx.measureText(fl).width / 2, FALL + KEY_H * 0.72);
+    }
   }
   for (let p = LOW; p <= HIGH; p++) if ([1,3,6,8,10].includes(p % 12)) {
     const [x, w] = keyX(p, g);
     ctx.fillStyle = keyCol(p, true);
     ctx.fillRect(x, FALL, w, KEY_H * 0.62);
+    if (expFing && expFing.has(p) && expFing.get(p)) {
+      ctx.fillStyle = '#0a0a0a';
+      ctx.font = '700 ' + (13 * dpr) + 'px "JetBrains Mono",monospace';
+      const fl = String(expFing.get(p));
+      ctx.fillText(fl, x + w / 2 - ctx.measureText(fl).width / 2, FALL + KEY_H * 0.62 - 8 * dpr);
+    }
   }
   ctx.fillStyle = '#8a8580'; ctx.font = '500 ' + (12 * dpr) + 'px "JetBrains Mono",monospace';
   const bar = Math.floor(Math.max(0, pos) / 4) + 1;
   ctx.fillText('Takt ' + Math.min(bar, SONG.bars) + ' / ' + SONG.bars + '   ' + Math.round(SONG.bpm * tempoPct / 100) + ' BPM' + (mode === 'wait' ? '   WARTE-MODUS' : ''), 14 * dpr, 22 * dpr);
 }
+// ================= Klavierklang: Salamander Grand (CC BY 3.0, Alexander Holm) =================
+// 15 Samples im Tritonus-Raster, selbst gehostet; Pitch-Shift max. +-3 Halbtoene.
+const SAMPLE_MAP = [[24,'C1'],[30,'Fs1'],[36,'C2'],[42,'Fs2'],[48,'C3'],[54,'Fs3'],[60,'C4'],[66,'Fs4'],[72,'C5'],[78,'Fs5'],[84,'C6'],[90,'Fs6'],[96,'C7'],[102,'Fs7'],[108,'C8']];
+const pianoBuf = {};
+let pianoReady = false, pianoLoading = false;
+function loadPiano(){
+  if (pianoLoading || !ac) return;
+  pianoLoading = true;
+  Promise.all(SAMPLE_MAP.map(([m, n]) =>
+    fetch('assets/piano/' + n + '.mp3')
+      .then(r => { if (!r.ok) throw new Error(n); return r.arrayBuffer(); })
+      .then(b => new Promise((res, rej) => ac.decodeAudioData(b, res, rej)))
+      .then(buf => { pianoBuf[m] = buf; })
+  )).then(() => { pianoReady = true; }).catch(() => {});  // bei Fehlern bleibt der Synth-Fallback
+}
 function tone(when, dur, midi, gain){
+  if (pianoReady) {
+    let best = SAMPLE_MAP[0][0], bd = 1e9;
+    for (const [m] of SAMPLE_MAP) { const d0 = Math.abs(m - midi); if (d0 < bd) { bd = d0; best = m; } }
+    const src = ac.createBufferSource();
+    src.buffer = pianoBuf[best];
+    src.playbackRate.value = Math.pow(2, (midi - best) / 12);
+    const g = ac.createGain();
+    const d = Math.max(0.25, dur);
+    g.gain.setValueAtTime(Math.min(1, gain * 2.4), when);
+    g.gain.setTargetAtTime(0.0001, when + d, 0.18);   // natuerliches Release nach Notenlaenge
+    src.connect(g); g.connect(ac.destination);
+    src.start(when); src.stop(when + d + 1.0);
+    scheduled.push(src);
+    return;
+  }
   const o = ac.createOscillator(), o2 = ac.createOscillator(), gn = ac.createGain(), g2 = ac.createGain();
   const f = 440 * Math.pow(2, (midi - 69) / 12);
   o.type = 'triangle'; o.frequency.value = f; o2.type = 'sine'; o2.frequency.value = f * 2; g2.gain.value = 0.25;
@@ -682,7 +831,7 @@ function click(when){
   g.gain.setValueAtTime(0.12, when); g.gain.exponentialRampToValueAtTime(0.001, when + 0.06);
   o.start(when); o.stop(when + 0.08); scheduled.push(o);
 }
-function ensureAC(){ if (!ac) ac = new (window.AudioContext || window.webkitAudioContext)(); ac.resume(); }
+function ensureAC(){ if (!ac) ac = new (window.AudioContext || window.webkitAudioContext)(); ac.resume(); loadPiano(); }
 function schedule(){
   const base = ac.currentTime + 0.1, s = spb();
   for (let i = 0; i < 4; i++) click(base + i * s);
@@ -921,6 +1070,7 @@ document.getElementById('loop').onclick = e => { looping = !looping; e.target.te
 document.getElementById('oct').onclick = e => { octTolerant = !octTolerant; e.target.classList.toggle('okactive'); };
 document.getElementById('metro').onclick = e => { metro = !metro; e.target.classList.toggle('active'); if (playing && mode !== 'wait') setPlaying(false); };
 document.getElementById('names').onclick = e => { showNames = !showNames; e.target.classList.toggle('active'); draw(); };
+document.getElementById('fing').onclick = e => { showFinger = !showFinger; e.target.classList.toggle('active'); draw(); };
 window.onresize = () => draw();
 
 // ---------- Views ----------
