@@ -125,6 +125,9 @@ main { flex:1; overflow:auto; }
 .anachip:hover { border-color:var(--tiefrot); }
 .anachip small { color:var(--dim); font-size:10px; letter-spacing:0.1em; margin-left:6px; }
 .ana-key { font-family:var(--brutal); font-weight:800; font-size:2.1rem; letter-spacing:-0.03em; }
+.gbars { display:flex; gap:2px; align-items:flex-end; height:52px; margin-top:10px; }
+.gbars .gbar { flex:1; min-height:4px; background:var(--muted-deep); border-radius:2px 2px 0 0; }
+.gbars .gbar.gs { background:var(--bone); }
 .anachip.fn-t { border-left:3px solid #4a8a4a; }
 .anachip.fn-s { border-left:3px solid #e8c04a; }
 .anachip.fn-d { border-left:3px solid var(--tiefrot); }
@@ -1184,17 +1187,18 @@ function recPlay(){
   const t0 = ac.currentTime + 0.2, base = recNotes[0][0];
   for (const [b, d, p, v] of recNotes) tone(t0 + (b - base) * recSpb, d * recSpb, p, 0.1 + (v / 127) * 0.25);
 }
-function recExport(){
-  const tpb = 480, spb = recSpb;
+// Format-0-MIDI aus [beat,dur,pitch,vel]-Noten (vel optional, Standard 80)
+function midiBytes(ns, spb){
+  const tpb = 480;
   const bytes = [];
   const str = s => { for (const c of s) bytes.push(c.charCodeAt(0)); };
   const u32 = n => bytes.push(n >>> 24 & 255, n >>> 16 & 255, n >>> 8 & 255, n & 255);
   const u16 = n => bytes.push(n >>> 8 & 255, n & 255);
   str('MThd'); u32(6); u16(0); u16(1); u16(tpb);
   const ev = [];
-  const base = recNotes[0][0];
-  for (const [b, d, p, v] of recNotes) {
-    ev.push({ tick: Math.round((b - base) * tpb), msg: [0x90, p, Math.max(1, v)] });
+  const base = Math.min(...ns.map(n => n[0]));
+  for (const [b, d, p, v] of ns) {
+    ev.push({ tick: Math.round((b - base) * tpb), msg: [0x90, p, Math.max(1, Math.min(127, v || 80))] });
     ev.push({ tick: Math.round((b - base + d) * tpb), msg: [0x80, p, 0] });
   }
   ev.sort((a, b) => a.tick - b.tick);
@@ -1205,12 +1209,18 @@ function recExport(){
   for (const e of ev) { tr.push(...vlq(e.tick - last), ...e.msg); last = e.tick; }
   tr.push(0, 0xff, 0x2f, 0);
   str('MTrk'); u32(tr.length); bytes.push(...tr);
-  const blob = new Blob([new Uint8Array(bytes)], { type: 'audio/midi' });
+  return bytes;
+}
+function downloadMidi(ns, spb, fname){
+  const blob = new Blob([new Uint8Array(midiBytes(ns, spb))], { type: 'audio/midi' });
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
-  a.download = (SONG ? SONG.name.replace(/\W+/g, '_') : 'aufnahme') + '_aufnahme.mid';
+  a.download = fname;
   a.click();
   setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+}
+function recExport(){
+  downloadMidi(recNotes, recSpb, (SONG ? SONG.name.replace(/\W+/g, '_') : 'aufnahme') + '_aufnahme.mid');
 }
 function handlePress(p){
   const now = performance.now();
@@ -1485,6 +1495,47 @@ function chordFunction(rootPc, q, key){
   return ['T','D','T','S','T','S','D'][deg];
 }
 const FNLABEL = { T: 'Tonika', S: 'Subdominante', D: 'Dominante' };
+// Groove DNA: Gewicht je 16tel-Position (hierarchisch schwer/leicht)
+const GROOVE_W16 = [4,0,1,0,2,0,1,0,3,0,1,0,2,0,1,0];
+function grooveProfile(ns){
+  const counts = Array(16).fill(0);
+  let devSum = 0, off = 0;
+  for (const n of ns) {
+    const t16 = n[0] * 4;
+    const q = Math.round(t16);
+    const dev = Math.abs(t16 - q);
+    devSum += dev;
+    if (dev > 0.12) off++;                  // deutlich neben dem 16tel-Raster
+    counts[((q % 16) + 16) % 16]++;
+  }
+  const heavy = counts.reduce((a, c, i) => a + (GROOVE_W16[i] >= 2 ? c : 0), 0);
+  const light = counts.reduce((a, c, i) => a + (GROOVE_W16[i] < 2 ? c : 0), 0);
+  const span = Math.max(1, Math.ceil(Math.max(...ns.map(n => (n[0] + n[1]) * 4))));
+  const occ = new Set();
+  for (const n of ns) for (let t = Math.round(n[0] * 4); t < Math.round((n[0] + n[1]) * 4); t++) occ.add(t);
+  return { counts, avgDev: ns.length ? devSum / ns.length : 0, offGrid: ns.length ? off / ns.length : 0,
+           heavy, light, density: occ.size / span };
+}
+function grooveTips(g){
+  const tips = [];
+  if (g.offGrid > 0.15) tips.push('Timing: ' + Math.round(g.offGrid * 100) + '% der Noten liegen neben dem 16tel-Raster – Quantisierung hilft.');
+  const tot = g.heavy + g.light;
+  if (tot) {
+    const lr = g.light / tot;
+    if (lr < 0.25) tips.push('Mehr Drive: betone auch leichte Zählzeiten (2 & 4, Offbeats) – dort lebt der Groove.');
+    else if (lr > 0.65) tips.push('Anker setzen: viele Betonungen auf leichten Zählzeiten – ohne schwere Anker droht der Groove zu drehen.');
+    else tips.push('Ausgewogen: schwere und leichte Zählzeiten halten sich die Waage.');
+  }
+  if (g.density > 0.85) tips.push('Mehr Pausen wagen: catchy Melodien haben etwa gleich viele Noten wie Pausen.');
+  return tips;
+}
+// 100% aufs 16tel-Raster + Velocity nach rhythmischer Gewichtung
+function optimizeNotes(ns){
+  return ns.map(n => {
+    const q16 = Math.round(n[0] * 4);
+    return [q16 / 4, Math.max(0.25, Math.round(n[1] * 4) / 4), n[2], 68 + GROOVE_W16[((q16 % 16) + 16) % 16] * 7];
+  });
+}
 // Reharmonisierung per Funktionstausch: gleicher Halt, anderer Mood
 function reharmonize(chords, key){
   const tr = keyTriads(key);
@@ -1533,7 +1584,7 @@ function openDrill(title, ns, bpm){
   rebuild(); updScore(); go('trainer'); draw();
   setPlaying(true);
 }
-function renderAnalysis(name, ns){
+function renderAnalysis(name, ns, abpm){
   const key = detectKey(ns);
   const triads = keyTriads(key);
   const bars = Math.max(1, Math.ceil(Math.max(...ns.map(n => n[0] + n[1])) / 4));
@@ -1661,6 +1712,35 @@ function renderAnalysis(name, ns){
       vName + '7, harmonisches Moll) – sie zieht dann viel stärker zur Tonika (E7-Prinzip).';
     c6.appendChild(p);
   }
+  // Groove-Check: Betonungsprofil gegen die Groove DNA + optimierter Export
+  const g = grooveProfile(ns);
+  const c7 = card('<span class="num">7</span><h3>Groove-Check</h3>' +
+    '<div class="gbars"></div>' +
+    '<p class="gmeta" style="color:var(--dim);font-family:var(--mono);font-size:11px;margin-top:6px"></p>' +
+    '<div class="chips gtips" style="margin-top:8px"></div>');
+  c7.id = 'groove';
+  const gb = c7.querySelector('.gbars');
+  const gmax = Math.max(1, ...g.counts);
+  g.counts.forEach((c, i) => {
+    const w = document.createElement('div');
+    w.className = 'gbar' + (GROOVE_W16[i] >= 2 ? ' gs' : '');
+    w.title = 'Position ' + (i + 1) + ' · ' + c + ' Anschläge · ' + (GROOVE_W16[i] >= 2 ? 'schwer' : 'leicht');
+    w.style.height = Math.max(6, c / gmax * 100) + '%';
+    gb.appendChild(w);
+  });
+  c7.querySelector('.gmeta').textContent = Math.round((1 - g.offGrid) * 100) + '% im Raster · Betonungen schwer/leicht ' +
+    g.heavy + '/' + g.light + ' · Dichte ' + Math.round(g.density * 100) + '%';
+  const gt = c7.querySelector('.gtips');
+  grooveTips(g).forEach(t => {
+    const s = document.createElement('span');
+    s.className = 'anachip'; s.style.cursor = 'default';
+    s.textContent = t;
+    gt.appendChild(s);
+  });
+  const b7 = document.createElement('button'); b7.className = 'btn'; b7.textContent = 'Optimiert exportieren (.mid)';
+  b7.onclick = () => downloadMidi(optimizeNotes(ns), 60 / (abpm || (SONG && SONG.bpm) || 90),
+    name.replace(/\W+/g, '_') + '_optimiert.mid');
+  c7.appendChild(b7);
   const head = document.createElement('div');
   head.className = 'levelhead';
   head.innerHTML = '<span class="lvltitle"></span><span class="lvlsub">Chips anklicken = anhören · Üben-Buttons öffnen den Trainer</span>';
@@ -1675,15 +1755,15 @@ document.getElementById('anafile').onchange = e => {
   const rd = new FileReader();
   rd.onload = () => {
     try {
-      const { notes: nn } = parseMidi(rd.result);
+      const { notes: nn, bpm: nb } = parseMidi(rd.result);
       if (!nn.length) return;
-      renderAnalysis(f.name.replace(/\.(mid|midi)$/i, ''), nn);
+      renderAnalysis(f.name.replace(/\.(mid|midi)$/i, ''), nn, nb);
     } catch (err) { document.getElementById('anaout').textContent = 'Fehler: ' + err.message; }
   };
   rd.readAsArrayBuffer(f);
   e.target.value = '';
 };
-document.getElementById('anacur').onclick = () => { if (SONG) renderAnalysis(SONG.name, SONG.full); };
+document.getElementById('anacur').onclick = () => { if (SONG) renderAnalysis(SONG.name, SONG.full, SONG.bpm); };
 // ================= Gehörtraining =================
 const EAR_KEY = 'nulltag-ear';
 let earBest = {};
