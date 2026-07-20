@@ -66,6 +66,10 @@ main { flex:1; overflow:auto; }
 .sbarw:hover .sbar { opacity:1; }
 .sbarw .tip { display:none; position:absolute; bottom:calc(100% + 6px); left:50%; transform:translateX(-50%); white-space:nowrap; background:var(--panel2); border:1px solid var(--border); border-radius:4px; padding:4px 8px; font-family:var(--mono); font-size:10px; letter-spacing:0.06em; color:var(--bone); z-index:3; pointer-events:none; }
 .sbarw:hover .tip { display:block; }
+.goalbar { height:3px; background:var(--border); border-radius:2px; margin-top:10px; overflow:hidden; }
+.goalbar div { height:100%; background:var(--tiefrot); transition:width 150ms var(--ease); }
+#goalrow a { color:var(--dim); text-decoration:underline; text-underline-offset:3px; cursor:pointer; }
+#goalrow a:hover { color:var(--tiefrot); }
 .segbar { display:flex; gap:4px; margin-top:10px; }
 .segbar div { height:3px; flex:1; background:var(--border); }
 .segbar div.on { background:var(--bone); }
@@ -1837,6 +1841,21 @@ function addPractice(min){
   practiceDays[k] = (practiceDays[k] || 0) + min;
   try { localStorage.setItem(PRACTICE_KEY, JSON.stringify(practiceDays)); } catch (e) {}
 }
+const GOAL_KEY = 'nulltag-goal';
+function weekGoal(){
+  const g = parseInt(localStorage.getItem(GOAL_KEY) || '60', 10);
+  return [30, 60, 120].includes(g) ? g : 60;
+}
+function bestStreak(){
+  const days = Object.keys(practiceDays).filter(k => practiceDays[k] > 0).sort();
+  let best = 0, run = 0, prev = null;
+  for (const k of days) {
+    run = (prev && Date.parse(k) - Date.parse(prev) === 86400000) ? run + 1 : 1;
+    best = Math.max(best, run);
+    prev = k;
+  }
+  return best;
+}
 function streakDays(){
   let s = 0;
   for (let i = 0; i < 999; i++) {
@@ -1999,10 +2018,21 @@ function renderStart(){
   const max = Math.max(1, ...days.map(d => d.min));
   const sc = document.createElement('div');
   sc.className = 'kurs-card statcard';
+  const goal = weekGoal();
+  const weekMin = Math.round(Array.from({ length: 7 }, (_, i) => practiceDays[dayKey(i)] || 0).reduce((a, b) => a + b, 0));
   sc.innerHTML = '<div class="resume-eyebrow">Verlauf</div><div class="resume-title">' + tot +
     ' Min.</div><div class="statbars" id="statchart"></div><div class="resume-meta">' +
     (tot ? 'Letzte 14 Tage · Ø ' + Math.round(tot / 14 * 10) / 10 + ' Min. pro Tag'
-         : 'Noch keine Übezeit – Klick auf die Streak-Karte startet eine Session') + '</div>';
+         : 'Noch keine Übezeit – Klick auf die Streak-Karte startet eine Session') + '</div>' +
+    '<div class="goalbar"><div style="width:' + Math.min(100, weekMin / goal * 100) + '%"></div></div>' +
+    '<div class="resume-meta" id="goalrow">Woche: ' + weekMin + ' / ' + goal + ' Min. · Beste Serie: ' +
+    bestStreak() + ' Tage · <a id="goalcycle">Ziel ändern</a></div>';
+  sc.querySelector('#goalcycle').onclick = e => {
+    e.stopPropagation();
+    const next = { 30: 60, 60: 120, 120: 30 }[goal] || 60;
+    try { localStorage.setItem(GOAL_KEY, String(next)); } catch (err) {}
+    renderStart();
+  };
   const bx = sc.querySelector('#statchart');
   days.forEach(d => {
     const w = document.createElement('div');
