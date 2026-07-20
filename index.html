@@ -178,6 +178,10 @@ canvas { display:block; width:100%; flex:1; touch-action:none; cursor:pointer; }
 .steprow.done .sglyph { color:var(--bone); }
 .steprow.cur .sglyph { color:var(--tiefrot); }
 .sbody2 { min-width:0; }
+.lesshead { padding:12px 14px 14px; border-bottom:1px solid var(--border); background:var(--panel); }
+.lesshead .lessec { font-family:var(--mono); font-size:9px; letter-spacing:0.28em; text-transform:uppercase; color:var(--tiefrot); margin-bottom:5px; }
+.lesshead h3 { font-family:var(--brutal); font-weight:700; font-size:16px; letter-spacing:-0.01em; margin:0 0 6px; }
+.lesshead p { color:var(--dim); font-size:11.5px; line-height:1.5; margin:0; }
 .stitle { font-family:var(--grotesk); font-weight:500; font-size:13px; color:var(--bone); }
 .smeta { font-family:var(--mono); font-size:9px; letter-spacing:0.12em; text-transform:uppercase; color:var(--dim); margin-top:2px; }
 @media (max-width:900px){ #steppanel { display:none; } }
@@ -480,6 +484,7 @@ function openLesson(id){
   document.getElementById('mode').value = 'wait'; mode = 'wait';
   rebuild(); updScore();
   currentLesson = id;
+  renderStepPanel();   // Lektions-Panel erst nach dem Setzen von currentLesson
   go('trainer');
   document.getElementById('hint').textContent = les.tip;
   draw();
@@ -768,7 +773,8 @@ function markStepDone(){
 }
 function renderStepPanel(){
   const panel = document.getElementById('steppanel');
-  if (!SONG || currentLesson || !SONG.steps || SONG.steps.length < 2) { panel.classList.add('hide'); return; }
+  if (currentLesson) { renderLessonPanel(); return; }
+  if (!SONG || !SONG.steps || SONG.steps.length < 2) { panel.classList.add('hide'); return; }
   panel.classList.remove('hide');
   const done = stepsDone[stepKey()] || [];
   const cur = curStepIdx();
@@ -792,6 +798,38 @@ function renderStepPanel(){
     };
     list.appendChild(row);
   });
+}
+// Lektionen im Trainer: prominenter Titel + Beschreibung + Seitenmenue zum Wechseln
+function renderLessonPanel(){
+  const panel = document.getElementById('steppanel');
+  panel.classList.remove('hide');
+  const les = ALL_LESSONS.find(l => l.id === currentLesson);
+  document.getElementById('stephead').textContent = '§1 · Bibliothek · ' + doneSet.size + ' / ' + ALL_LESSONS.length;
+  const list = document.getElementById('steplist');
+  list.innerHTML = '';
+  const sec = LIBRARY.find(s => s.lessons.some(l => l.id === currentLesson));
+  const hd = document.createElement('div');
+  hd.className = 'lesshead';
+  hd.innerHTML = '<div class="lessec"></div><h3></h3><p></p>';
+  hd.querySelector('.lessec').textContent = sec ? sec.level : '';
+  hd.querySelector('h3').textContent = les ? les.title : '';
+  hd.querySelector('p').textContent = les ? les.tip : '';
+  list.appendChild(hd);
+  let curRow = null;
+  ALL_LESSONS.forEach(l => {
+    const lsec = LIBRARY.find(s => s.lessons.includes(l));
+    const row = document.createElement('div');
+    const cur = l.id === currentLesson;
+    row.className = 'steprow' + (cur ? ' cur' : doneSet.has(l.id) ? ' done' : '');
+    row.innerHTML = '<span class="sglyph"></span><div class="sbody2"><div class="stitle"></div><div class="smeta"></div></div>';
+    row.querySelector('.sglyph').textContent = cur ? '→' : doneSet.has(l.id) ? '●' : '◯';
+    row.querySelector('.stitle').textContent = l.title;
+    row.querySelector('.smeta').textContent = lsec ? lsec.level : '';
+    row.onclick = () => { if (!cur) openLesson(l.id); };
+    if (cur) curRow = row;
+    list.appendChild(row);
+  });
+  if (curRow) curRow.scrollIntoView({ block: 'center' });
 }
 // Kreuz-Tonarten schreiben mit Kreuzen, alle anderen mit b (Notenansicht)
 function isFlatKey(key){
