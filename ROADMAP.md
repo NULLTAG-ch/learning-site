@@ -71,6 +71,18 @@ Stand: 2026-07-19 · 22 PRs gemerged · Gesamt-Audit gruen (36 Basis-Checks + 83
 
 ## Naechste Features (Ideen)
 
+Erledigt am 2026-07-20 (Video- und Theorie-Runde):
+- Video-Pipeline ausgerollt: 16 Clips in assets/demo/ (8x 16:9-Demo ~35s,
+  8x 9:16-Teaser ~17s, Salamander-Audio synchron; Skripte: scratchpad
+  render-song.js/render-all.sh)
+- Harmonielehre nach Ivans Folien: Akkordfunktionen T/S/D an allen Akkord-Chips,
+  Funktionen-Karte (Schuessel-Metaphern), Funktionsfolge, Reharmonisierung per
+  Funktionstausch (anhoerbar + Drill), E7-Tipp bei Moll (chordFunction/reharmonize)
+- Groove-Check im Analyse-Tab: Quantisierungs-Abweichung, Betonungsprofil je
+  16tel-Position vs. Groove-DNA-Gewichte, Empfehlungs-Chips, optimierter
+  .mid-Export (Quantisierung + Velocity nach Gewichtung)
+- Gehoertraining Level 8 'Rhythmik': Betonung hoeren und zuordnen (schwer/leicht/Offbeat)
+
 Erledigt in der Improve-Runde vom 2026-07-20 (PR #28-#30):
 - Gehoertraining v2: Melodie-Diktate (3/5 Toene) + Kadenzen-Level (7 Levels total)
 - Wochenziel (30/60/120 Min., nulltag-goal) + beste Serie auf der Verlaufs-Karte
