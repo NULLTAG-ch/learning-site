@@ -71,15 +71,22 @@ Stand: 2026-07-19 · 22 PRs gemerged · Gesamt-Audit gruen (36 Basis-Checks + 83
 
 ## Naechste Features (Ideen)
 
+Erledigt in der Improve-Runde vom 2026-07-20 (PR #28-#30):
+- Gehoertraining v2: Melodie-Diktate (3/5 Toene) + Kadenzen-Level (7 Levels total)
+- Wochenziel (30/60/120 Min., nulltag-goal) + beste Serie auf der Verlaufs-Karte
+- Teilen-Links: ?song=…&v=…&m=…&t=a-b und ?lesson=id, «Link kopieren» im Trainer
+
+Offen:
 1. **Video-Pipeline pro Song**: Render-Skripte (scratchpad: render-video.js /
    render-teaser.js) fuer alle Songs ausrollen, z.B. als Release-Begleitmaterial.
-2. **Gehoertraining ausbauen**: melodische Diktate (Tonfolge nachspielen),
-   Akkordfolgen hoeren und bestimmen, Levels an Streak koppeln.
-3. **Notenschrift vertiefen**: Notenhals/Balken, Pausen, Taktart-Anzeige;
+2. **Notenschrift vertiefen**: Notenhals/Balken, Pausen, Taktart-Anzeige;
    optional VexFlow als getrennt geladenes Asset, falls volle Notation gewuenscht.
-4. **Statistik ausbauen**: Genauigkeit pro Song ueber Zeit, beste Streaks,
-   Wochenziel mit Fortschrittsring.
-5. **Lehrer-/Share-Modus**: Uebe-Stand als Link teilen (URL-Parameter, kein Backend).
+3. **Statistik vertiefen**: Genauigkeit pro Song ueber Zeit (braucht Log der
+   Kontrolle-Runden in localStorage).
+4. **Gehoertraining**: Levels an Streak/Tages-Session koppeln (z.B. 1 Runde als
+   Session-Baustein).
+5. **NACHHALL-Cover-Option**: DJIS production/nachhall/ hat eigene Piano-EP-Cover
+   fuer 7 Songs – auf Wunsch statt der Single-Artworks zeigen.
 
 ## Architektur-Notizen fuer Weiterarbeit
 
