@@ -757,12 +757,13 @@ function rebuild(){
   notes = SONG[version].filter(n => n[0] >= secStart * 4 && n[0] < secEnd * 4);
   fingering = computeFingering(notes, SONG.split);
   staffFlat = isFlatKey(detectKey(SONG.full || notes));
-  roundN = 1; bannerUntil = 0;
+  roundN = 1; bannerUntil = 0; handPhase = null;
   buildGroups(); resetScore(); renderStepPanel();
 }
 // Durchlauf-Anzeige: sichtbar machen, wenn der Lernteil durch ist und neu beginnt
 let roundN = 1, bannerUntil = 0, bannerText = '';
 function roundWrap(){
+  if (bannerUntil > performance.now()) { roundN++; return; }   // aktives Banner (z.B. 'bereit') nicht ueberschreiben
   bannerText = '✓ Durchlauf ' + roundN + ' geschafft · weiter mit Durchlauf ' + (roundN + 1);
   roundN++;
   bannerUntil = performance.now() + 2200;
@@ -809,7 +810,7 @@ function renderStepPanel(){
       secStart = st.a - 1; secEnd = st.b;
       document.getElementById('step').value = (st.a - 1) + '-' + st.b;
       document.getElementById('section').value = '';
-      setPlaying(false); rebuild(); updScore(); draw();
+      setPlaying(false); rebuild(); startGuidedStep(st); updScore(); draw();
     };
     list.appendChild(row);
   });
@@ -1265,7 +1266,7 @@ function loopFrame(){
           const k = SONG.name + '|' + version;
           if ((starMap[k] || 0) < stars) { starMap[k] = stars; saveStars(); }
           reviewDone('song|' + SONG.name + '|' + version);
-          if (cov >= 0.85 && acc >= 0.85) markStepDone();
+          if (cov >= 0.85 && acc >= 0.85) stepRoundClean();
           msg += ' ' + '★'.repeat(stars) + '☆'.repeat(3 - stars);
         }
         // verpasste Noten den Takten zuschreiben
@@ -1326,9 +1327,13 @@ function waitAdvance(){
     } else if (sessionActive) {
       showSessionOverlay();   // Tages-Session: weiter zum naechsten Baustein
     } else {
-      document.getElementById('hint').textContent = 'Abschnitt geschafft!';
-      markStepDone();
-      if (looping) { roundWrap(); gIdx = 0; } else { setPlaying(false); }
+      const r = stepRoundClean();
+      if (r === 'phase') { /* Hand-Phase gewechselt: weiter im Warte-Modus */ }
+      else if (looping) {
+        if (!r) document.getElementById('hint').textContent = 'Abschnitt geschafft!';
+        roundWrap(); gIdx = 0;
+      }
+      else { setPlaying(false); }
     }
   }
   pos = groups[Math.min(gIdx, groups.length - 1)].t;
@@ -1630,6 +1635,7 @@ function applyPreset(p){
   document.getElementById('tempo').value = tempoPct; updTempo();
   syncToggleUi();
   rebuild(); updScore(); draw();
+  if (p === 'step' && SONG.steps[0]) startGuidedStep(SONG.steps[0]);
   setPlaying(true);
 }
 document.querySelectorAll('#tpresets button[data-preset]').forEach(b => b.onclick = () => applyPreset(b.dataset.preset));
@@ -1651,8 +1657,75 @@ document.getElementById('section').onchange = e => {
 const tv = document.getElementById('tempoval');
 function updTempo(){ tv.textContent = tempoPct + '% = ' + Math.round(SONG.bpm * tempoPct / 100) + ' BPM'; }
 document.getElementById('tempo').oninput = e => { tempoPct = +e.target.value; updTempo(); if (playing && mode !== 'wait') setPlaying(false); };
-document.getElementById('bRH').onclick = e => { playRH = !playRH; e.target.classList.toggle('active'); setPlaying(false); buildGroups(); draw(); };
-document.getElementById('bLH').onclick = e => { playLH = !playLH; e.target.classList.toggle('lhactive'); setPlaying(false); buildGroups(); draw(); };
+document.getElementById('bRH').onclick = e => { handPhase = null; playRH = !playRH; e.target.classList.toggle('active'); setPlaying(false); buildGroups(); draw(); };
+document.getElementById('bLH').onclick = e => { handPhase = null; playLH = !playLH; e.target.classList.toggle('lhactive'); setPlaying(false); buildGroups(); draw(); };
+// ---------- Gefuehrte Hand-Progression + Ready-Erkennung ----------
+// Bei Schritten mit beiden Haenden: erst rechts, dann links, dann zusammen.
+// Nach sauberem Abschluss der Beide-Haende-Phase meldet die App 'bereit fuer
+// den naechsten Teil'. Manuelles RH/LH-Schalten beendet die Fuehrung.
+let handPhase = null;
+function setHands(r, l){
+  playRH = r; playLH = l;
+  document.getElementById('bRH').classList.toggle('active', r);
+  document.getElementById('bLH').classList.toggle('lhactive', l);
+  buildGroups();
+}
+function stepNeedsBoth(st){
+  const ev = SONG[version].filter(n => n[0] >= (st.a - 1) * 4 && n[0] < st.b * 4);
+  return ev.some(n => isRHn(n, SONG.split)) && ev.some(n => !isRHn(n, SONG.split));
+}
+function startGuidedStep(st){
+  const done = (stepsDone[stepKey()] || []).includes(SONG.steps.indexOf(st));
+  if (!done && stepNeedsBoth(st)) {
+    handPhase = 'rh';
+    setHands(true, false);
+    document.getElementById('hint').textContent = 'Geführt: erst die rechte Hand – dann links, dann beide.';
+  } else {
+    handPhase = 'both';
+    setHands(true, true);
+  }
+}
+// Sauberer Abschluss einer Runde ueber einen Lernschritt (Warte komplett oder
+// Kontrolle >=85%): Phase weiterschalten bzw. Bereit-Meldung zeigen
+function stepRoundClean(){
+  if (currentLesson || curStepIdx() < 0) { markStepDone(); return false; }
+  if (handPhase === 'rh') {
+    handPhase = 'lh';
+    setHands(false, true);
+    bannerText = '✓ Rechte Hand sitzt · jetzt die linke Hand';
+    bannerUntil = performance.now() + 2600;
+    pos = secStart * 4 - 4; gIdx = 0; updScore(); draw();
+    return 'phase';
+  }
+  if (handPhase === 'lh') {
+    handPhase = 'both';
+    setHands(true, true);
+    bannerText = '✓ Linke Hand sitzt · jetzt beide Hände zusammen';
+    bannerUntil = performance.now() + 2600;
+    pos = secStart * 4 - 4; gIdx = 0; updScore(); draw();
+    return 'phase';
+  }
+  markStepDone();
+  const i = curStepIdx();
+  const nxt = SONG.steps[i + 1];
+  bannerText = '✓ Schritt ' + (i + 1) + ' sitzt' + (nxt ? ' · bereit für Schritt ' + (i + 2) : ' · Song komplett!');
+  bannerUntil = performance.now() + 2600;
+  const h = document.getElementById('hint');
+  h.textContent = 'Schritt ' + (i + 1) + ' geschafft. ';
+  if (nxt) {
+    const a = document.createElement('a');
+    a.href = '#';
+    a.textContent = 'Bereit? Weiter zu Schritt ' + (i + 2) + ' →';
+    a.onclick = e => {
+      e.preventDefault();
+      secStart = nxt.a - 1; secEnd = nxt.b;
+      document.getElementById('step').value = (nxt.a - 1) + '-' + nxt.b;
+      setPlaying(false); rebuild(); startGuidedStep(nxt); updScore(); draw();
+    };
+    h.appendChild(a);
+  }
+  return 'done';
+}
 document.getElementById('loop').onclick = e => { looping = !looping; e.target.textContent = looping ? 'Loop an' : 'Loop aus'; e.target.classList.toggle('active'); };
 document.getElementById('oct').onclick = e => { octTolerant = !octTolerant; e.target.classList.toggle('okactive'); };
 document.getElementById('metro').onclick = e => { metro = !metro; e.target.classList.toggle('active'); if (playing && mode !== 'wait') setPlaying(false); };
