@@ -1602,9 +1602,21 @@ const EAR_LEVELS = [
   { id: 'i2', title: 'Intervalle II', sub: 'Alle Intervalle bis zur Oktave', kind: 'int', opts: [1,2,3,4,5,6,7,8,9,10,11,12] },
   { id: 'c1', title: 'Akkorde I', sub: 'Dur oder Moll', kind: 'chord', opts: ['maj','min'] },
   { id: 'c2', title: 'Akkorde II', sub: 'Dur · Moll · vermindert · übermässig', kind: 'chord', opts: ['maj','min','dim','aug'] },
+  { id: 'm1', title: 'Melodie I', sub: '3 Töne nachhören', kind: 'mel', len: 3 },
+  { id: 'm2', title: 'Melodie II', sub: '5 Töne nachhören', kind: 'mel', len: 5 },
+  { id: 'p1', title: 'Kadenzen', sub: 'Akkordfolgen erkennen', kind: 'prog',
+    opts: ['I–IV–V–I','I–V–vi–IV','vi–IV–I–V','i–VI–III–VII'] },
 ];
+const MEL_SCALE = [60,62,64,65,67,69,71,72];
+const MEL_LABELS = ['C','D','E','F','G','A','H','C↑'];
+const EAR_PROGS = {
+  'I–IV–V–I':     [[60,64,67],[60,65,69],[59,62,67],[60,64,67]],
+  'I–V–vi–IV':    [[60,64,67],[59,62,67],[57,60,64],[57,60,65]],
+  'vi–IV–I–V':    [[57,60,64],[57,60,65],[60,64,67],[59,62,67]],
+  'i–VI–III–VII': [[60,63,67],[56,60,63],[63,67,70],[58,62,65]],
+};
 const EAR_N = 10;
-let earLvl = null, earIdx = 0, earScore = 0, earCur = null, earLock = false, earT0 = 0, earQs = [];
+let earLvl = null, earIdx = 0, earScore = 0, earCur = null, earLock = false, earT0 = 0, earQs = [], earMelPos = 0;
 function earLabel(lvl, opt){ return lvl.kind === 'int' ? INT_NAMES[opt] : EAR_CHORDS[opt].name; }
 function renderEarLevels(){
   const box = document.getElementById('earlvls');
@@ -1630,21 +1642,33 @@ function startEar(lvl){
 }
 function nextEarQ(){
   earLock = false;
-  const q = earLvl.opts[Math.floor(Math.random() * earLvl.opts.length)];
-  earCur = q;
-  const span = earLvl.kind === 'int' ? 25 - q : 24;
-  earQs.push({ opt: q, root: 48 + Math.floor(Math.random() * span) });
-  document.getElementById('earprog').textContent = 'Frage ' + (earIdx + 1) + ' / ' + EAR_N + ' · ' + earLvl.title;
+  earMelPos = 0;
   const box = document.getElementById('earans');
   box.innerHTML = '';
-  earLvl.opts.forEach(opt => {
+  const chip = (opt, label) => {
     const b = document.createElement('button');
     b.className = 'anachip';
     b.dataset.opt = String(opt);
-    b.textContent = earLabel(earLvl, opt);
+    b.textContent = label;
     b.onclick = () => earAnswer(opt, b);
     box.appendChild(b);
-  });
+  };
+  if (earLvl.kind === 'mel') {
+    earCur = Array.from({ length: earLvl.len }, () => MEL_SCALE[Math.floor(Math.random() * MEL_SCALE.length)]);
+    earQs.push({ seq: earCur });
+    MEL_SCALE.forEach((p, i) => chip(p, MEL_LABELS[i]));
+  } else if (earLvl.kind === 'prog') {
+    earCur = earLvl.opts[Math.floor(Math.random() * earLvl.opts.length)];
+    earQs.push({ prog: earCur });
+    earLvl.opts.forEach(opt => chip(opt, opt));
+  } else {
+    const q = earLvl.opts[Math.floor(Math.random() * earLvl.opts.length)];
+    earCur = q;
+    const span = earLvl.kind === 'int' ? 25 - q : 24;
+    earQs.push({ opt: q, root: 48 + Math.floor(Math.random() * span) });
+    earLvl.opts.forEach(opt => chip(opt, earLabel(earLvl, opt)));
+  }
+  document.getElementById('earprog').textContent = 'Frage ' + (earIdx + 1) + ' / ' + EAR_N + ' · ' + earLvl.title;
   playEarQ();
 }
 function playEarQ(){
@@ -1653,12 +1677,37 @@ function playEarQ(){
   try {
     ensureAC();
     const t = ac.currentTime + 0.05;
-    if (earLvl.kind === 'int') { tone(t, 0.7, q.root, 0.22); tone(t + 0.6, 0.9, q.root + q.opt, 0.22); }
+    if (earLvl.kind === 'mel') q.seq.forEach((p, i) => tone(t + i * 0.55, 0.5, p, 0.22));
+    else if (earLvl.kind === 'prog') EAR_PROGS[q.prog].forEach((ch, i) => ch.forEach(p => tone(t + i * 0.75, 0.7, p, 0.18)));
+    else if (earLvl.kind === 'int') { tone(t, 0.7, q.root, 0.22); tone(t + 0.6, 0.9, q.root + q.opt, 0.22); }
     else EAR_CHORDS[q.opt].iv.forEach(s => tone(t, 1.3, q.root + s, 0.2));
   } catch (e) {}
 }
+function earAdvance(delay){
+  setTimeout(() => {
+    earIdx++;
+    if (earIdx >= EAR_N) finishEar(); else nextEarQ();
+  }, delay);
+}
 function earAnswer(opt, btn){
   if (earLock) return;
+  if (earLvl.kind === 'mel') {
+    // Diktat: Ton fuer Ton nachklicken; erster Fehler beendet die Frage
+    try { ensureAC(); tone(ac.currentTime, 0.4, opt, 0.2); } catch (e) {}
+    if (opt === earCur[earMelPos]) {
+      btn.classList.add('good');
+      setTimeout(() => btn.classList.remove('good'), 260);
+      earMelPos++;
+      if (earMelPos >= earCur.length) { earLock = true; earScore++; earAdvance(650); }
+    } else {
+      earLock = true;
+      btn.classList.add('bad');
+      const g = document.querySelector('#earans .anachip[data-opt="' + earCur[earMelPos] + '"]');
+      if (g) g.classList.add('good');
+      earAdvance(1400);
+    }
+    return;
+  }
   earLock = true;
   const hit = opt === earCur;
   if (hit) earScore++;
@@ -1667,10 +1716,7 @@ function earAnswer(opt, btn){
     const g = document.querySelector('#earans .anachip[data-opt="' + earCur + '"]');
     if (g) g.classList.add('good');
   }
-  setTimeout(() => {
-    earIdx++;
-    if (earIdx >= EAR_N) finishEar(); else nextEarQ();
-  }, hit ? 650 : 1400);
+  earAdvance(hit ? 650 : 1400);
 }
 function finishEar(){
   const prevBest = earBest[earLvl.id] || 0;
@@ -1695,7 +1741,9 @@ function finishEar(){
     const lvl = earLvl, qs = earQs.slice();
     const dn = [];
     qs.forEach((q, i) => {
-      if (lvl.kind === 'int') { dn.push([i * 4, 1.5, q.root, 1]); dn.push([i * 4 + 2, 1.5, q.root + q.opt, 1]); }
+      if (lvl.kind === 'mel') q.seq.forEach((p, j) => dn.push([i * (lvl.len + 1) + j, 1, p, 1]));
+      else if (lvl.kind === 'prog') EAR_PROGS[q.prog].forEach((ch, j) => ch.forEach(p => dn.push([i * 8 + j * 2, 2, p, 1])));
+      else if (lvl.kind === 'int') { dn.push([i * 4, 1.5, q.root, 1]); dn.push([i * 4 + 2, 1.5, q.root + q.opt, 1]); }
       else EAR_CHORDS[q.opt].iv.forEach(s => dn.push([i * 4, 3, q.root + s, 1]));
     });
     openDrill('Gehörtraining: ' + lvl.title, dn, 70);
