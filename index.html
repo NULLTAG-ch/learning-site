@@ -164,6 +164,20 @@ label { font-family:var(--mono); font-size:10.5px; letter-spacing:0.18em; text-t
 input[type=range] { width:110px; accent-color:var(--tiefrot); }
 #tempoval { min-width:96px; font-family:var(--mono); font-variant-numeric:tabular-nums; font-size:11px; color:var(--dim); }
 canvas { display:block; width:100%; flex:1; touch-action:none; cursor:pointer; }
+#tmain { display:flex; flex:1; min-height:0; }
+#tmain canvas { width:auto; flex:1; }
+#steppanel { width:224px; flex:none; border-right:1px solid var(--border); overflow-y:auto; background:var(--void); }
+#stephead { font-family:var(--mono); font-size:9px; letter-spacing:0.3em; text-transform:uppercase; color:var(--dim); padding:12px 14px 8px; }
+.steprow { display:flex; align-items:center; gap:8px; min-height:52px; padding:6px 12px; border-bottom:1px solid #1c1c1c; cursor:pointer; transition:background 150ms var(--ease), border-color 150ms var(--ease); }
+.steprow:hover { background:var(--panel); }
+.steprow.cur { background:var(--panel); box-shadow:inset 2px 0 0 var(--tiefrot); }
+.sglyph { width:22px; text-align:center; font-family:var(--mono); font-size:12px; color:var(--muted-deep); flex:none; }
+.steprow.done .sglyph { color:var(--bone); }
+.steprow.cur .sglyph { color:var(--tiefrot); }
+.sbody2 { min-width:0; }
+.stitle { font-family:var(--grotesk); font-weight:500; font-size:13px; color:var(--bone); }
+.smeta { font-family:var(--mono); font-size:9px; letter-spacing:0.12em; text-transform:uppercase; color:var(--dim); margin-top:2px; }
+@media (max-width:900px){ #steppanel { display:none; } }
 #tstatus { padding:6px 16px 9px; font-family:var(--mono); font-size:11.5px; color:var(--dim); display:flex; gap:16px; flex-wrap:wrap; align-items:baseline; }
 #midistat { color:var(--dim); } #midistat.on { color:var(--ok); }
 #sharel { color:var(--dim); cursor:pointer; transition:color 150ms var(--ease); }
@@ -300,7 +314,13 @@ canvas { display:block; width:100%; flex:1; touch-action:none; cursor:pointer; }
       <button id="autot">Auto-Tempo</button>
       <button id="rec">● Aufnahme</button>
     </div>
-    <canvas id="cv"></canvas>
+    <div id="tmain">
+      <aside id="steppanel" class="hide">
+        <div id="stephead"></div>
+        <div id="steplist"></div>
+      </aside>
+      <canvas id="cv"></canvas>
+    </div>
     <div id="tstatus">
       <span id="songname"></span>
       <span id="midistat">Kein MIDI – Klick/Tastatur geht auch</span>
@@ -687,7 +707,53 @@ function rebuild(){
   notes = SONG[version].filter(n => n[0] >= secStart * 4 && n[0] < secEnd * 4);
   fingering = computeFingering(notes, SONG.split);
   staffFlat = isFlatKey(detectKey(SONG.full || notes));
-  buildGroups(); resetScore();
+  buildGroups(); resetScore(); renderStepPanel();
+}
+// ---------- Lernschritt-Checkliste (Design 1b/2b): Schritte als §-TOC ----------
+const STEPS_KEY = 'nulltag-steps';
+let stepsDone = {};
+try { stepsDone = JSON.parse(localStorage.getItem(STEPS_KEY) || '{}'); } catch (e) { stepsDone = {}; }
+function stepKey(){ return SONG.name + '|' + version; }
+function curStepIdx(){
+  return SONG && SONG.steps ? SONG.steps.findIndex(st => secStart === st.a - 1 && secEnd === st.b) : -1;
+}
+function markStepDone(){
+  if (!SONG || currentLesson) return;
+  const i = curStepIdx();
+  if (i < 0) return;
+  const arr = stepsDone[stepKey()] || (stepsDone[stepKey()] = []);
+  if (!arr.includes(i)) {
+    arr.push(i);
+    try { localStorage.setItem(STEPS_KEY, JSON.stringify(stepsDone)); } catch (e) {}
+  }
+  renderStepPanel();
+}
+function renderStepPanel(){
+  const panel = document.getElementById('steppanel');
+  if (!SONG || currentLesson || !SONG.steps || SONG.steps.length < 2) { panel.classList.add('hide'); return; }
+  panel.classList.remove('hide');
+  const done = stepsDone[stepKey()] || [];
+  const cur = curStepIdx();
+  document.getElementById('stephead').textContent = '§2 · Lernschritte · ' + done.length + ' / ' + SONG.steps.length;
+  const list = document.getElementById('steplist');
+  list.innerHTML = '';
+  SONG.steps.forEach((st, i) => {
+    const ev = SONG[version].filter(n => n[0] >= (st.a - 1) * 4 && n[0] < st.b * 4);
+    const hasR = ev.some(n => isRHn(n, SONG.split)), hasL = ev.some(n => !isRHn(n, SONG.split));
+    const row = document.createElement('div');
+    row.className = 'steprow' + (i === cur ? ' cur' : done.includes(i) ? ' done' : '');
+    row.innerHTML = '<span class="sglyph"></span><div class="sbody2"><div class="stitle"></div><div class="smeta"></div></div>';
+    row.querySelector('.sglyph').textContent = i === cur ? '→' : done.includes(i) ? '●' : '◯';
+    row.querySelector('.stitle').textContent = 'Schritt ' + (i + 1) + ' · Takte ' + st.a + '–' + st.b;
+    row.querySelector('.smeta').textContent = ev.length + ' Noten · ' + (hasR && hasL ? 'beide' : hasR ? 'RH' : 'LH');
+    row.onclick = () => {
+      secStart = st.a - 1; secEnd = st.b;
+      document.getElementById('step').value = (st.a - 1) + '-' + st.b;
+      document.getElementById('section').value = '';
+      setPlaying(false); rebuild(); updScore(); draw();
+    };
+    list.appendChild(row);
+  });
 }
 // Kreuz-Tonarten schreiben mit Kreuzen, alle anderen mit b (Notenansicht)
 function isFlatKey(key){
@@ -1064,6 +1130,7 @@ function loopFrame(){
           const k = SONG.name + '|' + version;
           if ((starMap[k] || 0) < stars) { starMap[k] = stars; saveStars(); }
           reviewDone('song|' + SONG.name + '|' + version);
+          if (cov >= 0.85 && acc >= 0.85) markStepDone();
           msg += ' ' + '★'.repeat(stars) + '☆'.repeat(3 - stars);
         }
         // verpasste Noten den Takten zuschreiben
@@ -1125,6 +1192,7 @@ function waitAdvance(){
       showSessionOverlay();   // Tages-Session: weiter zum naechsten Baustein
     } else {
       document.getElementById('hint').textContent = 'Abschnitt geschafft!';
+      markStepDone();
       if (looping) gIdx = 0; else { setPlaying(false); }
     }
   }
