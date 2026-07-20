@@ -125,6 +125,15 @@ main { flex:1; overflow:auto; }
 .anachip:hover { border-color:var(--tiefrot); }
 .anachip small { color:var(--dim); font-size:10px; letter-spacing:0.1em; margin-left:6px; }
 .ana-key { font-family:var(--brutal); font-weight:800; font-size:2.1rem; letter-spacing:-0.03em; }
+.anachip.fn-t { border-left:3px solid #4a8a4a; }
+.anachip.fn-s { border-left:3px solid #e8c04a; }
+.anachip.fn-d { border-left:3px solid var(--tiefrot); }
+.fnl { font-family:var(--mono); font-size:11px; padding:1px 6px; border:1px solid var(--border); border-radius:3px; margin-right:4px; }
+.fnl.fn-t { color:#7ec98f; } .fnl.fn-s { color:#e8c04a; } .fnl.fn-d { color:var(--tiefrot); }
+.fnseq span { display:inline-block; font-family:var(--mono); font-size:12px; width:22px; height:22px; line-height:22px; text-align:center; border:1px solid var(--border); border-radius:3px; margin:0 4px 4px 0; }
+.fnseq span.fn-t { color:#7ec98f; border-color:#2a4a35; }
+.fnseq span.fn-s { color:#e8c04a; border-color:#5a4a20; }
+.fnseq span.fn-d { color:var(--tiefrot); border-color:var(--tiefrot-dim); }
 .anachip.good { border-color:#4a8a4a; background:#14201a; }
 .anachip.bad { border-color:var(--tiefrot); background:var(--tiefrot-dim); }
 #earlvls { margin-top:14px; }
@@ -1465,6 +1474,27 @@ function keyTriads(key){
     pcs: [r, (r + (quals[i] === 'min' || quals[i] === 'dim' ? 3 : 4)) % 12, (r + (quals[i] === 'dim' ? 6 : 7)) % 12] }));
 }
 function pcToPitch(pc, lo){ let p = lo + ((pc - lo) % 12 + 12) % 12; return p; }
+// Akkordfunktion nach Ivans Kompositions-Folien: T stabil, S instabil, D labil.
+// Moll: Funktionen wie in der Parallel-Dur; die 5. Stufe wird erst als
+// DUR-Akkord (E7-Prinzip, harmonisches Moll) zur Dominante.
+function chordFunction(rootPc, q, key){
+  const deg = keyScale(key).indexOf(((rootPc % 12) + 12) % 12);
+  if (deg < 0) return null;
+  if (!key.minor) return ['T','S','T','S','D','T','D'][deg];
+  if (deg === 4) return q === 'maj' ? 'D' : 'T';
+  return ['T','D','T','S','T','S','D'][deg];
+}
+const FNLABEL = { T: 'Tonika', S: 'Subdominante', D: 'Dominante' };
+// Reharmonisierung per Funktionstausch: gleicher Halt, anderer Mood
+function reharmonize(chords, key){
+  const tr = keyTriads(key);
+  return chords.map(c => {
+    const f = chordFunction(c.root, c.q, key);
+    const alt = f && tr.find(t => !(t.root === c.root && t.q === c.q) && chordFunction(t.root, t.q, key) === f);
+    return alt ? { root: alt.root, q: alt.q, name: alt.name }
+               : { root: c.root, q: c.q, name: chordName(c.root, c.q) };
+  });
+}
 function triadPitches(t, base){ const r = pcToPitch(t.root, base || 60); return [r, r + (t.q === 'min' || t.q === 'dim' ? 3 : 4), r + (t.q === 'dim' ? 6 : 7)]; }
 function chordTimeline(ns, bars){
   const TR = [];
@@ -1536,9 +1566,11 @@ function renderAnalysis(name, ns){
   const ch3 = c3.querySelector('.chips');
   triads.forEach(t => {
     const b = document.createElement('button'); b.className = 'anachip';
+    const fn = chordFunction(t.root, t.q, key);
+    if (fn) b.classList.add('fn-' + fn.toLowerCase());
     b.innerHTML = '<b></b><small></small>';
     b.querySelector('b').textContent = t.name;
-    b.querySelector('small').textContent = t.rn;
+    b.querySelector('small').textContent = t.rn + (fn ? ' · ' + fn : '');
     b.onclick = () => playChordPcs(triadPitches(t));
     ch3.appendChild(b);
   });
@@ -1559,9 +1591,11 @@ function renderAnalysis(name, ns){
   const ch4 = c4.querySelector('.chips');
   timeline.slice(0, 32).forEach(t => {
     const b = document.createElement('button'); b.className = 'anachip';
+    const fn = chordFunction(t.root, t.q, key);
+    if (fn) b.classList.add('fn-' + fn.toLowerCase());
     b.innerHTML = '<b></b><small></small>';
     b.querySelector('b').textContent = t.name;
-    b.querySelector('small').textContent = t.from === t.to ? 'T' + t.from : 'T' + t.from + '–' + t.to;
+    b.querySelector('small').textContent = (t.from === t.to ? 'T' + t.from : 'T' + t.from + '–' + t.to) + (fn ? ' · ' + fn : '');
     b.onclick = () => playChordPcs(triadPitches(t));
     ch4.appendChild(b);
   });
@@ -1575,6 +1609,58 @@ function renderAnalysis(name, ns){
     openDrill('Akkorde: ' + name, dn, 65);
   };
   c4.appendChild(b4);
+  // Funktionen: T/S/D mit Ivans Metaphern + Folge des Stuecks
+  const fns = timeline.map(t => chordFunction(t.root, t.q, key));
+  const c5 = card('<span class="num">5</span><h3>Funktionen</h3>' +
+    '<p style="line-height:1.6;margin-top:6px"><b class="fnl fn-t">T</b> <b>Tonika</b> – stabil, dein Zuhause: ein Ball in der Schüssel.<br>' +
+    '<b class="fnl fn-s">S</b> <b>Subdominante</b> – instabil: ein Ball auf dem Tisch, ein Stoss und er rollt.<br>' +
+    '<b class="fnl fn-d">D</b> <b>Dominante</b> – labil: ein Ball auf der umgedrehten Schüssel, er will zur Tonika.</p>' +
+    '<div class="fnseq" style="margin-top:10px"></div>');
+  c5.id = 'fnkarte';
+  const fsq = c5.querySelector('.fnseq');
+  fns.slice(0, 24).forEach(f => {
+    const s = document.createElement('span');
+    s.textContent = f || '·';
+    if (f) s.className = 'fn-' + f.toLowerCase();
+    fsq.appendChild(s);
+  });
+  // Reharmonisierung: Funktionstausch, anhoerbar + uebbar
+  const c6 = card('<span class="num">6</span><h3>Reharmonisierung</h3>' +
+    '<p style="color:var(--dim);margin-top:6px;line-height:1.5">Akkorde gleicher Funktion sind austauschbar – ' +
+    'der Mood ändert sich, der Halt bleibt.</p><div class="chips" style="margin-top:10px"></div>');
+  c6.id = 'reharm';
+  const uniq = [];
+  timeline.slice(0, 8).forEach(t => uniq.push({ root: t.root, q: t.q }));
+  const variant = reharmonize(uniq, key);
+  const ch6 = c6.querySelector('.chips');
+  variant.forEach((c, i) => {
+    const b = document.createElement('button'); b.className = 'anachip';
+    const fn = chordFunction(c.root, c.q, key);
+    if (fn) b.classList.add('fn-' + fn.toLowerCase());
+    b.innerHTML = '<b></b><small></small>';
+    b.querySelector('b').textContent = c.name;
+    b.querySelector('small').textContent = 'statt ' + (uniq[i] ? chordName(uniq[i].root, uniq[i].q) : '');
+    b.onclick = () => playChordPcs(triadPitches(c));
+    ch6.appendChild(b);
+  });
+  const b6 = document.createElement('button'); b6.className = 'btn'; b6.textContent = 'Variante üben';
+  b6.onclick = () => {
+    const dn = [];
+    variant.forEach((c, i) => {
+      dn.push([i * 4, 4, pcToPitch(c.root, 45), 0]);
+      triadPitches(c).forEach(p => dn.push([i * 4, 4, p, 1]));
+    });
+    openDrill('Reharmonisiert: ' + name, dn, 65);
+  };
+  c6.appendChild(b6);
+  if (key.minor && timeline.some(t => keyScale(key).indexOf(t.root) === 4 && t.q === 'min')) {
+    const p = document.createElement('p');
+    p.style.cssText = 'margin-top:10px;color:var(--dim);line-height:1.5';
+    const vName = KEYNAMES[keyScale(key)[4]];
+    p.innerHTML = '<b style="color:var(--tiefrot)">Tipp:</b> Spiele die 5. Stufe als <b>Dur-Akkord mit Septime</b> (' +
+      vName + '7, harmonisches Moll) – sie zieht dann viel stärker zur Tonika (E7-Prinzip).';
+    c6.appendChild(p);
+  }
   const head = document.createElement('div');
   head.className = 'levelhead';
   head.innerHTML = '<span class="lvltitle"></span><span class="lvlsub">Chips anklicken = anhören · Üben-Buttons öffnen den Trainer</span>';
