@@ -61,13 +61,12 @@ Stand: 2026-07-19 · 22 PRs gemerged · Gesamt-Audit gruen (36 Basis-Checks + 83
    sind jetzt echte Piano-Arrangements mit Hand-Flags. Tonart-Meta bleibt die
    Kuenstler-Angabe (Erkennung sieht bei Burn the Void die Parallele e-Moll,
    bei Paper Kings f-Moll – funktional irrelevant, da live erkannt wird).
-3. **Echte Cover**: 6 von 8 erledigt 2026-07-19 (Quelle: NULLTAG-ch/music-site
-   covers/, auf 480px verkleinert; sw.js-CACHE auf v2 gebumpt). Noch Platzhalter:
-   - Burn the Void: Artwork existiert auf SoundCloud
-     (i1.sndcdn.com/artworks-LzjXnqBvZG8Akna6-kcttKw-t500x500.jpg), CDN ist aus
-     der Sandbox geblockt -> Datei hochladen oder in music-site/covers/ ablegen.
-   - Pilze, Plaene und Panik: nirgends ein Release-Artwork gefunden
-     (weder music-site noch nulltag-cd) -> Artwork bereitstellen.
+3. **Echte Cover**: 7 von 8 erledigt (Quellen: NULLTAG-ch/music-site covers/ und
+   DJIS releases/NULLTAG-20_burn_the_void/covers/, auf 480px verkleinert;
+   sw.js-CACHE inzwischen auf v3). Einzig offener Platzhalter:
+   - Pilze, Plaene und Panik: hat laut Ivan noch kein Cover (nirgends ein
+     Release-Artwork: weder music-site noch nulltag-cd noch DJIS). Sobald eines
+     existiert: nach assets/covers/pilze_plaene_panik.jpg (480px) + CACHE bumpen.
 4. **Higher Ground Meta pruefen**: Level 2 und c-Moll sind geschaetzt.
 
 ## Naechste Features (Ideen)
