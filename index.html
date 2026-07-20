@@ -195,8 +195,29 @@ canvas { display:block; width:100%; flex:1; touch-action:none; cursor:pointer; }
 .hide { display:none !important; }
 .kbdlegend { font-size:11px; color:var(--muted-deep); }
 .kbdlegend b.r{color:var(--rh)} .kbdlegend b.l{color:var(--lh)} .kbdlegend b.g{color:var(--ok)} .kbdlegend b.y{color:#e8c04a}
-@media (max-width:640px){ .page{padding:24px 16px 48px} .hero h2{font-size:1.7rem} nav{padding:10px 12px}
-  #tcontrols{padding:8px 10px} #tcontrols select{max-width:56vw} #tstatus{font-size:10.5px} }
+/* Design 2a: Streak-Pill, Tab-Bar-App mobil, Querformat-Gate */
+#streakpill { font-family:var(--mono); font-weight:500; font-size:10px; letter-spacing:0.08em; color:#e8703a; border:1px solid var(--border); border-radius:999px; padding:4px 10px; margin-left:auto; white-space:nowrap; }
+nav button#midipill { margin-left:0; }
+#tabbar { display:none; position:fixed; left:0; right:0; bottom:0; z-index:7; background:var(--void); border-top:1px solid var(--border); padding-bottom:env(safe-area-inset-bottom); }
+#tabbar button { flex:1; min-height:52px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px; background:none; border:none; color:var(--dim); font-family:var(--mono); font-weight:500; font-size:8.5px; letter-spacing:0.14em; text-transform:uppercase; cursor:pointer; transition:color 150ms var(--ease); }
+#tabbar button .tglyph { font-size:13px; letter-spacing:0; }
+#tabbar button.here { color:var(--bone); }
+#rotgate { display:none; position:fixed; inset:0; z-index:10; background:var(--void); align-items:center; justify-content:center; text-align:center; padding:24px; }
+#rotgate .rg-glyph { font-size:44px; color:var(--tiefrot); margin-bottom:14px; }
+#rotgate h3 { font-family:var(--brutal); font-weight:700; font-size:1.3rem; letter-spacing:-0.02em; margin-bottom:8px; }
+#rotgate p { color:var(--dim); font-size:0.85rem; line-height:1.5; max-width:280px; margin:0 auto; }
+/* Querformat-Trainer auf dem Handy: Chrome kompakt, Canvas bekommt die Hoehe */
+@media (max-height:520px){
+  #tpresets, #tcontrols label, .kbdlegend, #metro, #names, #autot, #rec { display:none; }
+  #tcontrols { padding:4px 8px; gap:5px; }
+  #tcontrols button, #tcontrols select { padding:5px 9px; }
+  #tstatus { padding:3px 10px 5px; gap:10px; }
+  nav { padding:6px 12px; }
+}
+@media (max-width:640px){ .page{padding:24px 16px 76px} .hero h2{font-size:1.7rem} nav{padding:10px 12px; gap:8px}
+  #tcontrols{padding:8px 10px} #tcontrols select{max-width:56vw} #tstatus{font-size:10.5px; padding-bottom:60px}
+  nav button[data-v]{ display:none; }
+  #tabbar{ display:flex; } }
 </style>
 </head>
 <body>
@@ -207,8 +228,22 @@ canvas { display:block; width:100%; flex:1; touch-action:none; cursor:pointer; }
   <button data-v="songs">Songs</button>
   <button data-v="ana">Analyse</button>
   <button data-v="trainer">Trainer</button>
+  <span id="streakpill" class="hide">⚡ 0 Tage</span>
   <button id="midipill">MIDI · nicht verbunden</button>
 </nav>
+<div id="tabbar">
+  <button data-v="start" class="here"><span class="tglyph">◆</span>Start</button>
+  <button data-v="bib"><span class="tglyph">≡</span>Bibliothek</button>
+  <button data-v="songs"><span class="tglyph">▤</span>Songs</button>
+  <button data-v="trainer"><span class="tglyph">▶</span>Trainer</button>
+</div>
+<div id="rotgate">
+  <div>
+    <div class="rg-glyph">⟳</div>
+    <h3>Gerät drehen</h3>
+    <p>Der Trainer läuft im Querformat – da haben die fallenden Noten und die Klaviatur Platz.</p>
+  </div>
+</div>
 <main>
   <!-- START -->
   <div id="view-start" class="page">
@@ -2011,13 +2046,29 @@ renderEarLevels();
 function go(v){
   for (const el of document.querySelectorAll('main > div')) el.classList.add('hide');
   document.getElementById('view-' + v).classList.remove('hide');
-  for (const b of document.querySelectorAll('nav button')) b.classList.toggle('here', b.dataset.v === v);
+  for (const b of document.querySelectorAll('nav button, #tabbar button')) b.classList.toggle('here', b.dataset.v === v);
+  curView = v;
+  updateRotGate();
   if (v === 'trainer') draw();
   if (v === 'bib') renderLibrary();
   if (v === 'songs') renderSongs();
   if (v === 'start') renderStart();
 }
-document.querySelectorAll('nav button').forEach(b => { if (b.dataset.v) b.onclick = () => go(b.dataset.v); });
+document.querySelectorAll('nav button, #tabbar button').forEach(b => { if (b.dataset.v) b.onclick = () => go(b.dataset.v); });
+// Querformat-Gate (Design 2a): Trainer mobil nur landscape
+let curView = 'start';
+function updateRotGate(){
+  const on = curView === 'trainer' && window.innerWidth < 640 && window.innerHeight > window.innerWidth;
+  document.getElementById('rotgate').style.display = on ? 'flex' : 'none';
+}
+window.addEventListener('resize', updateRotGate);
+// Streak-Pill in der Nav (Design 2a/2b: global sichtbar)
+function updateStreakPill(){
+  const s = streakDays();
+  const el = document.getElementById('streakpill');
+  el.textContent = '⚡ ' + s + (s === 1 ? ' Tag' : ' Tage');
+  el.classList.toggle('hide', s === 0);
+}
 // Maus-Klicks sollen keinen Dauer-Fokus auf Buttons hinterlassen, sonst
 // re-aktiviert die Leertaste den Button statt Start/Stopp zu togglen
 // (Tastatur-Aktivierung hat e.detail === 0 und behaelt den Fokus)
@@ -2091,6 +2142,7 @@ function addPractice(min){
   const k = dayKey(0);
   practiceDays[k] = (practiceDays[k] || 0) + min;
   try { localStorage.setItem(PRACTICE_KEY, JSON.stringify(practiceDays)); } catch (e) {}
+  updateStreakPill();
 }
 const GOAL_KEY = 'nulltag-goal';
 function weekGoal(){
@@ -2297,6 +2349,7 @@ function renderStart(){
   row.appendChild(sc);
 }
 renderStart();
+updateStreakPill();
 // PWA: Service Worker fuer Offline-Betrieb (Samples + App-Shell)
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
 // Bibliothek initial rendern
