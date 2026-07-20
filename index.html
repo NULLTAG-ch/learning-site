@@ -679,7 +679,7 @@ function makeSteps(ns, split, bars){
   for (let b = 1; b <= bars; b += 4) {
     const e = Math.min(b + 3, bars);
     const ev = ns.filter(n => n[0] >= (b-1)*4 && n[0] < e*4);
-    if (ev.length < 6) continue;
+    if (ev.length < 3) continue;
     const on = new Map();
     for (const n of ev) {
       const k = Math.round(n[0] * 2) / 2;
@@ -690,7 +690,12 @@ function makeSteps(ns, split, bars){
     const rng = Math.max(...ev.map(n => n[2])) - Math.min(...ev.map(n => n[2]));
     steps.push({ a: b, b: e, score: ev.length + 2 * both + 0.3 * rng, n: ev.length });
   }
-  steps.sort((x, y) => x.score - y.score);
+  // Chronologisch lernen (wie das Stueck laeuft), Schwierigkeit nur als Label:
+  // Terzile ueber den Score -> leicht / mittel / schwer
+  const ranked = [...steps].sort((x, y) => x.score - y.score);
+  ranked.forEach((s, i) => {
+    s.diff = i < ranked.length / 3 ? 'leicht' : i < ranked.length * 2 / 3 ? 'mittel' : 'schwer';
+  });
   return steps;
 }
 // ================= Song-Zustand =================
@@ -752,7 +757,15 @@ function rebuild(){
   notes = SONG[version].filter(n => n[0] >= secStart * 4 && n[0] < secEnd * 4);
   fingering = computeFingering(notes, SONG.split);
   staffFlat = isFlatKey(detectKey(SONG.full || notes));
+  roundN = 1; bannerUntil = 0;
   buildGroups(); resetScore(); renderStepPanel();
+}
+// Durchlauf-Anzeige: sichtbar machen, wenn der Lernteil durch ist und neu beginnt
+let roundN = 1, bannerUntil = 0, bannerText = '';
+function roundWrap(){
+  bannerText = '✓ Durchlauf ' + roundN + ' geschafft · weiter mit Durchlauf ' + (roundN + 1);
+  roundN++;
+  bannerUntil = performance.now() + 2200;
 }
 // ---------- Lernschritt-Checkliste (Design 1b/2b): Schritte als §-TOC ----------
 const STEPS_KEY = 'nulltag-steps';
@@ -791,7 +804,7 @@ function renderStepPanel(){
     row.innerHTML = '<span class="sglyph"></span><div class="sbody2"><div class="stitle"></div><div class="smeta"></div></div>';
     row.querySelector('.sglyph').textContent = i === cur ? '→' : done.includes(i) ? '●' : '◯';
     row.querySelector('.stitle').textContent = 'Schritt ' + (i + 1) + ' · Takte ' + st.a + '–' + st.b;
-    row.querySelector('.smeta').textContent = ev.length + ' Noten · ' + (hasR && hasL ? 'beide' : hasR ? 'RH' : 'LH');
+    row.querySelector('.smeta').textContent = ev.length + ' Noten · ' + (hasR && hasL ? 'beide' : hasR ? 'RH' : 'LH') + (st.diff ? ' · ' + st.diff : '');
     row.onclick = () => {
       secStart = st.a - 1; secEnd = st.b;
       document.getElementById('step').value = (st.a - 1) + '-' + st.b;
@@ -1149,7 +1162,21 @@ function draw(){
   }
   ctx.fillStyle = '#8a8580'; ctx.font = '500 ' + (12 * dpr) + 'px "JetBrains Mono",monospace';
   const bar = Math.floor(Math.max(0, pos) / 4) + 1;
-  ctx.fillText('Takt ' + Math.min(bar, SONG.bars) + ' / ' + SONG.bars + '   ' + Math.round(SONG.bpm * tempoPct / 100) + ' BPM' + (mode === 'wait' ? '   WARTE-MODUS' : ''), 14 * dpr, 22 * dpr);
+  ctx.fillText('Takt ' + Math.min(bar, SONG.bars) + ' / ' + SONG.bars + '   ' + Math.round(SONG.bpm * tempoPct / 100) + ' BPM' + (mode === 'wait' ? '   WARTE-MODUS' : '') + (looping ? '   DURCHLAUF ' + roundN : ''), 14 * dpr, 22 * dpr);
+  // Durchlauf-Banner: kurzer Hinweis, wenn der Lernteil neu beginnt
+  if (bannerUntil > now) {
+    const rest = (bannerUntil - now) / 2200;
+    ctx.globalAlpha = Math.min(1, rest * 3);
+    ctx.font = '700 ' + (13 * dpr) + 'px "JetBrains Mono",monospace';
+    const tw = ctx.measureText(bannerText).width;
+    const bx = (g.W - tw) / 2 - 16 * dpr, by = 40 * dpr;
+    ctx.fillStyle = '#141414';
+    ctx.strokeStyle = '#4a8a4a';
+    ctx.beginPath(); ctx.roundRect(bx, by, tw + 32 * dpr, 34 * dpr, 4 * dpr); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = '#e8e3da';
+    ctx.fillText(bannerText, bx + 16 * dpr, by + 22 * dpr);
+    ctx.globalAlpha = 1;
+  }
 }
 // ================= Klavierklang: Salamander Grand (CC BY 3.0, Alexander Holm) =================
 // 15 Samples im Tritonus-Raster, selbst gehostet; Pitch-Shift max. +-3 Halbtoene.
@@ -1268,7 +1295,7 @@ function loopFrame(){
         }
         if (currentLesson && tot > 0 && hits >= Math.ceil(tot * 0.8) && misses <= Math.ceil(tot * 0.25)) { lessonDone(); return; }
       }
-      if (looping) { timing = schedule(); pos = secStart * 4 - 4; resetScore(); }
+      if (looping) { roundWrap(); timing = schedule(); pos = secStart * 4 - 4; resetScore(); }
       else { setPlaying(false); return; }
     }
   }
@@ -1301,7 +1328,7 @@ function waitAdvance(){
     } else {
       document.getElementById('hint').textContent = 'Abschnitt geschafft!';
       markStepDone();
-      if (looping) gIdx = 0; else { setPlaying(false); }
+      if (looping) { roundWrap(); gIdx = 0; } else { setPlaying(false); }
     }
   }
   pos = groups[Math.min(gIdx, groups.length - 1)].t;
