@@ -95,10 +95,13 @@ main { flex:1; overflow:auto; }
 .lvl b { color:var(--lh); letter-spacing:2.5px; font-weight:400; }
 .sprog { height:2px; background:var(--border); border-radius:1px; margin-top:9px; overflow:hidden; }
 .sprog div { height:100%; background:var(--tiefrot); }
-.vrow { display:flex; gap:6px; margin-top:14px; flex-wrap:wrap; }
-.vchip { background:var(--panel2); color:var(--dim); border:1px solid var(--border); border-radius:4px; font-family:var(--mono); font-size:10px; letter-spacing:0.08em; text-transform:uppercase; padding:5px 10px; cursor:pointer; transition:border-color 150ms var(--ease), color 150ms var(--ease); }
-.vchip:hover { border-color:var(--tiefrot); color:var(--bone); }
-.vchip .st { color:#ffe27a; letter-spacing:0; }
+/* Fassungs-Matrix (Design 2b): drei gleich breite Zellen Easy/Normal/Pro */
+.vrow { display:flex; gap:6px; margin-top:14px; }
+.vcell { flex:1; display:flex; flex-direction:column; align-items:center; gap:3px; background:var(--void); color:var(--dim); border:1px solid var(--border); border-radius:4px; padding:7px 4px; cursor:pointer; transition:border-color 150ms var(--ease); }
+.vcell:hover { border-color:var(--tiefrot); }
+.vcell .vlabel { font-family:var(--mono); font-size:9px; letter-spacing:0.18em; text-transform:uppercase; }
+.vcell .vstars { font-family:var(--mono); font-size:11px; letter-spacing:2px; color:var(--muted-deep); }
+.vcell .vstars.played { color:#e8c04a; }
 .lesson { background:var(--panel); border:1px solid var(--border); border-radius:6px; padding:20px 22px; margin-top:14px; box-shadow:0 1px 0 rgba(255,255,255,0.04) inset; }
 .lesson h3 { font-family:var(--brutal); font-weight:700; letter-spacing:-0.01em; margin-bottom:6px; }
 .lesson p { color:var(--dim); font-size:0.9rem; line-height:1.55; max-width:720px; }
@@ -2116,9 +2119,12 @@ function renderSongs(){
     const row = d.querySelector('.vrow');
     [['easy','Easy'],['normal','Normal'],['full','Pro']].forEach(([v, label]) => {
       const b = document.createElement('button');
-      b.className = 'vchip';
+      b.className = 'vcell';
       const st = starMap[s.title + '|' + v] || 0;
-      b.innerHTML = label + (st ? ' <span class="st">' + '★'.repeat(st) + '</span>' : '');
+      b.innerHTML = '<span class="vlabel"></span><span class="vstars"></span>';
+      b.querySelector('.vlabel').textContent = label;
+      b.querySelector('.vstars').textContent = st ? '★'.repeat(st) + '☆'.repeat(3 - st) : '– – –';
+      b.querySelector('.vstars').classList.toggle('played', st > 0);
       b.onclick = e => { e.stopPropagation(); openSong(s, v); };
       row.appendChild(b);
     });
