@@ -125,6 +125,18 @@ main { flex:1; overflow:auto; }
 .anachip:hover { border-color:var(--tiefrot); }
 .anachip small { color:var(--dim); font-size:10px; letter-spacing:0.1em; margin-left:6px; }
 .ana-key { font-family:var(--brutal); font-weight:800; font-size:2.1rem; letter-spacing:-0.03em; }
+.gbars { display:flex; gap:2px; align-items:flex-end; height:52px; margin-top:10px; }
+.gbars .gbar { flex:1; min-height:4px; background:var(--muted-deep); border-radius:2px 2px 0 0; }
+.gbars .gbar.gs { background:var(--bone); }
+.anachip.fn-t { border-left:3px solid #4a8a4a; }
+.anachip.fn-s { border-left:3px solid #e8c04a; }
+.anachip.fn-d { border-left:3px solid var(--tiefrot); }
+.fnl { font-family:var(--mono); font-size:11px; padding:1px 6px; border:1px solid var(--border); border-radius:3px; margin-right:4px; }
+.fnl.fn-t { color:#7ec98f; } .fnl.fn-s { color:#e8c04a; } .fnl.fn-d { color:var(--tiefrot); }
+.fnseq span { display:inline-block; font-family:var(--mono); font-size:12px; width:22px; height:22px; line-height:22px; text-align:center; border:1px solid var(--border); border-radius:3px; margin:0 4px 4px 0; }
+.fnseq span.fn-t { color:#7ec98f; border-color:#2a4a35; }
+.fnseq span.fn-s { color:#e8c04a; border-color:#5a4a20; }
+.fnseq span.fn-d { color:var(--tiefrot); border-color:var(--tiefrot-dim); }
 .anachip.good { border-color:#4a8a4a; background:#14201a; }
 .anachip.bad { border-color:var(--tiefrot); background:var(--tiefrot-dim); }
 #earlvls { margin-top:14px; }
@@ -1175,17 +1187,18 @@ function recPlay(){
   const t0 = ac.currentTime + 0.2, base = recNotes[0][0];
   for (const [b, d, p, v] of recNotes) tone(t0 + (b - base) * recSpb, d * recSpb, p, 0.1 + (v / 127) * 0.25);
 }
-function recExport(){
-  const tpb = 480, spb = recSpb;
+// Format-0-MIDI aus [beat,dur,pitch,vel]-Noten (vel optional, Standard 80)
+function midiBytes(ns, spb){
+  const tpb = 480;
   const bytes = [];
   const str = s => { for (const c of s) bytes.push(c.charCodeAt(0)); };
   const u32 = n => bytes.push(n >>> 24 & 255, n >>> 16 & 255, n >>> 8 & 255, n & 255);
   const u16 = n => bytes.push(n >>> 8 & 255, n & 255);
   str('MThd'); u32(6); u16(0); u16(1); u16(tpb);
   const ev = [];
-  const base = recNotes[0][0];
-  for (const [b, d, p, v] of recNotes) {
-    ev.push({ tick: Math.round((b - base) * tpb), msg: [0x90, p, Math.max(1, v)] });
+  const base = Math.min(...ns.map(n => n[0]));
+  for (const [b, d, p, v] of ns) {
+    ev.push({ tick: Math.round((b - base) * tpb), msg: [0x90, p, Math.max(1, Math.min(127, v || 80))] });
     ev.push({ tick: Math.round((b - base + d) * tpb), msg: [0x80, p, 0] });
   }
   ev.sort((a, b) => a.tick - b.tick);
@@ -1196,12 +1209,18 @@ function recExport(){
   for (const e of ev) { tr.push(...vlq(e.tick - last), ...e.msg); last = e.tick; }
   tr.push(0, 0xff, 0x2f, 0);
   str('MTrk'); u32(tr.length); bytes.push(...tr);
-  const blob = new Blob([new Uint8Array(bytes)], { type: 'audio/midi' });
+  return bytes;
+}
+function downloadMidi(ns, spb, fname){
+  const blob = new Blob([new Uint8Array(midiBytes(ns, spb))], { type: 'audio/midi' });
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
-  a.download = (SONG ? SONG.name.replace(/\W+/g, '_') : 'aufnahme') + '_aufnahme.mid';
+  a.download = fname;
   a.click();
   setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+}
+function recExport(){
+  downloadMidi(recNotes, recSpb, (SONG ? SONG.name.replace(/\W+/g, '_') : 'aufnahme') + '_aufnahme.mid');
 }
 function handlePress(p){
   const now = performance.now();
@@ -1465,6 +1484,68 @@ function keyTriads(key){
     pcs: [r, (r + (quals[i] === 'min' || quals[i] === 'dim' ? 3 : 4)) % 12, (r + (quals[i] === 'dim' ? 6 : 7)) % 12] }));
 }
 function pcToPitch(pc, lo){ let p = lo + ((pc - lo) % 12 + 12) % 12; return p; }
+// Akkordfunktion nach Ivans Kompositions-Folien: T stabil, S instabil, D labil.
+// Moll: Funktionen wie in der Parallel-Dur; die 5. Stufe wird erst als
+// DUR-Akkord (E7-Prinzip, harmonisches Moll) zur Dominante.
+function chordFunction(rootPc, q, key){
+  const deg = keyScale(key).indexOf(((rootPc % 12) + 12) % 12);
+  if (deg < 0) return null;
+  if (!key.minor) return ['T','S','T','S','D','T','D'][deg];
+  if (deg === 4) return q === 'maj' ? 'D' : 'T';
+  return ['T','D','T','S','T','S','D'][deg];
+}
+const FNLABEL = { T: 'Tonika', S: 'Subdominante', D: 'Dominante' };
+// Groove DNA: Gewicht je 16tel-Position (hierarchisch schwer/leicht)
+const GROOVE_W16 = [4,0,1,0,2,0,1,0,3,0,1,0,2,0,1,0];
+function grooveProfile(ns){
+  const counts = Array(16).fill(0);
+  let devSum = 0, off = 0;
+  for (const n of ns) {
+    const t16 = n[0] * 4;
+    const q = Math.round(t16);
+    const dev = Math.abs(t16 - q);
+    devSum += dev;
+    if (dev > 0.12) off++;                  // deutlich neben dem 16tel-Raster
+    counts[((q % 16) + 16) % 16]++;
+  }
+  const heavy = counts.reduce((a, c, i) => a + (GROOVE_W16[i] >= 2 ? c : 0), 0);
+  const light = counts.reduce((a, c, i) => a + (GROOVE_W16[i] < 2 ? c : 0), 0);
+  const span = Math.max(1, Math.ceil(Math.max(...ns.map(n => (n[0] + n[1]) * 4))));
+  const occ = new Set();
+  for (const n of ns) for (let t = Math.round(n[0] * 4); t < Math.round((n[0] + n[1]) * 4); t++) occ.add(t);
+  return { counts, avgDev: ns.length ? devSum / ns.length : 0, offGrid: ns.length ? off / ns.length : 0,
+           heavy, light, density: occ.size / span };
+}
+function grooveTips(g){
+  const tips = [];
+  if (g.offGrid > 0.15) tips.push('Timing: ' + Math.round(g.offGrid * 100) + '% der Noten liegen neben dem 16tel-Raster – Quantisierung hilft.');
+  const tot = g.heavy + g.light;
+  if (tot) {
+    const lr = g.light / tot;
+    if (lr < 0.25) tips.push('Mehr Drive: betone auch leichte Zählzeiten (2 & 4, Offbeats) – dort lebt der Groove.');
+    else if (lr > 0.65) tips.push('Anker setzen: viele Betonungen auf leichten Zählzeiten – ohne schwere Anker droht der Groove zu drehen.');
+    else tips.push('Ausgewogen: schwere und leichte Zählzeiten halten sich die Waage.');
+  }
+  if (g.density > 0.85) tips.push('Mehr Pausen wagen: catchy Melodien haben etwa gleich viele Noten wie Pausen.');
+  return tips;
+}
+// 100% aufs 16tel-Raster + Velocity nach rhythmischer Gewichtung
+function optimizeNotes(ns){
+  return ns.map(n => {
+    const q16 = Math.round(n[0] * 4);
+    return [q16 / 4, Math.max(0.25, Math.round(n[1] * 4) / 4), n[2], 68 + GROOVE_W16[((q16 % 16) + 16) % 16] * 7];
+  });
+}
+// Reharmonisierung per Funktionstausch: gleicher Halt, anderer Mood
+function reharmonize(chords, key){
+  const tr = keyTriads(key);
+  return chords.map(c => {
+    const f = chordFunction(c.root, c.q, key);
+    const alt = f && tr.find(t => !(t.root === c.root && t.q === c.q) && chordFunction(t.root, t.q, key) === f);
+    return alt ? { root: alt.root, q: alt.q, name: alt.name }
+               : { root: c.root, q: c.q, name: chordName(c.root, c.q) };
+  });
+}
 function triadPitches(t, base){ const r = pcToPitch(t.root, base || 60); return [r, r + (t.q === 'min' || t.q === 'dim' ? 3 : 4), r + (t.q === 'dim' ? 6 : 7)]; }
 function chordTimeline(ns, bars){
   const TR = [];
@@ -1503,7 +1584,7 @@ function openDrill(title, ns, bpm){
   rebuild(); updScore(); go('trainer'); draw();
   setPlaying(true);
 }
-function renderAnalysis(name, ns){
+function renderAnalysis(name, ns, abpm){
   const key = detectKey(ns);
   const triads = keyTriads(key);
   const bars = Math.max(1, Math.ceil(Math.max(...ns.map(n => n[0] + n[1])) / 4));
@@ -1536,9 +1617,11 @@ function renderAnalysis(name, ns){
   const ch3 = c3.querySelector('.chips');
   triads.forEach(t => {
     const b = document.createElement('button'); b.className = 'anachip';
+    const fn = chordFunction(t.root, t.q, key);
+    if (fn) b.classList.add('fn-' + fn.toLowerCase());
     b.innerHTML = '<b></b><small></small>';
     b.querySelector('b').textContent = t.name;
-    b.querySelector('small').textContent = t.rn;
+    b.querySelector('small').textContent = t.rn + (fn ? ' · ' + fn : '');
     b.onclick = () => playChordPcs(triadPitches(t));
     ch3.appendChild(b);
   });
@@ -1559,9 +1642,11 @@ function renderAnalysis(name, ns){
   const ch4 = c4.querySelector('.chips');
   timeline.slice(0, 32).forEach(t => {
     const b = document.createElement('button'); b.className = 'anachip';
+    const fn = chordFunction(t.root, t.q, key);
+    if (fn) b.classList.add('fn-' + fn.toLowerCase());
     b.innerHTML = '<b></b><small></small>';
     b.querySelector('b').textContent = t.name;
-    b.querySelector('small').textContent = t.from === t.to ? 'T' + t.from : 'T' + t.from + '–' + t.to;
+    b.querySelector('small').textContent = (t.from === t.to ? 'T' + t.from : 'T' + t.from + '–' + t.to) + (fn ? ' · ' + fn : '');
     b.onclick = () => playChordPcs(triadPitches(t));
     ch4.appendChild(b);
   });
@@ -1575,6 +1660,87 @@ function renderAnalysis(name, ns){
     openDrill('Akkorde: ' + name, dn, 65);
   };
   c4.appendChild(b4);
+  // Funktionen: T/S/D mit Ivans Metaphern + Folge des Stuecks
+  const fns = timeline.map(t => chordFunction(t.root, t.q, key));
+  const c5 = card('<span class="num">5</span><h3>Funktionen</h3>' +
+    '<p style="line-height:1.6;margin-top:6px"><b class="fnl fn-t">T</b> <b>Tonika</b> – stabil, dein Zuhause: ein Ball in der Schüssel.<br>' +
+    '<b class="fnl fn-s">S</b> <b>Subdominante</b> – instabil: ein Ball auf dem Tisch, ein Stoss und er rollt.<br>' +
+    '<b class="fnl fn-d">D</b> <b>Dominante</b> – labil: ein Ball auf der umgedrehten Schüssel, er will zur Tonika.</p>' +
+    '<div class="fnseq" style="margin-top:10px"></div>');
+  c5.id = 'fnkarte';
+  const fsq = c5.querySelector('.fnseq');
+  fns.slice(0, 24).forEach(f => {
+    const s = document.createElement('span');
+    s.textContent = f || '·';
+    if (f) s.className = 'fn-' + f.toLowerCase();
+    fsq.appendChild(s);
+  });
+  // Reharmonisierung: Funktionstausch, anhoerbar + uebbar
+  const c6 = card('<span class="num">6</span><h3>Reharmonisierung</h3>' +
+    '<p style="color:var(--dim);margin-top:6px;line-height:1.5">Akkorde gleicher Funktion sind austauschbar – ' +
+    'der Mood ändert sich, der Halt bleibt.</p><div class="chips" style="margin-top:10px"></div>');
+  c6.id = 'reharm';
+  const uniq = [];
+  timeline.slice(0, 8).forEach(t => uniq.push({ root: t.root, q: t.q }));
+  const variant = reharmonize(uniq, key);
+  const ch6 = c6.querySelector('.chips');
+  variant.forEach((c, i) => {
+    const b = document.createElement('button'); b.className = 'anachip';
+    const fn = chordFunction(c.root, c.q, key);
+    if (fn) b.classList.add('fn-' + fn.toLowerCase());
+    b.innerHTML = '<b></b><small></small>';
+    b.querySelector('b').textContent = c.name;
+    b.querySelector('small').textContent = 'statt ' + (uniq[i] ? chordName(uniq[i].root, uniq[i].q) : '');
+    b.onclick = () => playChordPcs(triadPitches(c));
+    ch6.appendChild(b);
+  });
+  const b6 = document.createElement('button'); b6.className = 'btn'; b6.textContent = 'Variante üben';
+  b6.onclick = () => {
+    const dn = [];
+    variant.forEach((c, i) => {
+      dn.push([i * 4, 4, pcToPitch(c.root, 45), 0]);
+      triadPitches(c).forEach(p => dn.push([i * 4, 4, p, 1]));
+    });
+    openDrill('Reharmonisiert: ' + name, dn, 65);
+  };
+  c6.appendChild(b6);
+  if (key.minor && timeline.some(t => keyScale(key).indexOf(t.root) === 4 && t.q === 'min')) {
+    const p = document.createElement('p');
+    p.style.cssText = 'margin-top:10px;color:var(--dim);line-height:1.5';
+    const vName = KEYNAMES[keyScale(key)[4]];
+    p.innerHTML = '<b style="color:var(--tiefrot)">Tipp:</b> Spiele die 5. Stufe als <b>Dur-Akkord mit Septime</b> (' +
+      vName + '7, harmonisches Moll) – sie zieht dann viel stärker zur Tonika (E7-Prinzip).';
+    c6.appendChild(p);
+  }
+  // Groove-Check: Betonungsprofil gegen die Groove DNA + optimierter Export
+  const g = grooveProfile(ns);
+  const c7 = card('<span class="num">7</span><h3>Groove-Check</h3>' +
+    '<div class="gbars"></div>' +
+    '<p class="gmeta" style="color:var(--dim);font-family:var(--mono);font-size:11px;margin-top:6px"></p>' +
+    '<div class="chips gtips" style="margin-top:8px"></div>');
+  c7.id = 'groove';
+  const gb = c7.querySelector('.gbars');
+  const gmax = Math.max(1, ...g.counts);
+  g.counts.forEach((c, i) => {
+    const w = document.createElement('div');
+    w.className = 'gbar' + (GROOVE_W16[i] >= 2 ? ' gs' : '');
+    w.title = 'Position ' + (i + 1) + ' · ' + c + ' Anschläge · ' + (GROOVE_W16[i] >= 2 ? 'schwer' : 'leicht');
+    w.style.height = Math.max(6, c / gmax * 100) + '%';
+    gb.appendChild(w);
+  });
+  c7.querySelector('.gmeta').textContent = Math.round((1 - g.offGrid) * 100) + '% im Raster · Betonungen schwer/leicht ' +
+    g.heavy + '/' + g.light + ' · Dichte ' + Math.round(g.density * 100) + '%';
+  const gt = c7.querySelector('.gtips');
+  grooveTips(g).forEach(t => {
+    const s = document.createElement('span');
+    s.className = 'anachip'; s.style.cursor = 'default';
+    s.textContent = t;
+    gt.appendChild(s);
+  });
+  const b7 = document.createElement('button'); b7.className = 'btn'; b7.textContent = 'Optimiert exportieren (.mid)';
+  b7.onclick = () => downloadMidi(optimizeNotes(ns), 60 / (abpm || (SONG && SONG.bpm) || 90),
+    name.replace(/\W+/g, '_') + '_optimiert.mid');
+  c7.appendChild(b7);
   const head = document.createElement('div');
   head.className = 'levelhead';
   head.innerHTML = '<span class="lvltitle"></span><span class="lvlsub">Chips anklicken = anhören · Üben-Buttons öffnen den Trainer</span>';
@@ -1589,15 +1755,15 @@ document.getElementById('anafile').onchange = e => {
   const rd = new FileReader();
   rd.onload = () => {
     try {
-      const { notes: nn } = parseMidi(rd.result);
+      const { notes: nn, bpm: nb } = parseMidi(rd.result);
       if (!nn.length) return;
-      renderAnalysis(f.name.replace(/\.(mid|midi)$/i, ''), nn);
+      renderAnalysis(f.name.replace(/\.(mid|midi)$/i, ''), nn, nb);
     } catch (err) { document.getElementById('anaout').textContent = 'Fehler: ' + err.message; }
   };
   rd.readAsArrayBuffer(f);
   e.target.value = '';
 };
-document.getElementById('anacur').onclick = () => { if (SONG) renderAnalysis(SONG.name, SONG.full); };
+document.getElementById('anacur').onclick = () => { if (SONG) renderAnalysis(SONG.name, SONG.full, SONG.bpm); };
 // ================= Gehörtraining =================
 const EAR_KEY = 'nulltag-ear';
 let earBest = {};
@@ -1613,7 +1779,15 @@ const EAR_LEVELS = [
   { id: 'm2', title: 'Melodie II', sub: '5 Töne nachhören', kind: 'mel', len: 5 },
   { id: 'p1', title: 'Kadenzen', sub: 'Akkordfolgen erkennen', kind: 'prog',
     opts: ['I–IV–V–I','I–V–vi–IV','vi–IV–I–V','i–VI–III–VII'] },
+  { id: 'r1', title: 'Rhythmik', sub: 'Wo liegt die Betonung?', kind: 'beat',
+    opts: ['Schwere Zählzeiten (1 & 3)','Leichte Zählzeiten (2 & 4)','Offbeats (8tel dazwischen)'] },
 ];
+// Betonungs-Positionen (in Beats, 2 Takte) je Rhythmik-Antwort
+const BEAT_ACCENTS = {
+  'Schwere Zählzeiten (1 & 3)': [0, 2, 4, 6],
+  'Leichte Zählzeiten (2 & 4)': [1, 3, 5, 7],
+  'Offbeats (8tel dazwischen)': [0.5, 1.5, 2.5, 3.5, 4.5, 5.5, 6.5, 7.5],
+};
 const MEL_SCALE = [60,62,64,65,67,69,71,72];
 const MEL_LABELS = ['C','D','E','F','G','A','H','C↑'];
 const EAR_PROGS = {
@@ -1664,9 +1838,9 @@ function nextEarQ(){
     earCur = Array.from({ length: earLvl.len }, () => MEL_SCALE[Math.floor(Math.random() * MEL_SCALE.length)]);
     earQs.push({ seq: earCur });
     MEL_SCALE.forEach((p, i) => chip(p, MEL_LABELS[i]));
-  } else if (earLvl.kind === 'prog') {
+  } else if (earLvl.kind === 'prog' || earLvl.kind === 'beat') {
     earCur = earLvl.opts[Math.floor(Math.random() * earLvl.opts.length)];
-    earQs.push({ prog: earCur });
+    earQs.push(earLvl.kind === 'prog' ? { prog: earCur } : { beat: earCur });
     earLvl.opts.forEach(opt => chip(opt, opt));
   } else {
     const q = earLvl.opts[Math.floor(Math.random() * earLvl.opts.length)];
@@ -1685,6 +1859,11 @@ function playEarQ(){
     ensureAC();
     const t = ac.currentTime + 0.05;
     if (earLvl.kind === 'mel') q.seq.forEach((p, i) => tone(t + i * 0.55, 0.5, p, 0.22));
+    else if (earLvl.kind === 'beat') {
+      const spb = 0.5;   // 120 BPM, 2 Takte Puls + Akzente
+      for (let b = 0; b < 8; b++) tone(t + b * spb, 0.12, 36, 0.16);
+      BEAT_ACCENTS[q.beat].forEach(b => tone(t + b * spb, 0.1, 76, 0.3));
+    }
     else if (earLvl.kind === 'prog') EAR_PROGS[q.prog].forEach((ch, i) => ch.forEach(p => tone(t + i * 0.75, 0.7, p, 0.18)));
     else if (earLvl.kind === 'int') { tone(t, 0.7, q.root, 0.22); tone(t + 0.6, 0.9, q.root + q.opt, 0.22); }
     else EAR_CHORDS[q.opt].iv.forEach(s => tone(t, 1.3, q.root + s, 0.2));
@@ -1749,6 +1928,7 @@ function finishEar(){
     const dn = [];
     qs.forEach((q, i) => {
       if (lvl.kind === 'mel') q.seq.forEach((p, j) => dn.push([i * (lvl.len + 1) + j, 1, p, 1]));
+      else if (lvl.kind === 'beat') BEAT_ACCENTS[q.beat].forEach(b => dn.push([i * 8 + b, 0.5, 76, 1]));
       else if (lvl.kind === 'prog') EAR_PROGS[q.prog].forEach((ch, j) => ch.forEach(p => dn.push([i * 8 + j * 2, 2, p, 1])));
       else if (lvl.kind === 'int') { dn.push([i * 4, 1.5, q.root, 1]); dn.push([i * 4 + 2, 1.5, q.root + q.opt, 1]); }
       else EAR_CHORDS[q.opt].iv.forEach(s => dn.push([i * 4, 3, q.root + s, 1]));
