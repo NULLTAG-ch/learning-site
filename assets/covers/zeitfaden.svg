@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400">
+<rect width="400" height="400" fill="#0b0b0f"/>
+<rect x="24" y="24" width="352" height="352" fill="none" stroke="#7c5cff" stroke-width="2" opacity="0.55"/>
+<circle cx="200" cy="168" r="64" fill="none" stroke="#7c5cff" stroke-width="3" opacity="0.9"/>
+<circle cx="200" cy="168" r="30" fill="#7c5cff" opacity="0.22"/>
+<text x="200" y="285" font-family="Inter Tight, Arial, sans-serif" font-size="26" font-weight="700" fill="#f2f2f5" text-anchor="middle" letter-spacing="2">ZEITFADEN</text>
+<text x="200" y="320" font-family="Inter Tight, Arial, sans-serif" font-size="14" fill="#8a8a95" text-anchor="middle" letter-spacing="6">NULLTAG 02</text>
+</svg>
