@@ -154,6 +154,8 @@ input[type=range] { width:110px; accent-color:var(--tiefrot); }
 canvas { display:block; width:100%; flex:1; touch-action:none; cursor:pointer; }
 #tstatus { padding:6px 16px 9px; font-family:var(--mono); font-size:11.5px; color:var(--dim); display:flex; gap:16px; flex-wrap:wrap; align-items:baseline; }
 #midistat { color:var(--dim); } #midistat.on { color:var(--ok); }
+#sharel { color:var(--dim); cursor:pointer; transition:color 150ms var(--ease); }
+#sharel:hover { color:var(--tiefrot); }
 #score { color:var(--bone); font-variant-numeric:tabular-nums; }
 #songname { color:var(--bone); font-weight:500; }
 #drop { position:fixed; inset:0; background:rgba(10,10,10,0.88); border:2px dashed var(--bone); display:none; align-items:center; justify-content:center; font-family:var(--mono); font-size:1.1rem; letter-spacing:0.08em; z-index:9; pointer-events:none; }
@@ -291,6 +293,7 @@ canvas { display:block; width:100%; flex:1; touch-action:none; cursor:pointer; }
       <span id="songname"></span>
       <span id="midistat">Kein MIDI – Klick/Tastatur geht auch</span>
       <span id="score"></span>
+      <span id="sharel" title="Übe-Link kopieren">⧉ Link kopieren</span>
       <span class="kbdlegend"><b class="r">türkis RH</b> · <b class="l">orange LH</b> · <b class="y">gelb erwartet</b> · <b class="g">grün richtig</b> · Ziffern = Fingersatz (1 = Daumen … 5 = kleiner Finger) · Klaviatur anklicken oder Tastenreihe A–Ö spielen · Leertaste = Start/Stopp</span>
       <span id="hint"></span>
     </div>
@@ -2053,6 +2056,45 @@ renderLibrary();
 // Start: leichtester Song vorladen
 loadSong(SONGS[0].title, SONGS[0].notes, SONGS[0].bpm);
 go('start');
+// ---------- Teilen-Links: aktuellen Uebe-Stand als URL ----------
+function shareUrl(){
+  const u = new URL(location.origin + location.pathname);
+  if (currentLesson) u.searchParams.set('lesson', currentLesson);
+  else if (SONG && SONGS.some(s => s.title === SONG.name)) {
+    u.searchParams.set('song', SONG.name);
+    u.searchParams.set('v', version);
+    u.searchParams.set('m', mode);
+    u.searchParams.set('t', (secStart + 1) + '-' + secEnd);
+  }
+  return u.toString();
+}
+document.getElementById('sharel').onclick = () => {
+  const el = document.getElementById('sharel');
+  navigator.clipboard.writeText(shareUrl()).then(() => {
+    el.textContent = 'Kopiert ✓';
+    setTimeout(() => { el.textContent = '⧉ Link kopieren'; }, 1600);
+  }).catch(() => { el.textContent = shareUrl(); });
+};
+// Deep-Link beim Laden: ?song=…&v=…&m=…&t=a-b oder ?lesson=id
+(function(){
+  const q = new URLSearchParams(location.search);
+  const lid = q.get('lesson');
+  if (lid) {
+    const l = ALL_LESSONS.find(x => x.id === lid);
+    if (l) openLesson(l.id);
+    return;
+  }
+  const s = SONGS.find(x => x.title === q.get('song'));
+  if (!s) return;
+  openSong(s, ['easy', 'normal', 'full'].includes(q.get('v')) ? q.get('v') : 'easy');
+  if (['listen', 'wait', 'check'].includes(q.get('m'))) { mode = q.get('m'); document.getElementById('mode').value = mode; }
+  const t = /^(\d+)-(\d+)$/.exec(q.get('t') || '');
+  if (t) {
+    secStart = Math.max(0, Math.min(parseInt(t[1], 10) - 1, SONG.bars - 1));
+    secEnd = Math.max(secStart + 1, Math.min(parseInt(t[2], 10), SONG.bars));
+  }
+  rebuild(); updScore(); draw();
+})();
 </script>
 </body>
 </html>
