@@ -88,6 +88,9 @@ main { flex:1; overflow:auto; }
 .song { display:flex; gap:14px; background:var(--panel); border:1px solid var(--border); border-radius:6px; padding:14px; cursor:pointer; box-shadow:0 1px 0 rgba(255,255,255,0.04) inset; transition:border-color 150ms var(--ease); }
 .song:hover { border-color:var(--tiefrot); }
 .song img.cov { width:72px; height:72px; object-fit:cover; border-radius:3px; flex:none; display:block; }
+.covown { width:72px; height:72px; border-radius:3px; flex:none; background:var(--panel2); border:1px dashed var(--border); display:flex; align-items:center; justify-content:center; font-size:22px; color:var(--dim); }
+.mydel { margin-top:8px; background:none; border:none; color:var(--muted-deep); font-family:var(--mono); font-size:9px; letter-spacing:0.14em; text-transform:uppercase; cursor:pointer; padding:0; }
+.mydel:hover { color:var(--tiefrot); }
 .song .sbody { flex:1; min-width:0; }
 .song h3 { font-family:var(--brutal); font-weight:700; font-size:15px; letter-spacing:-0.01em; }
 .song .meta { color:var(--dim); font-family:var(--mono); font-size:9.5px; letter-spacing:0.14em; text-transform:uppercase; margin-top:4px; }
@@ -1573,10 +1576,32 @@ function loadFile(file){
     try {
       const { notes, bpm } = parseMidi(rd.result);
       if (!notes.length) { document.getElementById('hint').textContent = 'Keine spielbaren Noten gefunden (nur Drums?).'; return; }
-      loadSong(file.name.replace(/\.(mid|midi)$/i, ''), notes, bpm); go('trainer');
+      const title = file.name.replace(/\.(mid|midi)$/i, '');
+      saveMySong(title, notes, bpm);
+      loadSong(title, notes, bpm); go('trainer');
+      document.getElementById('hint').textContent = 'Gespeichert unter «Meine Songs» – nur auf diesem Gerät.';
     } catch (e) { document.getElementById('hint').textContent = 'Fehler: ' + e.message; }
   };
   rd.readAsArrayBuffer(file);
+}
+// ---------- Meine Songs: eigene MIDIs, nur lokal im Browser (localStorage) ----------
+// Bewusst KEIN Upload und nichts im Repo: eigene Importe (auch fremdes
+// Material) bleiben Privatgebrauch auf diesem Geraet.
+const MYS_KEY = 'nulltag-mysongs';
+let mySongs = [];
+try { mySongs = JSON.parse(localStorage.getItem(MYS_KEY) || '[]'); } catch (e) { mySongs = []; }
+function saveMySong(title, notes, bpm){
+  const i = mySongs.findIndex(s => s.title === title);
+  const entry = { title, bpm, notes };
+  if (i >= 0) mySongs[i] = entry; else mySongs.push(entry);
+  try { localStorage.setItem(MYS_KEY, JSON.stringify(mySongs)); }
+  catch (e) { document.getElementById('hint').textContent = 'Lokaler Speicher voll – Song nur temporär geladen.'; return; }
+  renderSongs();
+}
+function deleteMySong(title){
+  mySongs = mySongs.filter(s => s.title !== title);
+  try { localStorage.setItem(MYS_KEY, JSON.stringify(mySongs)); } catch (e) {}
+  renderSongs();
 }
 
 document.getElementById('file').onchange = e => { if (e.target.files[0]) loadFile(e.target.files[0]); };
@@ -2310,6 +2335,31 @@ function renderSongs(){
       b.onclick = e => { e.stopPropagation(); openSong(s, v); };
       row.appendChild(b);
     });
+    d.onclick = () => openSong(s, 'easy');
+    grid.appendChild(d);
+  });
+  // Meine Songs: eigene Importe, nur auf diesem Geraet
+  mySongs.forEach(s => {
+    const bars = Math.max(1, Math.ceil(Math.max(...s.notes.map(n => n[0] + n[1])) / 4));
+    const d = document.createElement('div');
+    d.className = 'song mysong';
+    d.innerHTML = '<div class="cov covown">♪</div><div class="sbody"><h3></h3>' +
+      '<div class="meta">Eigener Import · nur auf diesem Gerät · ' + s.bpm + ' BPM · ' + bars + ' Takte</div>' +
+      '<div class="vrow"></div><button class="mydel" title="Von diesem Gerät löschen">✗ entfernen</button></div>';
+    d.querySelector('h3').textContent = s.title;
+    const row = d.querySelector('.vrow');
+    [['easy','Easy'],['normal','Normal'],['full','Pro']].forEach(([v, label]) => {
+      const b = document.createElement('button');
+      b.className = 'vcell';
+      const st = starMap[s.title + '|' + v] || 0;
+      b.innerHTML = '<span class="vlabel"></span><span class="vstars"></span>';
+      b.querySelector('.vlabel').textContent = label;
+      b.querySelector('.vstars').textContent = st ? '★'.repeat(st) + '☆'.repeat(3 - st) : '– – –';
+      b.querySelector('.vstars').classList.toggle('played', st > 0);
+      b.onclick = e => { e.stopPropagation(); openSong(s, v); };
+      row.appendChild(b);
+    });
+    d.querySelector('.mydel').onclick = e => { e.stopPropagation(); deleteMySong(s.title); };
     d.onclick = () => openSong(s, 'easy');
     grid.appendChild(d);
   });
