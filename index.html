@@ -2,7 +2,7 @@
 <html lang="de">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>learn.nulltag.ch – NULLTAG Piano Trainer</title>
 <meta name="description" content="Klavier lernen mit NULLTAG – alle Songs als interaktive Lernversionen: fallende Noten, Grundkurs, Web-MIDI-Support und MIDI-Import. Läuft komplett im Browser.">
 <meta name="theme-color" content="#0a0a0a">
@@ -166,6 +166,8 @@ main { flex:1; overflow:auto; }
 label { font-family:var(--mono); font-size:10.5px; letter-spacing:0.18em; text-transform:uppercase; color:var(--dim); }
 input[type=range] { width:110px; accent-color:var(--tiefrot); }
 #tempoval { min-width:96px; font-family:var(--mono); font-variant-numeric:tabular-nums; font-size:11px; color:var(--dim); }
+/* iPad/iOS: kein Doppeltipp-Zoom auf Bedienelementen, kein Tap-Blitz */
+button, select, .anachip, .steprow, .vcell, .lcard, .song, .kurs-card, .resume-card { touch-action:manipulation; -webkit-tap-highlight-color:transparent; }
 canvas { display:block; width:100%; flex:1; touch-action:none; cursor:pointer; }
 #tmain { display:flex; flex:1; min-height:0; }
 #tmain canvas { width:auto; flex:1; }
@@ -972,6 +974,20 @@ function keyX(p, g){
   let lw = p - 1; while (!([0,2,4,5,7,9,11].includes(lw % 12))) lw--;
   return [g.wx[lw] + g.ww * 0.65, g.ww * 0.7];
 }
+// Safari < 16.4 (aeltere iPads) kennt ctx.roundRect nicht - ohne Polyfill
+// wuerde draw() werfen und der Canvas bliebe schwarz
+if (!CanvasRenderingContext2D.prototype.roundRect) {
+  CanvasRenderingContext2D.prototype.roundRect = function(x, y, w, h, r){
+    r = Math.min(Math.abs(typeof r === 'number' ? r : (r && r[0]) || 0), w / 2, h / 2);
+    this.moveTo(x + r, y);
+    this.arcTo(x + w, y, x + w, y + h, r);
+    this.arcTo(x + w, y + h, x, y + h, r);
+    this.arcTo(x, y + h, x, y, r);
+    this.arcTo(x, y, x + w, y, r);
+    this.closePath();
+    return this;
+  };
+}
 // Notenschrift-Ansicht: Grand Staff oben im Trainer, Zeit horizontal, eigener
 // leichter Renderer (kein Fremd-Code) - Notenkoepfe, Vorzeichen, Hilfslinien.
 function drawStaff(g, TOP, dpr){
@@ -1409,7 +1425,12 @@ function setMidiUi(text, on){
 }
 function midiBlockReason(){
   if (!window.isSecureContext) return { pill: 'MIDI · blockiert: unsichere Verbindung', stat: 'Web-MIDI blockiert: Die Verbindung gilt als unsicher (Zertifikatswarnung?). Seite über gültiges HTTPS laden, Warnungen nicht umgehen.' };
-  if (!navigator.requestMIDIAccess) return { pill: 'MIDI · Browser nicht unterstützt', stat: 'Dieser Browser unterstützt Web-MIDI nicht (Safari/Firefox ohne Flag) – Chrome oder Edge nutzen.' };
+  if (!navigator.requestMIDIAccess) {
+    const ios = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.maxTouchPoints > 1 && /Mac/.test(navigator.userAgent));
+    return ios
+      ? { pill: 'MIDI · auf iPad nicht möglich', stat: 'Safari/iPadOS kennt kein Web-MIDI – die Touch-Klaviatur (auch Akkorde mit mehreren Fingern) und alle Modi funktionieren trotzdem. Für ein MIDI-Keyboard: Chrome oder Edge am Desktop.' }
+      : { pill: 'MIDI · Browser nicht unterstützt', stat: 'Dieser Browser unterstützt Web-MIDI nicht (Safari/Firefox ohne Flag) – Chrome oder Edge nutzen.' };
+  }
   return null;
 }
 async function midiConnect(){
