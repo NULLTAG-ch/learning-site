@@ -342,6 +342,7 @@ nav button#midipill { margin-left:0; }
     <div id="tcontrols">
       <div class="grp"><label>Song</label><select id="songsel"></select></div>
       <button id="midibtn">MIDI-Keyboard verbinden</button>
+      <div class="grp hide" id="midiinwrap"><label>Eingang</label><select id="midiinsel" title="MIDI-Eingang wählen"></select></div>
       <div class="grp"><label>Modus</label>
         <select id="mode">
           <option value="listen">Anhören</option>
@@ -1563,21 +1564,48 @@ function midiBlockReason(){
   }
   return null;
 }
+// Bei mehreren MIDI-Geraeten (z.B. Audio-Interface + Keyboard): waehlbar per
+// Dropdown, Wahl bleibt gespeichert. Auto-Wahl bevorzugt Keyboard-Marken vor
+// Audio-Interfaces, damit z.B. UR22C nicht das Alesis verdraengt.
+let midiAcc = null;
+const MIDIIN_KEY = 'nulltag-midiin';
+function midiPick(){
+  if (!midiAcc) return;
+  const ins = [...midiAcc.inputs.values()];
+  const wrap = document.getElementById('midiinwrap'), sel = document.getElementById('midiinsel');
+  sel.innerHTML = '';
+  ins.forEach(i => {
+    const o = document.createElement('option');
+    o.value = i.id; o.textContent = i.name || 'MIDI-Gerät';
+    sel.appendChild(o);
+  });
+  wrap.classList.toggle('hide', ins.length < 2);
+  if (!ins.length) { midiIn = null; setMidiUi('Berechtigung ok, aber kein MIDI-Gerät gefunden – Kabel/Einschalten prüfen, Gerät wird bei Anschluss automatisch erkannt', false); return; }
+  let saved = null;
+  try { saved = localStorage.getItem(MIDIIN_KEY); } catch (e) {}
+  const isKb = i => /flkey|novation|alesis|akai|arturia|keystation|launchkey|mpk|keylab|roland|yamaha|korg|kawai|casio|piano|keyboard/i.test(i.name || '');
+  midiIn = ins.find(i => i.name === saved) || ins.find(i => i.id === saved) || ins.find(isKb) || ins[0];
+  sel.value = midiIn.id;
+  ins.forEach(i => i.onmidimessage = null);
+  midiIn.onmidimessage = m => { const [s, p2, v] = m.data; const cmd = s & 0xf0; if (cmd === 0x90 || cmd === 0x80) onNote(cmd, p2, v); };
+  setMidiUi('MIDI: ' + midiIn.name + (ins.length > 1 ? ' · ' + ins.length + ' Geräte erkannt – Eingang oben wählbar' : ''), true);
+}
+document.getElementById('midiinsel').onchange = e => {
+  if (!midiAcc) return;
+  const ins = [...midiAcc.inputs.values()];
+  const chosen = ins.find(i => i.id === e.target.value);
+  if (!chosen) return;
+  try { localStorage.setItem(MIDIIN_KEY, chosen.name || chosen.id); } catch (err) {}
+  midiPick();
+};
 async function midiConnect(){
   const blocked = midiBlockReason();
   if (blocked) { document.getElementById('midipill').textContent = blocked.pill; document.getElementById('midistat').textContent = blocked.stat; return; }
   setMidiUi('MIDI wird angefragt … (Browser-Abfrage bestätigen)', false);
   try {
-    const acc = await navigator.requestMIDIAccess({ sysex: false });
-    function pick(){
-      const ins = [...acc.inputs.values()];
-      if (!ins.length) { midiIn = null; setMidiUi('Berechtigung ok, aber kein MIDI-Gerät gefunden – Kabel/Einschalten prüfen, Gerät wird bei Anschluss automatisch erkannt', false); return; }
-      midiIn = ins.find(i => /flkey|novation/i.test(i.name)) || ins[0];
-      ins.forEach(i => i.onmidimessage = null);
-      midiIn.onmidimessage = m => { const [s, p2, v] = m.data; const cmd = s & 0xf0; if (cmd === 0x90 || cmd === 0x80) onNote(cmd, p2, v); };
-      setMidiUi('MIDI: ' + midiIn.name, true);
-    }
-    acc.onstatechange = pick; pick();
+    midiAcc = await navigator.requestMIDIAccess({ sysex: false });
+    midiAcc.onstatechange = midiPick;
+    midiPick();
   } catch (e) { setMidiUi('MIDI-Zugriff fehlgeschlagen (' + (e && e.name ? e.name : 'abgelehnt') + ') – in den Website-Einstellungen MIDI erlauben', false); }
 }
 // Beim Laden: Blocker sofort anzeigen, sonst automatisch verbinden,
