@@ -191,6 +191,8 @@ canvas { display:block; width:100%; flex:1; touch-action:none; cursor:pointer; }
 .smeta { font-family:var(--mono); font-size:9px; letter-spacing:0.12em; text-transform:uppercase; color:var(--dim); margin-top:2px; }
 @media (max-width:900px){ #steppanel { display:none; } }
 #tstatus { padding:6px 16px 9px; font-family:var(--mono); font-size:11.5px; color:var(--dim); display:flex; gap:16px; flex-wrap:wrap; align-items:baseline; }
+#tprog { color:var(--bone); }
+#tprog b { color:#e8c04a; font-weight:500; }
 #midistat { color:var(--dim); } #midistat.on { color:var(--ok); }
 #sharel { color:var(--dim); cursor:pointer; transition:color 150ms var(--ease); }
 #sharel:hover { color:var(--tiefrot); }
@@ -372,6 +374,7 @@ nav button#midipill { margin-left:0; }
     <div id="tstatus">
       <span id="songname"></span>
       <span id="midistat">Kein MIDI – Klick/Tastatur geht auch</span>
+      <span id="tprog"></span>
       <span id="score"></span>
       <span id="sharel" title="Übe-Link kopieren">⧉ Link kopieren</span>
       <span class="kbdlegend"><b class="r">türkis RH</b> · <b class="l">orange LH</b> · <b class="y">gelb erwartet</b> · <b class="g">grün richtig</b> · Fingersatz: L/R + Ziffer · 1 = Daumen, 5 = kleiner Finger (in beiden Händen) · Klaviatur anklicken oder Tastenreihe A–Ö spielen · Leertaste = Start/Stopp</span>
@@ -790,7 +793,7 @@ function markStepDone(){
     arr.push(i);
     try { localStorage.setItem(STEPS_KEY, JSON.stringify(stepsDone)); } catch (e) {}
   }
-  renderStepPanel();
+  renderStepPanel(); updProgress();
 }
 function renderStepPanel(){
   const panel = document.getElementById('steppanel');
@@ -969,12 +972,73 @@ function buildGroups(){
   groups = [...m.entries()].sort((a, b) => a[0] - b[0]).map(([t, ns]) => ({ t, ns }));
   gIdx = 0; waitPressed.clear();
 }
-function resetScore(){ hits = 0; misses = 0; matched = new Set(); barErrs = {}; updScore(); }
+function resetScore(){ hits = 0; misses = 0; matched = new Set(); barErrs = {}; errStats = { oct: 0, early: 0, late: 0, wrong: 0 }; updScore(); }
 function updScore(){
   const s = document.getElementById('score');
   if (mode === 'check') s.textContent = 'Treffer: ' + hits + ' · daneben: ' + misses;
   else if (mode === 'wait') s.textContent = 'Schritt ' + Math.min(gIdx + 1, groups.length) + ' / ' + groups.length;
   else s.textContent = '';
+  updProgress();
+}
+// ---------- Fortschritt + Bereitschaft im Trainer ----------
+function updProgress(){
+  const el = document.getElementById('tprog');
+  if (!el) return;
+  if (!SONG || !SONG.steps || !SONG.steps.length || (typeof currentLesson !== 'undefined' && currentLesson)) { el.textContent = ''; return; }
+  const i = curStepIdx();
+  const doneN = (stepsDone[stepKey()] || []).length, n = SONG.steps.length;
+  if (i < 0) { el.textContent = doneN + ' / ' + n + ' Schritten sitzen · Durchlauf ' + roundN; return; }
+  let t = 'Schritt ' + (i + 1) + ' / ' + n + ' · ' + doneN + ' sitzen · Durchlauf ' + roundN;
+  const ziel = handPhase === 'rh' ? 'rechte Hand → danach links'
+    : handPhase === 'lh' ? 'linke Hand → danach beide'
+    : handPhase === 'both' ? 'beide Hände' : null;
+  if (ziel) t += ' · Phase: ' + ziel;
+  const next = handPhase === 'rh' ? 'zur linken Hand'
+    : handPhase === 'lh' ? 'zu beiden Händen'
+    : 'zum nächsten Schritt';
+  t += ' · noch 1 sauberer Durchlauf ' + next;
+  el.textContent = t;
+}
+// ---------- Fehlermuster-Tipps ----------
+let errStats = { oct: 0, early: 0, late: 0, wrong: 0 };
+function errorTip(cov, acc, lhMiss, rhMiss){
+  if (cov < 0.5) return 'Tipp: Tempo runter (Regler oder Auto-Tempo an) – erst sicher, dann schnell.';
+  if (errStats.oct >= 3) return 'Tipp: Viele Töne in der falschen Oktave – Handlage prüfen oder «Oktave egal» einschalten.';
+  if (errStats.early >= 2 && errStats.early >= 2 * errStats.late) return 'Tipp: Du bist oft zu früh – Metronom an und bewusst auf den Klick warten.';
+  if (errStats.late >= 2 && errStats.late >= 2 * errStats.early) return 'Tipp: Du kommst oft zu spät – Abschnitt langsamer loopen, bis die Griffe sitzen.';
+  if (lhMiss >= 3 && lhMiss >= 2 * Math.max(1, rhMiss)) return 'Tipp: Die linke Hand verliert die meisten Noten – übe sie einzeln (LH-Knopf oder geführter Schritt).';
+  if (rhMiss >= 3 && rhMiss >= 2 * Math.max(1, lhMiss)) return 'Tipp: Die rechte Hand verliert die meisten Noten – übe sie einzeln (RH-Knopf oder geführter Schritt).';
+  if (acc < 0.6 && errStats.wrong >= 4) return 'Tipp: Viele Nebentöne – Fingersatz-Anzeige nutzen und den Takt im Warte-Modus üben.';
+  return '';
+}
+// ---------- Ausstiegspunkt-Erkennung (Pause vorschlagen) ----------
+let sessMs = 0, pauseLastTs = -1e9, accHist = [];
+function maybeSuggestPause(){
+  const now = performance.now();
+  if (now - pauseLastTs < 10 * 60000) return false;
+  const mins = sessMs / 60000 + (playStartTs !== null ? (Date.now() - playStartTs) / 60000 : 0);
+  const declining = accHist.length >= 3 && accHist.slice(-3).every((v, j, a) => j === 0 || v < a[j - 1])
+    && accHist[accHist.length - 1] < 0.7;
+  if (mins < 20 && !declining) return false;
+  pauseLastTs = now;
+  if (bannerUntil <= now) {
+    bannerText = '✓ Guter Ausstiegspunkt · ' + (declining && mins < 20 ? 'die Konzentration lässt nach' : Math.round(mins) + ' Min geübt') + ' – Zeit für eine Pause?';
+    bannerUntil = now + 4200;
+  }
+  const h = document.getElementById('hint');
+  if (!h.querySelector('a.pauselink')) {
+    const a = document.createElement('a');
+    a.href = '#'; a.className = 'pauselink';
+    a.textContent = ' Session hier beenden ⏸';
+    a.onclick = e => {
+      e.preventDefault(); setPlaying(false);
+      const m = Math.round(sessMs / 60000);
+      const doneN = (stepsDone[stepKey()] || []).length;
+      h.textContent = 'Starke Session: ' + m + ' Min geübt, ' + doneN + ' Schritte sitzen. Genug für heute – bis zum nächsten Mal!';
+    };
+    h.appendChild(a);
+  }
+  return true;
 }
 let whites = [];
 function setRange(ns){
@@ -1280,17 +1344,30 @@ function loopFrame(){
           msg += ' ' + '★'.repeat(stars) + '☆'.repeat(3 - stars);
         }
         // verpasste Noten den Takten zuschreiben
-        for (const n of activeNotes()) if (!matched.has(n)) { const b = Math.floor(n[0] / 4) + 1; barErrs[b] = (barErrs[b] || 0) + 1; }
+        let lhMiss = 0, rhMiss = 0;
+        for (const n of activeNotes()) if (!matched.has(n)) {
+          const b = Math.floor(n[0] / 4) + 1; barErrs[b] = (barErrs[b] || 0) + 1;
+          if (isRHn(n, SONG.split)) rhMiss++; else lhMiss++;
+        }
         const failBars = Object.entries(barErrs).sort((a, b) => b[1] - a[1]);
+        accHist.push(Math.min(acc, cov));
+        if (accHist.length > 12) accHist.shift();
         if (autoTempo && cov >= 0.85 && acc >= 0.85 && tempoPct < 100) {
           tempoPct = Math.min(100, tempoPct + 10);
           document.getElementById('tempo').value = tempoPct; updTempo();
           msg += ' · Sauber! Tempo rauf: ' + tempoPct + ' %';
         } else if (autoTempo && tempoPct >= 100 && cov >= 0.85 && acc >= 0.85) {
           msg += ' · Zieltempo erreicht ✓';
+        } else if (autoTempo && cov < 0.5 && tempoPct > 30) {
+          tempoPct = Math.max(25, tempoPct - 10);
+          document.getElementById('tempo').value = tempoPct; updTempo();
+          msg += ' · Tempo runter: ' + tempoPct + ' %';
         }
+        const tip = errorTip(cov, acc, lhMiss, rhMiss);
+        if (tip) msg += ' · ' + tip;
         const h = document.getElementById('hint');
         h.textContent = msg + ' ';
+        maybeSuggestPause();
         if (stars < 3 && failBars.length && failBars[0][1] >= 2) {
           const worst = parseInt(failBars[0][0], 10);
           const a = document.createElement('a');
@@ -1317,7 +1394,7 @@ function setPlaying(v){
   playing = v;
   document.getElementById('play').textContent = v ? '⏸ Stopp' : '▶ Start';
   if (v) { if (playStartTs === null) playStartTs = Date.now(); }
-  else if (playStartTs !== null) { addPractice((Date.now() - playStartTs) / 60000); playStartTs = null; }
+  else if (playStartTs !== null) { addPractice((Date.now() - playStartTs) / 60000); sessMs += Date.now() - playStartTs; playStartTs = null; }
   if (v) {
     ensureAC();
     if (typeof saveLast === 'function') saveLast();
@@ -1342,8 +1419,9 @@ function waitAdvance(){
       else if (looping) {
         if (!r) document.getElementById('hint').textContent = 'Abschnitt geschafft!';
         roundWrap(); gIdx = 0;
+        if (r === 'done') maybeSuggestPause();
       }
-      else { setPlaying(false); }
+      else { setPlaying(false); if (r === 'done') maybeSuggestPause(); }
     }
   }
   pos = groups[Math.min(gIdx, groups.length - 1)].t;
@@ -1457,6 +1535,14 @@ function handlePress(p){
       misses++; flash[fold(p)] = { ok: false, until: now + 300 };
       const bar = Math.floor(Math.max(0, pos) / 4) + 1;
       barErrs[bar] = (barErrs[bar] || 0) + 1;
+      // Fehlermuster fuer Tipps klassifizieren
+      const octC = activeNotes().find(n => !matched.has(n) && (n[2] % 12) === (p % 12) && Math.abs(n[0] - pos) <= 0.6);
+      if (octC && !octTolerant) errStats.oct++;
+      else {
+        const tC = activeNotes().find(n => !matched.has(n) && matchPitch(p, n[2]) && Math.abs(n[0] - pos) <= 1.5);
+        if (tC) { if (pos < tC[0]) errStats.early++; else errStats.late++; }
+        else errStats.wrong++;
+      }
     }
     updScore();
   }
@@ -1697,7 +1783,10 @@ document.getElementById('version').onchange = e => { version = e.target.value; s
 document.getElementById('step').onchange = e => {
   if (!e.target.value) return;
   const [a, b] = e.target.value.split('-').map(Number);
-  secStart = a; secEnd = b; setPlaying(false); rebuild(); draw();
+  secStart = a; secEnd = b; setPlaying(false); rebuild();
+  const st = SONG.steps.find(s => s.a - 1 === a && s.b === b);
+  if (st) startGuidedStep(st);   // Hand-Fuehrung auch ueber das Dropdown
+  updScore(); draw();
   document.getElementById('section').value = '';
 };
 document.getElementById('section').onchange = e => {
