@@ -205,6 +205,7 @@ canvas { display:block; width:100%; flex:1; touch-action:none; cursor:pointer; }
 .ldone-card h3 { font-family:var(--brutal); font-weight:700; font-size:1.3rem; letter-spacing:-0.02em; margin-bottom:6px; }
 .ldone-meta { font-family:var(--mono); font-size:10px; letter-spacing:0.22em; text-transform:uppercase; color:var(--dim); }
 .ldone-btns { display:flex; gap:10px; justify-content:center; flex-wrap:wrap; margin-top:8px; }
+.ldone-keyhint { font-family:var(--mono); font-size:10px; letter-spacing:0.18em; text-transform:uppercase; color:var(--dim); margin-top:16px; min-height:12px; }
 #file { display:none; }
 .hide { display:none !important; }
 .kbdlegend { font-size:11px; color:var(--muted-deep); }
@@ -395,6 +396,7 @@ nav button#midipill { margin-left:0; }
       <button class="btn ghost" id="ldrepeat">Wiederholen</button>
       <button class="btn ghost" id="ldbib">Zur Bibliothek</button>
     </div>
+    <div class="ldone-keyhint" id="ldkeyhint"></div>
   </div>
 </div>
 <script>
@@ -500,6 +502,18 @@ function openLesson(id){
   draw();
   setPlaying(true);   // gefuehrter Flow: Lektion startet sofort, gelbe Taste zeigt den Weg
 }
+// ---------- Weiter ohne Maus: MIDI-Taste (oder Enter) bestaetigt "Weiter"-Prompts ----------
+// Kurze Sperrfrist nach dem Armieren, damit der letzte Anschlag der Lektion
+// (oder ein noch gehaltener Akkord) nicht sofort weiterschaltet.
+let advFn = null, advArmAt = 0;
+function armAdvance(fn){ advFn = fn; advArmAt = performance.now() + 900; }
+function clearAdvance(){ advFn = null; }
+function fireAdvance(){
+  if (!advFn || performance.now() < advArmAt) return false;
+  if (document.getElementById('view-trainer').classList.contains('hide')) return false;
+  const f = advFn; advFn = null; f(); return true;
+}
+function advKeyHintText(){ return midiIn ? '♪ Beliebige Keyboard-Taste = weiter' : 'Enter = weiter'; }
 function lessonDone(){
   if (!currentLesson) return;
   if (!doneSet.has(currentLesson)) { doneSet.add(currentLesson); saveDone(); }
@@ -518,9 +532,16 @@ function lessonDone(){
     nb.onclick = () => { hideLdone(); sessionAdvance(); };
   } else if (nxt) { nb.textContent = 'Nächste: ' + nxt.title; nb.classList.remove('hide'); nb.onclick = () => { hideLdone(); openLesson(nxt.id); }; }
   else nb.classList.add('hide');
+  showLdone();
+}
+// Overlay zeigen und "Weiter" armieren: MIDI-Taste/Enter loest den Hauptbutton aus
+function showLdone(){
+  const nb = document.getElementById('ldnext');
+  armAdvance(nb.classList.contains('hide') ? hideLdone : () => nb.click());
+  document.getElementById('ldkeyhint').textContent = advKeyHintText();
   document.getElementById('ldone').classList.remove('hide');
 }
-function hideLdone(){ document.getElementById('ldone').classList.add('hide'); }
+function hideLdone(){ clearAdvance(); document.getElementById('ldone').classList.add('hide'); }
 document.getElementById('ldrepeat').onclick = () => { hideLdone(); if (currentLesson) openLesson(currentLesson); };
 document.getElementById('ldbib').onclick = () => { hideLdone(); go('bib'); };
 document.getElementById('ldone').addEventListener('click', e => { if (e.target.id === 'ldone') hideLdone(); });
@@ -763,6 +784,7 @@ function spb(){ return 60 / (SONG.bpm * tempoPct / 100); }
 function fold(p){ while (p < LOW) p += 12; while (p > HIGH) p -= 12; return p; }
 function activeNotes(){ return notes.filter(n => (isRHn(n, SONG.split) ? playRH : playLH)); }
 function rebuild(){
+  clearAdvance();   // Abschnitt/Version/Song gewechselt: armiertes "Weiter" waere veraltet
   notes = SONG[version].filter(n => n[0] >= secStart * 4 && n[0] < secEnd * 4);
   fingering = computeFingering(notes, SONG.split);
   staffFlat = isFlatKey(detectKey(SONG.full || notes));
@@ -1337,11 +1359,12 @@ function loopFrame(){
         const acc = (hits + misses) ? hits / (hits + misses) : 0, cov = tot ? hits / tot : 0;
         const stars = (cov >= 0.9 && acc >= 0.95) ? 3 : (cov >= 0.75 && acc >= 0.85) ? 2 : (cov >= 0.5 && acc >= 0.7) ? 1 : 0;
         let msg = 'Runde fertig: ' + hits + ' Treffer, ' + misses + ' daneben.';
+        let stepClean = false;
         if (!currentLesson && stars) {
           const k = SONG.name + '|' + version;
           if ((starMap[k] || 0) < stars) { starMap[k] = stars; saveStars(); }
           reviewDone('song|' + SONG.name + '|' + version);
-          if (cov >= 0.85 && acc >= 0.85) stepRoundClean();
+          if (cov >= 0.85 && acc >= 0.85) stepClean = stepRoundClean();
           msg += ' ' + '★'.repeat(stars) + '☆'.repeat(3 - stars);
         }
         // verpasste Noten den Takten zuschreiben
@@ -1382,6 +1405,8 @@ function loopFrame(){
           };
           h.appendChild(a);
         }
+        if (stepClean === 'stop') { appendStepPrompt(h); setPlaying(false); return; }
+        if (stepClean === 'done') { if (looping) clearAdvance(); else appendStepPrompt(h); }
         if (currentLesson && tot > 0 && hits >= Math.ceil(tot * 0.8) && misses <= Math.ceil(tot * 0.25)) { lessonDone(); return; }
       }
       if (looping) { roundWrap(); timing = schedule(); pos = secStart * 4 - 4; resetScore(); }
@@ -1397,6 +1422,7 @@ function setPlaying(v){
   if (v) { if (playStartTs === null) playStartTs = Date.now(); }
   else if (playStartTs !== null) { addPractice((Date.now() - playStartTs) / 60000); sessMs += Date.now() - playStartTs; playStartTs = null; }
   if (v) {
+    clearAdvance();
     ensureAC();
     if (typeof saveLast === 'function') saveLast();
     if (mode === 'wait') { buildGroups(); pos = groups.length ? groups[0].t : secStart * 4; updScore(); }
@@ -1417,6 +1443,7 @@ function waitAdvance(){
     } else {
       const r = stepRoundClean();
       if (r === 'phase') { /* Hand-Phase gewechselt: weiter im Warte-Modus */ }
+      else if (r === 'stop') { setPlaying(false); maybeSuggestPause(); }
       else if (looping) {
         if (!r) document.getElementById('hint').textContent = 'Abschnitt geschafft!';
         roundWrap(); gIdx = 0;
@@ -1520,6 +1547,7 @@ function recExport(){
   downloadMidi(recNotes, recSpb, (SONG ? SONG.name.replace(/\W+/g, '_') : 'aufnahme') + '_aufnahme.mid');
 }
 function handlePress(p){
+  if (!playing && fireAdvance()) return;   // armierter "Weiter"-Prompt: Anschlag bestaetigt statt zu klingen
   const now = performance.now();
   if (mode === 'wait' && playing && groups[gIdx]) {
     const exp = groups[gIdx].ns.map(n => n[2]);
@@ -1679,7 +1707,15 @@ window.addEventListener('keydown', e => {
   if (document.getElementById('view-trainer').classList.contains('hide')) return;
   const t = e.target.tagName;
   if (t === 'SELECT' || t === 'INPUT' || e.metaKey || e.ctrlKey || e.altKey) return;
-  if (e.code === 'Space') { if (t === 'BUTTON') return; e.preventDefault(); setPlaying(!playing); return; }
+  if (e.code === 'Escape') { if (!document.getElementById('ldone').classList.contains('hide')) hideLdone(); return; }
+  if ((e.code === 'Enter' || e.code === 'NumpadEnter') && t !== 'BUTTON') { if (fireAdvance()) e.preventDefault(); return; }
+  if (e.code === 'Space') {
+    if (t === 'BUTTON') return;
+    e.preventDefault();
+    // Overlay offen: Space schaltet weiter statt hinter dem Overlay zu starten
+    if (!document.getElementById('ldone').classList.contains('hide')) { fireAdvance(); return; }
+    setPlaying(!playing); return;
+  }
   const p = KEYCODE[e.code];
   if (p === undefined || e.repeat || keysDown.has(e.code)) return;
   e.preventDefault();
@@ -1874,6 +1910,7 @@ function stepRoundClean(){
     pos = secStart * 4 - 4; gIdx = 0; updScore(); draw();
     return 'phase';
   }
+  const fresh = !(stepsDone[stepKey()] || []).includes(curStepIdx());
   markStepDone();
   const i = curStepIdx();
   const nxt = SONG.steps[i + 1];
@@ -1881,19 +1918,32 @@ function stepRoundClean(){
   bannerUntil = performance.now() + 2600;
   const h = document.getElementById('hint');
   h.textContent = 'Schritt ' + (i + 1) + ' geschafft. ';
-  if (nxt) {
-    const a = document.createElement('a');
-    a.href = '#';
-    a.textContent = 'Bereit? Weiter zu Schritt ' + (i + 2) + ' →';
-    a.onclick = e => {
-      e.preventDefault();
-      secStart = nxt.a - 1; secEnd = nxt.b;
-      document.getElementById('step').value = (nxt.a - 1) + '-' + nxt.b;
-      setPlaying(false); rebuild(); startGuidedStep(nxt); updScore(); draw();
-    };
-    h.appendChild(a);
-  }
-  return 'done';
+  stepPrompt = nxt ? { i, nxt } : null;
+  appendStepPrompt(h);
+  // Erstmals geschafft und es gibt einen naechsten Schritt: anhalten statt weiterloopen,
+  // damit die MIDI-Taste/Enter das "Weiter" bestaetigen kann
+  return fresh && nxt ? 'stop' : 'done';
+}
+// "Weiter zu Schritt"-Prompt (Link + MIDI-Taste/Enter) an einen Hinweis anhaengen. In der
+// Kontrolle ueberschreibt die Rundenstatistik den Hinweis - dort wird er danach neu angehaengt.
+let stepPrompt = null;
+function appendStepPrompt(h){
+  if (!stepPrompt) return;
+  const { i, nxt } = stepPrompt;
+  const goNext = () => {
+    stepPrompt = null;
+    secStart = nxt.a - 1; secEnd = nxt.b;
+    document.getElementById('step').value = (nxt.a - 1) + '-' + nxt.b;
+    setPlaying(false); rebuild(); startGuidedStep(nxt); updScore(); draw();
+    setPlaying(true);   // direkt loslegen - die gelbe Taste zeigt den Weg
+  };
+  const a = document.createElement('a');
+  a.href = '#';
+  a.textContent = 'Bereit? Weiter zu Schritt ' + (i + 2) + ' →';
+  a.onclick = e => { e.preventDefault(); goNext(); };
+  h.appendChild(a);
+  h.appendChild(document.createTextNode(midiIn ? ' – oder beliebige Keyboard-Taste/Enter' : ' – oder Enter'));
+  armAdvance(goNext);
 }
 document.getElementById('loop').onclick = e => { looping = !looping; e.target.textContent = looping ? 'Loop an' : 'Loop aus'; e.target.classList.toggle('active'); };
 document.getElementById('oct').onclick = e => { octTolerant = !octTolerant; e.target.classList.toggle('okactive'); };
@@ -2621,7 +2671,7 @@ function showSessionOverlay(){
     nb.classList.remove('hide');
     nb.onclick = () => { hideLdone(); go('start'); };
   }
-  document.getElementById('ldone').classList.remove('hide');
+  showLdone();
 }
 const LAST_KEY = 'nulltag-trainer-last';
 function saveLast(){
