@@ -1,0 +1,30 @@
+{
+  "_comment": [
+    "Brand-asset manifest for learn.nulltag.ch. Same contract as the one in",
+    "music-site: each entry names a source on the open web and the file it",
+    "should become here, at the size this site actually uses.",
+    ".github/workflows/brand-assets.yml fetches, converts and commits them.",
+    "",
+    "Sources are Higgsfield generations prompted from the NULLTAG palette —",
+    "void #0a0a0a, bone #e8e3da, tiefrot #ff2a55 — so the learning site and",
+    "the music site read as the same label."
+  ],
+  "assets": [
+    {
+      "out": "assets/hero.jpg",
+      "note": "Start-view hero — bone keys out of the void, one red hairline",
+      "src": "https://d8j0ntlcm91z4.cloudfront.net/user_3EiC0aoxhHycf13LKgNjWmwzNul/hf_20260813_191727_7552a87a-6fa2-408e-a9b7-c2a454d88499.png",
+      "resize": "1800x1013^",
+      "extent": "1800x1013",
+      "quality": 80
+    },
+    {
+      "out": "assets/og-image.jpg",
+      "note": "Open-Graph card — keys reduced to Swiss geometry, one red line",
+      "src": "https://d8j0ntlcm91z4.cloudfront.net/user_3EiC0aoxhHycf13LKgNjWmwzNul/hf_20260813_191727_b141e0e3-1502-4faa-88a2-dfe94f5fe1ee.png",
+      "resize": "1200x630^",
+      "extent": "1200x630",
+      "quality": 84
+    }
+  ]
+}
