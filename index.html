@@ -2870,12 +2870,37 @@ document.getElementById('sharel').onclick = () => {
 // ausgeschrieben, alles andere zu Bindestrichen:
 //   "Pilze, Pläne und Panik" -> "pilze-plaene-und-panik"
 //   "Eintracht-Hymne"        -> "eintracht-hymne"
-function trackSlug(title){
+function slugify(title){
   return String(title || '')
     .toLowerCase()
     .replace(/ä/g, 'ae').replace(/ö/g, 'oe').replace(/ü/g, 'ue').replace(/ß/g, 'ss')
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-+|-+$/g, '');
+}
+
+// Der Katalog-Slug ist NICHT immer aus dem Titel hier ableitbar: der Vault
+// (nulltag-cd/vault-export/tracks.json, die Katalog-Wahrheit) fuehrt einen
+// Track unter seinem englischen Titel, der Trainer unter dem deutschen.
+// Wo die beiden auseinandergehen, gilt der Vault — sonst zeigt ein Link von
+// music.nulltag.ch hierher ins Leere.
+//
+// Nur Abweichungen eintragen. Alles andere leitet sich sauber ab, und die
+// vier Trainer-eigenen Stuecke (Zeitfaden, Erster Schritt, Eintracht-Hymne,
+// Hauptmotiv) haben ueberhaupt keinen Katalog-Eintrag.
+const VAULT_SLUGS = {
+  'Pilze, Pläne und Panik': 'mushrooms-plans-and-panic'
+};
+
+// Der Slug, unter dem dieser Song im Katalog steht — fuer geteilte Links.
+function trackSlug(title){
+  return VAULT_SLUGS[title] || slugify(title);
+}
+
+// Trifft ein eingehender ?track=-Wert diesen Song? Beide Formen zaehlen,
+// damit weder ein Katalog-Link noch ein abgeleiteter Link ins Leere geht.
+function matchesSlug(title, wanted){
+  const w = slugify(wanted);
+  return w === slugify(trackSlug(title)) || w === slugify(title);
 }
 
 // Deep-Link beim Laden: ?track=slug (bevorzugt) oder ?song=Titel (Altlast),
@@ -2894,7 +2919,7 @@ function trackSlug(title){
   // bestehende Links sollen aber weiter funktionieren.
   const slug = q.get('track');
   const s = slug
-    ? SONGS.find(x => trackSlug(x.title) === trackSlug(slug))
+    ? SONGS.find(x => matchesSlug(x.title, slug))
     : SONGS.find(x => x.title === q.get('song'));
   if (!s) return;
   openSong(s, ['easy', 'normal', 'full'].includes(q.get('v')) ? q.get('v') : 'easy');
