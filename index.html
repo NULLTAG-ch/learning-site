@@ -12,20 +12,36 @@
 <meta property="og:description" content="Klavier lernen mit NULLTAG – fallende Noten, Warte-Modus, Web-MIDI. Kein Konto, keine Installation.">
 <meta property="og:url" content="https://learn.nulltag.ch/">
 <meta property="og:type" content="website">
+<meta property="og:image" content="https://learn.nulltag.ch/assets/og-image.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="learn.nulltag.ch – NULLTAG Piano Trainer">
+<meta name="twitter:description" content="Klavier lernen mit NULLTAG – fallende Noten, Warte-Modus, Web-MIDI. Kein Konto, keine Installation.">
+<meta name="twitter:image" content="https://learn.nulltag.ch/assets/og-image.jpg">
 <link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2064%2064'%3E%3Crect%20width='64'%20height='64'%20fill='%230a0a0a'/%3E%3Ctext%20x='32'%20y='42'%20font-family='monospace'%20font-size='34'%20font-weight='700'%20fill='%23e8e3da'%20text-anchor='middle'%3EN%3C/text%3E%3Crect%20x='20'%20y='50'%20width='24'%20height='4'%20fill='%23ff2a55'/%3E%3C/svg%3E">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@700;800&family=JetBrains+Mono:wght@400;500;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+<!-- Self-hosted faces — same woff2 files music.nulltag.ch ships, so both
+     properties render identically and neither calls fonts.googleapis.com. -->
+<link rel="stylesheet" href="fonts/fonts.css">
+<!-- The NULLTAG design system. tokens.css is the source of truth for every
+     colour, face and step; web.css is the shared component layer. Both are
+     edited in the nulltag-cd repo and vendored here. This app brings its own
+     component CSS below, so it links the TOKENS, not the element styles. -->
+<link rel="stylesheet" href="tokens.css?v=1">
+<link rel="stylesheet" href="web.css?v=1">
+<script src="web.js?v=1" defer></script>
 <style>
-/* NULLTAG design system — tokens from nulltag-cd/colors_and_type.css */
-:root { --rh:#5fc8e0; --rhd:#3a8896; --lh:#e8703a; --lhd:#8a4220; --ok:#5ae082; --bad:#ff2a55;
-        --void:#0a0a0a; --panel:#141414; --panel2:#1a1a1a; --border:#2a2a2a; --border-warm:#3a3a3a;
-        --bone:#e8e3da; --dim:#8a8580; --muted-deep:#5a5550; --tiefrot:#ff2a55; --tiefrot-dim:#3a0000;
-        --mono:"JetBrains Mono","SF Mono",ui-monospace,Menlo,Consolas,monospace;
-        --grotesk:"Space Grotesk",system-ui,sans-serif;
-        --brutal:"Inter Tight","Space Grotesk",system-ui,sans-serif;
-        --body:-apple-system,BlinkMacSystemFont,"SF Pro Text","Helvetica Neue",system-ui,sans-serif;
-        --ease:cubic-bezier(0.2,0.6,0.2,1); }
+/* Local aliases onto the design-system tokens. Nothing is redefined here —
+   every value below points at tokens.css, so a colour change in the design
+   system lands on this app without a second edit. */
+:root { --rh:var(--cold-blue); --rhd:var(--eisflug-glow2); --lh:var(--sodium-glow); --lhd:var(--sodium-glow2);
+        --ok:var(--giftgrun-glow); --bad:var(--tiefrot);
+        --panel2:var(--code-bg);
+        --dim:var(--muted);
+        --mono:var(--font-mono);
+        --grotesk:var(--font-grotesk);
+        --brutal:var(--font-brutal);
+        --body:var(--font-body); }
 * { margin:0; padding:0; box-sizing:border-box; }
 html, body { height:100%; }
 body { background:var(--void); color:var(--bone); font-family:var(--body); display:flex; flex-direction:column; overflow:hidden; -webkit-font-smoothing:antialiased; }
@@ -43,8 +59,23 @@ main { flex:1; overflow:auto; }
 .page { max-width:980px; margin:0 auto; padding:32px 20px 64px; }
 .eyebrow { font-family:var(--mono); font-size:11px; letter-spacing:0.28em; text-transform:uppercase; color:var(--dim); margin-bottom:12px; }
 .page > h2 { font-family:var(--brutal); font-weight:800; font-size:1.9rem; letter-spacing:-0.03em; }
+/* Hero plate — the same treatment the music site gives its rails: a
+   photographic ground sunk deep into the void, masked away before it reaches
+   the copy. Painted as a background, so a plate that is not in the repo yet
+   simply does not appear. */
+.hero { position:relative; padding:8px 0 4px; }
+/* Radial, not linear: a one-directional fade still leaves hard cuts on the
+   other three sides, and the plate then reads as a pasted rectangle instead
+   of a ground. Fading out of a point near the copy handles every edge at
+   once. Bleeds past the box so no edge coincides with the .page padding. */
+.hero::before { content:""; position:absolute; inset:-40px -60px -28px; z-index:0; background-image:url("assets/hero.jpg"); background-size:cover; background-position:center 58%; opacity:0.34;
+  mask-image:radial-gradient(120% 140% at 22% 44%, #000 0%, rgba(0,0,0,0.55) 48%, transparent 80%), linear-gradient(to right, transparent 0%, #000 13%), linear-gradient(to bottom, #000 58%, transparent 100%);
+  mask-composite:intersect;
+  -webkit-mask-image:radial-gradient(120% 140% at 22% 44%, #000 0%, rgba(0,0,0,0.55) 48%, transparent 80%), linear-gradient(to right, transparent 0%, #000 13%), linear-gradient(to bottom, #000 58%, transparent 100%);
+  -webkit-mask-composite:source-in; pointer-events:none; }
+.hero > * { position:relative; z-index:1; }
 .hero h2 { font-family:var(--brutal); font-weight:800; font-size:2.4rem; letter-spacing:-0.04em; margin-bottom:12px; }
-.hero p { color:var(--dim); max-width:640px; line-height:1.6; }
+.hero p { color:var(--dim); max-width:640px; line-height:1.6; text-shadow:0 1px 12px var(--void); }
 /* Weiter-ueben-Zeile (Design 1a) */
 .resume-row { display:flex; gap:14px; margin-top:26px; flex-wrap:wrap; }
 .resume-card { flex:1.4; min-width:300px; display:flex; gap:16px; align-items:center; background:var(--panel); border:1px solid var(--border); border-radius:6px; padding:16px 20px; box-shadow:0 1px 0 rgba(255,255,255,0.04) inset; }
@@ -56,6 +87,8 @@ main { flex:1; overflow:auto; }
 .resume-meta { font-family:var(--mono); font-size:10px; letter-spacing:0.14em; text-transform:uppercase; color:var(--dim); margin-top:4px; }
 .kurs-card { flex:1; min-width:240px; background:var(--panel); border:1px solid var(--border); border-radius:6px; padding:16px 20px; box-shadow:0 1px 0 rgba(255,255,255,0.04) inset; cursor:pointer; transition:border-color 150ms var(--ease); }
 .kurs-card:hover { border-color:var(--tiefrot); }
+.demos__h { font-family:var(--brutal); font-weight:800; font-size:1.5rem; letter-spacing:-0.03em; margin-bottom:18px; }
+.demos .nt-split__index { max-height:340px; }
 .statcard { cursor:default; }
 .statcard:hover { border-color:var(--border); }
 .statbars { display:flex; gap:2px; align-items:flex-end; height:46px; margin-top:10px; }
@@ -235,6 +268,16 @@ nav button#midipill { margin-left:0; }
 </style>
 </head>
 <body>
+<a class="nt-skip" href="#view-start">Zum Inhalt</a>
+<!-- Cross-property bar — the one element that is identical on every
+     nulltag.ch domain. Defined in the design system (web.css). -->
+<div class="nt-bar">
+  <a class="nt-bar__mark" href="https://music.nulltag.ch"><span class="nt-dot" aria-hidden="true"></span><span>NULLTAG</span></a>
+  <nav class="nt-switch" aria-label="NULLTAG-Seiten">
+    <a href="https://music.nulltag.ch">Music</a>
+    <a href="/" aria-current="page">Learn</a>
+  </nav>
+</div>
 <nav>
   <div class="logo">NULLTAG <span>·</span> LEARN</div>
   <button data-v="start" class="here">Start</button>
@@ -282,7 +325,28 @@ nav button#midipill { margin-left:0; }
     </div>
     <button class="btn" onclick="go('bib')">Bibliothek öffnen</button>
     <button class="btn ghost" onclick="go('songs')">Zu den Songs</button>
-    <a class="btn ghost" href="assets/demo/trainer-demo.mp4" target="_blank" rel="noopener" style="text-decoration:none">▶ Demo ansehen</a>
+
+    <!-- Demos as a split view — the same component music.nulltag.ch uses for
+         the video section, here with self-hosted mp4s instead of YouTube.
+         Nothing is downloaded until a demo is actually started. -->
+    <section class="demos" aria-labelledby="demos-h">
+      <div class="eyebrow" style="margin-top:44px">§ DEMOS · JEDER SONG IM TRAINER</div>
+      <h3 id="demos-h" class="demos__h">Erst schauen, dann spielen.</h3>
+      <div class="nt-split">
+        <div class="nt-split__stage">
+          <div class="nt-vid" id="demo-stage"
+               data-src="assets/demo/trainer-demo.mp4"
+               data-title="Der Trainer in Betrieb"
+               data-stamp="§ TRAINER"></div>
+          <div class="nt-vid__cap">
+            <h4 class="nt-vid__title" id="demo-title">Der Trainer in Betrieb</h4>
+            <div class="nt-vid__meta" id="demo-meta">Überblick · alle Modi</div>
+          </div>
+        </div>
+        <div class="nt-split__index" id="demo-index"></div>
+      </div>
+    </section>
+
     <div class="stamp">NULLTAG · MMXXVI · Buchs SG, Switzerland</div>
     <div class="stamp" style="margin-top:10px; letter-spacing:0.14em">Klavierklang: Salamander Grand Piano · Alexander Holm · CC BY 3.0</div>
   </div>
@@ -2455,6 +2519,42 @@ const COVERS = {
   'Eintracht-Hymne': 'assets/covers/eintracht_hymne.svg',
   'Hauptmotiv': 'assets/covers/hauptmotiv.svg',
 };
+// ── Demo-Split-View auf der Startseite ────────────────────────────────
+// Die Datei-Slugs der Demos sind identisch mit denen der Cover, also wird
+// die Liste aus COVERS abgeleitet: ein neuer Song braucht weiterhin nur
+// einen Eintrag dort, nicht zwei. Der Trainer-Überblick steht bewusst
+// zuoberst — er erklärt, was die Songdemos danach zeigen.
+function initDemos(){
+  if (!window.NT) return;
+  var slug = function(path){ return String(path).split("/").pop().replace(/\.(jpg|svg|png)$/i, ""); };
+  var items = [{
+    src: "assets/demo/trainer-demo.mp4",
+    title: "Der Trainer in Betrieb",
+    meta: "Überblick · alle Modi",
+    stamp: "§ TRAINER"
+  }];
+  Object.keys(COVERS).forEach(function(title, i){
+    items.push({
+      src: "assets/demo/" + slug(COVERS[title]) + "-demo.mp4",
+      poster: COVERS[title],
+      thumb: COVERS[title],
+      title: title,
+      meta: "Demo · Trainer-Fassung",
+      stamp: "§ " + (i < 9 ? "0" : "") + (i + 1)
+    });
+  });
+  NT.splitView({
+    stage: "#demo-stage", index: "#demo-index",
+    title: "#demo-title", meta: "#demo-meta",
+    indexLabel: "Demos",
+    emptyText: "Noch keine Demos",
+    items: items
+  });
+}
+// web.js is deferred, so NT does not exist yet while this script parses.
+if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", initDemos);
+else initDemos();
+
 function songProgress(title){
   const stars = ['easy','normal','full'].reduce((a, v) => a + (starMap[title + '|' + v] || 0), 0);
   return Math.round(stars / 9 * 100);
