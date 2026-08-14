@@ -1,12 +1,12 @@
 // NULLTAG Learn – Service Worker: App-Shell vorab, Assets zur Laufzeit.
 // Version bei jedem Release hochzaehlen, sonst bleibt der alte Cache aktiv.
-const CACHE = 'nulltag-learn-v4';
+const CACHE = 'nulltag-learn-v5';
 // Das Design-System liegt seit v4 in eigenen Dateien statt inline im HTML —
 // sie gehoeren darum in die Shell, sonst startet die App offline ohne Stil.
 // Die Query-Strings muessen exakt denen im HTML entsprechen: caches.match
 // vergleicht die volle URL, und genau das macht den Versions-Bump wirksam.
 const SHELL = ['./', 'index.html', 'manifest.json',
-  'tokens.css?v=1', 'web.css?v=1', 'web.js?v=1', 'fonts/fonts.css',
+  'tokens.css?v=1', 'web.css?v=4', 'web.js?v=1', 'fonts/fonts.css',
   'assets/icons/icon-192.png', 'assets/icons/icon-512.png', 'assets/icons/icon-maskable-512.png'];
 
 self.addEventListener('install', e => {
