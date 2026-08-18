@@ -1,5 +1,69 @@
 # learn.nulltag.ch – Roadmap & Status
 
+## Runde 2026-08-18 — UI, Klangwahl, Track-Audit, zwei neue Songs
+
+**Zwei neue Tracks** (14 statt 12): *Ashes to Anthem* (NULLTAG-26, c-Moll,
+95 BPM, 64 Takte) und *Hymn of the Void* (c-Moll, 150 BPM, 106 Takte), beide
+aus einspurigen Klavier-MIDIs importiert: 1/16-Quantisierung (Medianabweichung
+9 bzw. 19 Ticks bei 480 PPQ), kostenbasierte Handtrennung, anschliessend ein
+Spielbarkeits-Durchgang, der zu weit gegriffene Anschlaege umverteilt oder
+Oktav-Dubletten streicht. Beide haben noch keine Demo-Videos - `DEMO_TITLES`
+haelt fest, welche Songs im Split-View auftauchen.
+
+**Track-Audit** (`tools/audit-tracks.js`, neu): prueft alle Songs gegen
+Tonart-Metadaten und physische Griffgrenzen. Befunde dieser Runde:
+- *Paper Kings* stand als b-Moll in den Metadaten, ist aber f-Moll (kein Ges
+  im ganzen Stueck, G durchgehend) - korrigiert.
+- *Burn the Void* stand als G-Dur im Trainer. Der Vault fuehrt den Track als
+  a-Moll - G-Dur war also nie die Kuenstler-Angabe, wie frueher notiert. Die
+  Klavierfassung enthaelt durchgehend Fis und schliesst auf Em, steht also in
+  e-Moll (gegenueber dem Original offenbar transponiert). Auf e-Moll gesetzt.
+- *Higher Ground* c-Moll bestaetigt (offener Punkt 4 damit erledigt); bei
+  *Ashes to Anthem* zeigt die Erkennung die Parallele Es-Dur - dort gilt die
+  Vault-Angabe c-Moll.
+- Alle vierzehn Songs gegen `nulltag-cd/vault-export/tracks.json` abgeglichen:
+  vier stimmen ueberein, fuenf haben keinen Vault-Eintrag (learn_only), drei
+  fuehren im Vault keine Tonart. Tabelle in der Vault-Inbox-Notiz.
+- Die Easy-Fassung faltete die Melodie hart ins Fenster 60–84 zurueck und riss
+  dabei 241 Spruenge ueber eine Oktave in Linien, die im Original schrittweise
+  laufen. `foldNear` waehlt jetzt die Oktavlage nach der Kontur: 0 Spruenge
+  ueber eine Oktave, groesster Sprung 11 Halbtoene.
+- `makeEasy` setzte keine Hand-Flags; bei *Erster Schritt* (Splitpunkt 50)
+  landeten dadurch 9 Bassnoten in der rechten Hand. Flags werden jetzt gesetzt.
+
+**Fingersatz** — gemessen ueber alle Songs und Fassungen (19'500 Toene,
+3'500 Akkorde):
+- Akkordgriffe: `assignChord` schaetzte Finger aus dem halben Intervall und
+  lieferte 151 physisch unmoegliche Griffe (4.3%). Neu wird vollstaendig ueber
+  alle aufsteigenden Fingerfolgen gesucht, bewertet gegen die Ruhelage der
+  Hand -> 1 Griff (0.03%), und der ist ein echter Fall fuers Brechen.
+  Lehrbuch-Gegenprobe stimmt: Dreiklaenge 1-3-5, C7 1-2-3-5, LH C-G-C 5-2-1.
+- Laufwerk: ueberdehnte Fingerpaare innerhalb der Handweite werden gesperrt
+  statt nur verteuert -> unspielbare Legato-Spannen von 186 auf 8 (0.05%).
+  Die Tonleiter-Fingersaetze bleiben unveraendert korrekt (C-Dur, G-Dur,
+  F-Dur mit 1-2-3-4).
+- Nicht greifbare Akkorde werden im Trainer benannt («gebrochen spielen»)
+  statt mit einem Fingersatz kaschiert.
+
+**Klangwahl**: sechs Klangfarben (Fluegel, Filzfluegel, Fluegel hell, E-Piano,
+Vibraphon, Orgel), Wahl in `nulltag-sound` gemerkt. Alle Wiedergabewege laufen
+weiterhin ueber `tone()`, die Auswahl gilt also auch fuer Klaviatur,
+Gehoertraining, Analyse und Aufnahme-Wiedergabe. Neu wartet der Start, bis die
+Samples da sind - vorher begannen die ersten Sekunden mit dem Synth-Fallback
+und kippten mitten im Stueck auf den Fluegel um.
+
+**UI nach Designsystem**: die Trainer-Leiste ist zweigeteilt (Transport und
+Stueck oben, Werkzeuge einklappbar darunter, `nulltag-tools`) statt zwanzig
+gleichrangiger Knoepfe; aktive Schalter tragen den ruhigen Zustand des
+Designsystems (Bone auf `--surface-2`) statt Gruen/Tuerkis - Farbe bleibt den
+beiden Handfarben und der einen TIEFROT-Marke vorbehalten. Statuszeile in zwei
+Zeilen (Zustand / Legende), Schrittpanel mit klebender Kopfzeile. Die vier
+Platzhalter-Cover benutzten Farben ausserhalb der Palette (`#0b0b0f`,
+`#7c5cff`, `#4da6ff`) - alle sechs SVG-Cover folgen jetzt der Cover-Anatomie
+aus nulltag-cd. Im Querformat auf dem Handy schrumpfen Statusleiste und
+Konzern-Leiste, damit die Klaviatur Hoehe bekommt.
+
+
 Stand: 2026-07-19 · 22 PRs gemerged · Gesamt-Audit gruen (36 Basis-Checks + 83 Feature-Checks)
 
 ## Erreicht (live auf learn.nulltag.ch)
@@ -67,7 +131,16 @@ Stand: 2026-07-19 · 22 PRs gemerged · Gesamt-Audit gruen (36 Basis-Checks + 83
    - Pilze, Plaene und Panik: hat laut Ivan noch kein Cover (nirgends ein
      Release-Artwork: weder music-site noch nulltag-cd noch DJIS). Sobald eines
      existiert: nach assets/covers/pilze_plaene_panik.jpg (480px) + CACHE bumpen.
-4. **Higher Ground Meta pruefen**: Level 2 und c-Moll sind geschaetzt.
+4. ~~Higher Ground Meta pruefen~~ ERLEDIGT 2026-08-18: c-Moll ist bestaetigt
+   (Tonvorrat c-natuerlich-Moll, Bassschleife C–As–Es–B, Schlusston C).
+   Level 2 bleibt eine Einschaetzung.
+5. **Demo-Videos fuer die zwei neuen Songs**: *Ashes to Anthem* und *Hymn of
+   the Void* stehen nicht in `DEMO_TITLES`, weil es noch keine Clips gibt.
+   Nach dem Rendern dort eintragen und `sw.js`-CACHE hochzaehlen.
+6. **Vault-Abgleich**: *Ashes to Anthem* steht im Vault mit `learn: false` -
+   das stimmt seit dieser Runde nicht mehr. *Hymn of the Void* fehlt im Vault
+   ganz und gehoert zu `learn_only`. Notiz liegt in
+   `nulltag-cd/vault-inbox/2026-08-18_learn-tracks-und-tonart.md`.
 
 ## Naechste Features (Ideen)
 
