@@ -1,5 +1,39 @@
 # learn.nulltag.ch – Roadmap & Status
 
+## Runde 2026-08-18 (2) — Eisflug, Euphoric Night, Verlinkung von der Musikseite
+
+**Zwei rekonstruierte Klaviersaetze** (16 Songs statt 14). Beide Quell-MIDIs sind
+Synth-Spuren und als Klaviersatz nicht brauchbar:
+
+- *Eisflug* (CT-05, a-Moll, 152 BPM): 573 Noten, davon 362 kuerzer als 1/64 -
+  Gate-Artefakte eines Riser-Clusters. Uebrig bleiben 160 Anschlaege auf 522
+  Schlaegen: ein Flaechenklang mit Bass-Puls, auf dem Klavier schlicht leer.
+- *Euphoric Night* (c-Moll, 158 BPM): Offbeat-Bass plus Sechzehntel-Arpeggio.
+  Woertlich gespielt waere das mechanisch, keine Linie mit Atem.
+
+Rekonstruiert wurde aus dem, was am Original belegbar ist: Tonart, Tempo,
+Akkordfolge Takt fuer Takt, die Formkurve aus der Notendichte und das
+melodische Material. Bei *Eisflug* liegt sogar ein ausgeschriebenes Thema in
+der Quelle (T115-T122: C5 E5 C5 H4 | H4 D5 H4 C5) und die Wechselnote C-H aus
+T99-T111 - beides ist woertlich uebernommen. Erfunden ist die Klaviertextur,
+also die Frage, wie diese Harmonik unter zwei Haende kommt. Beide Saetze
+tragen deshalb in den Songdaten ein `note`-Feld, das auf der Songkarte als
+Merker «rekonstruiert» und im Trainer als Satz erscheint.
+
+Beide laufen ohne Befund durch `tools/audit-tracks.js` - in allen drei
+Fassungen keine Spanne ueber eine Oktave, keine Handkreuzung, kein
+unspielbarer Griff.
+
+*Eisflug* bekommt das echte Release-Artwork aus nulltag-cd
+(`cinetekk_05_eisflug.jpg`, auf 480px verkleinert), *Euphoric Night* ein
+Platzhalter-Cover im Designsystem.
+
+**Verlinkung von music.nulltag.ch** (siehe music-site-PR): die Musikseite hatte
+bis dahin ueberhaupt keinen Weg hierher - weder die Konzern-Leiste des
+Designsystems noch einen einzelnen Link. Neu traegt sie beides: die `.nt-bar`
+wie hier, und im Tools-Abschnitt ein Feld «Am Klavier» mit Deep-Links
+(`?track=…`) auf die zehn Katalog-Tracks, die eine Lernfassung haben.
+
 ## Runde 2026-08-18 — UI, Klangwahl, Track-Audit, zwei neue Songs
 
 **Zwei neue Tracks** (14 statt 12): *Ashes to Anthem* (NULLTAG-26, c-Moll,
@@ -134,8 +168,9 @@ Stand: 2026-07-19 · 22 PRs gemerged · Gesamt-Audit gruen (36 Basis-Checks + 83
 4. ~~Higher Ground Meta pruefen~~ ERLEDIGT 2026-08-18: c-Moll ist bestaetigt
    (Tonvorrat c-natuerlich-Moll, Bassschleife C–As–Es–B, Schlusston C).
    Level 2 bleibt eine Einschaetzung.
-5. **Demo-Videos fuer die zwei neuen Songs**: *Ashes to Anthem* und *Hymn of
-   the Void* stehen nicht in `DEMO_TITLES`, weil es noch keine Clips gibt.
+5. **Demo-Videos fuer die vier neuen Songs**: *Ashes to Anthem*, *Hymn of the
+   Void*, *Eisflug* und *Euphoric Night* stehen nicht in `DEMO_TITLES`, weil es
+   noch keine Clips gibt.
    Nach dem Rendern dort eintragen und `sw.js`-CACHE hochzaehlen.
 6. **Vault-Abgleich**: *Ashes to Anthem* steht im Vault mit `learn: false` -
    das stimmt seit dieser Runde nicht mehr. *Hymn of the Void* fehlt im Vault

@@ -19,6 +19,14 @@ NULLTAG-Designsystem ([`nulltag-cd`](https://github.com/NULLTAG-ch/nulltag-cd)).
 - Beliebige MIDI-Dateien ladbar: Drum-Filter, Handtrennung und Easy-Fassung werden client-seitig erzeugt
 - Klaviatur passt ihren Tonumfang dem geladenen Song an – grosse, lesbare Tasten statt 88 Mini-Tasten
 
+## Rekonstruierte Saetze
+Zwei Titel (*Eisflug*, *Euphoric Night*) liegen nur als Synth-Spur vor und
+waeren woertlich uebertragen kein Klavierstueck. Ihr Satz ist aus der
+Harmonik, der Form und dem melodischen Material des Originals rekonstruiert;
+die Songdaten fuehren dazu ein `note`-Feld, das die App als Merker
+«rekonstruiert» auf der Songkarte und als Satz im Trainer zeigt. Ein Song
+ohne `note` ist eine direkte Uebertragung.
+
 ## Track-Audit
 `node tools/audit-tracks.js` prueft alle Songs auf Tonart, Handverteilung,
 Griffweiten und Fingersatz. Die geprueften Funktionen zieht das Skript
