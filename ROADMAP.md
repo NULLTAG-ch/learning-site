@@ -1,5 +1,30 @@
 # learn.nulltag.ch – Roadmap & Status
 
+## Runde 2026-08-19 (4) — How My Brain Sounds, Ashes-Reverie, echtes Greifbarkeits-Kriterium
+
+**Zwei neue Songs** aus den letzten gelieferten MIDIs (19 total):
+
+- *How My Brain Sounds* (d-Moll, 81 BPM, 69 Takte, 1266 Noten, Level 3) -
+  neuer Titel, ohne Vault-Eintrag. Von vier gelieferten Takes (je zwei pro
+  Arrangement «Piano Reverie» / «Solo Piano Reverie») ist der erste
+  Piano-Reverie-Take eingebaut: voller Umfang, konsistentes Tempo 77-86;
+  Take 2 bricht frueher ab, die beiden Solo-Takes haben Tempo-Spruenge und
+  deutlich mehr ungreifbare Stellen.
+- *Ashes to Anthem (Reverie)* (c-Moll, 95 BPM, 67 Takte, 869 Noten,
+  Level 3) - zweites Arrangement des NULLTAG-26-Tracks, wie bei Eisflug
+  die Nocturne.
+
+**makePro misst jetzt echte Greifbarkeit** statt nur Spanne und Stimmenzahl:
+ein Cluster unten plus Sprung oben (E5-F5-G5 + E6 in How My Brain Sounds,
+Takt 63) liegt in der Oktave und ist trotzdem fuer keine Fingerkombination
+fassbar. Der Massstab ist dieselbe FMAX-Suche, die auch der Fingersatz
+benutzt - damit verschwinden die letzten Griff-Befunde in Easy/Normal/Pro
+ueber alle 19 Songs. Dazu ein Dedupe nach dem Brechen: ein vorgezogener
+Roll-Ton konnte auf einen Anschlag derselben Taste fallen (zwei Noten,
+eine Taste - der Fingersatz verlangte fuenf Finger fuer vier Tasten).
+
+Demos/Teaser fuer beide, DEMO_TITLES auf 19, CACHE auf v11.
+
 ## Runde 2026-08-19 (3) — Eisflug aus echtem Quellmaterial
 
 Ivan hat Klavier-MIDIs nachgeliefert - genau der Weg, der in der Notiz vom
