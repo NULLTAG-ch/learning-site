@@ -63,13 +63,25 @@ for (const song of SONGS){
   const split = T.splitPoint(song.notes);
   console.log('\n=== ' + song.title + ' · ' + song.key + ' · ' + song.bpm + ' BPM · ' + song.bars + ' Takte ===');
 
-  // 1) Tonart: stimmt die Angabe mit dem Tonvorrat ueberein?
+  // 1) Tonart: stimmt die Angabe mit dem Tonvorrat ueberein? Zwei bekannte
+  // Faelle sind kein Widerspruch: die Parallele (Dur/Moll-Verwechslung) und
+  // die Dominante - kreist ein Moll-Stueck stark um seine Dur-Dominante
+  // (a-Moll um E), tippt Krumhansl auf die Dominante. Entscheidend ist dann
+  // der Schluss: endet der Bass auf der angegebenen Tonika, gilt die Angabe.
   const det = T.detectKey(song.notes);
-  if (det.label !== song.key)
-    say(det.parallel === song.key ? ' ' : '!',
+  if (det.label !== song.key) {
+    const lastT = Math.max(...song.notes.map(n => n[0]));
+    const finBass = Math.min(...song.notes.filter(n => n[0] >= lastT - 4).map(n => n[2])) % 12;
+    const m = /^([A-Za-z]+)-(Dur|Moll)$/.exec(song.key) || [];
+    const declRoot = T.KEYNAMES.findIndex(k => k.toLowerCase() === (m[1] || '').toLowerCase());
+    const dominant = !det.minor && m[2] === 'Moll' && declRoot >= 0 &&
+      det.root === (declRoot + 7) % 12 && finBass === declRoot;
+    say(det.parallel === song.key || dominant ? ' ' : '!',
       'Tonart: Metadaten sagen ' + song.key + ', erkannt wird ' + det.label +
-      (det.parallel === song.key ? ' (Parallele - Kuenstler-Angabe gilt)' : ' - PRUEFEN'));
-  else say(' ', 'Tonart bestaetigt: ' + song.key);
+      (det.parallel === song.key ? ' (Parallele - Kuenstler-Angabe gilt)'
+       : dominant ? ' (dominantlastig, Schlussbass ist die Tonika - Angabe gilt)'
+       : ' - PRUEFEN'));
+  } else say(' ', 'Tonart bestaetigt: ' + song.key);
 
   // 2) Klaviertauglichkeit je Fassung
   for (const [vn, ns] of Object.entries({

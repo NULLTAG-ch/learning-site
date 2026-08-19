@@ -1,6 +1,6 @@
 // NULLTAG Learn – Service Worker: App-Shell vorab, Assets zur Laufzeit.
 // Version bei jedem Release hochzaehlen, sonst bleibt der alte Cache aktiv.
-const CACHE = 'nulltag-learn-v9';
+const CACHE = 'nulltag-learn-v10';
 // Das Design-System liegt seit v4 in eigenen Dateien statt inline im HTML —
 // sie gehoeren darum in die Shell, sonst startet die App offline ohne Stil.
 // Die Query-Strings muessen exakt denen im HTML entsprechen: caches.match

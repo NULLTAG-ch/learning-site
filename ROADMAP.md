@@ -1,5 +1,28 @@
 # learn.nulltag.ch – Roadmap & Status
 
+## Runde 2026-08-19 (3) — Eisflug aus echtem Quellmaterial
+
+Ivan hat Klavier-MIDIs nachgeliefert - genau der Weg, der in der Notiz vom
+Vortag vorgeschlagen war. Zwei Fassungen: «Eisflug (Solo Piano Version)»
+(dicht, 146 BPM) und «Eisflug (Solo Piano Nocturne)» (ruhiger, 144 BPM).
+Beide sind echtes Klaviermaterial: keine Gate-Artefakte, sauberes a-Moll
+mit Gis-Dominante, Umfang 28-93. Sidestick-Klickspuren («drums», konstante
+Tonhoehe) filtert der Import jetzt heraus; die Fortsetzungs-Spuren (Outro
+in eigener Spur) werden gemerged.
+
+- **Eisflug** ist nicht mehr rekonstruiert: die Solo Piano Version ersetzt
+  meinen Satz vollstaendig (1132 Noten, 134 Takte, Level 2 -> 3, das
+  `note`-Feld faellt weg). Das Cover bleibt das CT-05-Artwork.
+- **Eisflug (Nocturne)** kommt als eigenes Arrangement dazu (925 Noten,
+  109 Takte, Level 2, Platzhalter-Cover). 17 Songs total.
+- Die Nocturne kreist stark um die Dur-Dominante E - Krumhansl tippt dann
+  auf E-Dur. Das Audit kennt diesen Fall jetzt: endet der Bass auf der
+  angegebenen Moll-Tonika, gilt die Angabe (dominantlastig, kein Befund).
+- Beide Demos/Teaser gerendert (Eisflug neu, weil sich das Material
+  aendert), DEMO_TITLES auf 17, CACHE auf v10.
+
+Damit ist nur noch **Euphoric Night** rekonstruiert.
+
 ## Runde 2026-08-19 (2) — Burn the Void nach a-Moll, Demo-Videos
 
 **Burn the Void transponiert**: +5 Halbtoene, von e-Moll nach a-Moll - die

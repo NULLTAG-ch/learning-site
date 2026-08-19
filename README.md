@@ -42,8 +42,8 @@ Der localStorage-Schluessel der Original-Fassung heisst weiterhin `full` -
 so bleiben Sterne und geteilte Links von frueher gueltig.
 
 ## Rekonstruierte Saetze
-Zwei Titel (*Eisflug*, *Euphoric Night*) liegen nur als Synth-Spur vor und
-waeren woertlich uebertragen kein Klavierstueck. Ihr Satz ist aus der
+Ein Titel (*Euphoric Night*) liegt nur als Synth-Spur vor und
+waere woertlich uebertragen kein Klavierstueck. Sein Satz ist aus der
 Harmonik, der Form und dem melodischen Material des Originals rekonstruiert;
 die Songdaten fuehren dazu ein `note`-Feld, das die App als Merker
 «rekonstruiert» auf der Songkarte und als Satz im Trainer zeigt. Ein Song
