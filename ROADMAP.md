@@ -1,5 +1,198 @@
 # learn.nulltag.ch – Roadmap & Status
 
+## Runde 2026-08-19 (4) — How My Brain Sounds, Ashes-Reverie, echtes Greifbarkeits-Kriterium
+
+**Zwei neue Songs** aus den letzten gelieferten MIDIs (19 total):
+
+- *How My Brain Sounds* (d-Moll, 81 BPM, 69 Takte, 1266 Noten, Level 3) -
+  neuer Titel, ohne Vault-Eintrag. Von vier gelieferten Takes (je zwei pro
+  Arrangement «Piano Reverie» / «Solo Piano Reverie») ist der erste
+  Piano-Reverie-Take eingebaut: voller Umfang, konsistentes Tempo 77-86;
+  Take 2 bricht frueher ab, die beiden Solo-Takes haben Tempo-Spruenge und
+  deutlich mehr ungreifbare Stellen.
+- *Ashes to Anthem (Reverie)* (c-Moll, 95 BPM, 67 Takte, 869 Noten,
+  Level 3) - zweites Arrangement des NULLTAG-26-Tracks, wie bei Eisflug
+  die Nocturne.
+
+**makePro misst jetzt echte Greifbarkeit** statt nur Spanne und Stimmenzahl:
+ein Cluster unten plus Sprung oben (E5-F5-G5 + E6 in How My Brain Sounds,
+Takt 63) liegt in der Oktave und ist trotzdem fuer keine Fingerkombination
+fassbar. Der Massstab ist dieselbe FMAX-Suche, die auch der Fingersatz
+benutzt - damit verschwinden die letzten Griff-Befunde in Easy/Normal/Pro
+ueber alle 19 Songs. Dazu ein Dedupe nach dem Brechen: ein vorgezogener
+Roll-Ton konnte auf einen Anschlag derselben Taste fallen (zwei Noten,
+eine Taste - der Fingersatz verlangte fuenf Finger fuer vier Tasten).
+
+Demos/Teaser fuer beide, DEMO_TITLES auf 19, CACHE auf v11.
+
+## Runde 2026-08-19 (3) — Eisflug aus echtem Quellmaterial
+
+Ivan hat Klavier-MIDIs nachgeliefert - genau der Weg, der in der Notiz vom
+Vortag vorgeschlagen war. Zwei Fassungen: «Eisflug (Solo Piano Version)»
+(dicht, 146 BPM) und «Eisflug (Solo Piano Nocturne)» (ruhiger, 144 BPM).
+Beide sind echtes Klaviermaterial: keine Gate-Artefakte, sauberes a-Moll
+mit Gis-Dominante, Umfang 28-93. Sidestick-Klickspuren («drums», konstante
+Tonhoehe) filtert der Import jetzt heraus; die Fortsetzungs-Spuren (Outro
+in eigener Spur) werden gemerged.
+
+- **Eisflug** ist nicht mehr rekonstruiert: die Solo Piano Version ersetzt
+  meinen Satz vollstaendig (1132 Noten, 134 Takte, Level 2 -> 3, das
+  `note`-Feld faellt weg). Das Cover bleibt das CT-05-Artwork.
+- **Eisflug (Nocturne)** kommt als eigenes Arrangement dazu (925 Noten,
+  109 Takte, Level 2, Platzhalter-Cover). 17 Songs total.
+- Die Nocturne kreist stark um die Dur-Dominante E - Krumhansl tippt dann
+  auf E-Dur. Das Audit kennt diesen Fall jetzt: endet der Bass auf der
+  angegebenen Moll-Tonika, gilt die Angabe (dominantlastig, kein Befund).
+- Beide Demos/Teaser gerendert (Eisflug neu, weil sich das Material
+  aendert), DEMO_TITLES auf 17, CACHE auf v10.
+
+Damit ist nur noch **Euphoric Night** rekonstruiert.
+
+## Runde 2026-08-19 (2) — Burn the Void nach a-Moll, Demo-Videos
+
+**Burn the Void transponiert**: +5 Halbtoene, von e-Moll nach a-Moll - die
+Tonart, in der der Vault den Track fuehrt. Abwaerts (-7) ginge nicht, der
+Bass fiele unter A0; aufwaerts passt der Umfang (29-98). Der
+Tonart-Widerspruch zwischen Katalog und Lernseite ist damit aufgeloest,
+das Audit bestaetigt a-Moll, und der fruehere Normal-Befund des Songs
+verschwindet gleich mit (andere Schwarz/Weiss-Lage, besserer Fingersatz).
+
+**Demo-Videos**: 16:9-Demo + 9:16-Teaser fuer die vier neuen Songs
+(Ashes to Anthem, Hymn of the Void, Eisflug, Euphoric Night), gerendert wie
+die bestehenden zwoelf: Trainer im Anhoeren-Modus, Canvas + Salamander-Audio
+per MediaRecorder, ffmpeg-Mux (Skript: tools/render-demo.js, im Repo).
+`DEMO_TITLES` fuehrt jetzt alle 16 Songs, sw.js-CACHE auf v9.
+
+## Runde 2026-08-19 — vierte Fassung: Original
+
+Bisher hiess die volle Fassung «Pro (Original)» - zwei Dinge unter einem Namen.
+Neu sind es vier Stufen: **Easy · Normal · Pro · Original**.
+
+- **Pro** ist neu und wird abgeleitet: das ganze Stueck, aber garantiert
+  greifbar. `makePro` stellt sicher, dass kein Anschlag in einer Hand weiter
+  als eine Oktave greift und keiner mehr als fuenf Finger braucht. Wo die
+  Vorlage das verletzt, wird zuerst umverteilt und erst danach gebrochen: die
+  unteren Toene setzen ein Sechzehntel frueher ein und klingen bis zum alten
+  Ende durch - mit Pedal klingt der Akkord wie geschrieben, die Hand muss ihn
+  aber nie auf einmal fassen. Gestrichen wird nichts.
+- **Original** ist die Vorlage, unangetastet. Sie behaelt den Schluessel
+  `full`, damit Sterne im localStorage und geteilte Links (`?v=full`) weiter
+  gelten.
+
+Die Garantie laeuft auch ueber Easy und Normal - eine Easy-Fassung, die weiter
+greift als eine Hand fasst, waere ein Widerspruch in sich. Das hat prompt
+einen Fehler in `makeNormal` aufgedeckt: die Fassung behaelt die obersten zwei
+Stimmen der rechten Hand, und die koennen eine Dezime auseinanderliegen (Peace
+Remains T6). Vorher stand das unbemerkt in einer Fassung, die als *leichter*
+verkauft wird.
+
+Damit sind die letzten offenen Audit-Befunde erledigt: in Easy, Normal und Pro
+steht ueber alle 16 Songs **kein einziger Griff mehr, den eine Hand nicht
+fassen kann**. Was bleibt, steht nur noch in der Original-Fassung - und dort
+gehoert es hin.
+
+Der Trainer sagt in der Original-Fassung dazu, wieviele Akkorde gebrochen
+gehoeren und dass die Pro-Fassung sie schon so notiert.
+
+## Runde 2026-08-18 (2) — Eisflug, Euphoric Night, Verlinkung von der Musikseite
+
+**Zwei rekonstruierte Klaviersaetze** (16 Songs statt 14). Beide Quell-MIDIs sind
+Synth-Spuren und als Klaviersatz nicht brauchbar:
+
+- *Eisflug* (CT-05, a-Moll, 152 BPM): 573 Noten, davon 362 kuerzer als 1/64 -
+  Gate-Artefakte eines Riser-Clusters. Uebrig bleiben 160 Anschlaege auf 522
+  Schlaegen: ein Flaechenklang mit Bass-Puls, auf dem Klavier schlicht leer.
+- *Euphoric Night* (c-Moll, 158 BPM): Offbeat-Bass plus Sechzehntel-Arpeggio.
+  Woertlich gespielt waere das mechanisch, keine Linie mit Atem.
+
+Rekonstruiert wurde aus dem, was am Original belegbar ist: Tonart, Tempo,
+Akkordfolge Takt fuer Takt, die Formkurve aus der Notendichte und das
+melodische Material. Bei *Eisflug* liegt sogar ein ausgeschriebenes Thema in
+der Quelle (T115-T122: C5 E5 C5 H4 | H4 D5 H4 C5) und die Wechselnote C-H aus
+T99-T111 - beides ist woertlich uebernommen. Erfunden ist die Klaviertextur,
+also die Frage, wie diese Harmonik unter zwei Haende kommt. Beide Saetze
+tragen deshalb in den Songdaten ein `note`-Feld, das auf der Songkarte als
+Merker «rekonstruiert» und im Trainer als Satz erscheint.
+
+Beide laufen ohne Befund durch `tools/audit-tracks.js` - in allen drei
+Fassungen keine Spanne ueber eine Oktave, keine Handkreuzung, kein
+unspielbarer Griff.
+
+*Eisflug* bekommt das echte Release-Artwork aus nulltag-cd
+(`cinetekk_05_eisflug.jpg`, auf 480px verkleinert), *Euphoric Night* ein
+Platzhalter-Cover im Designsystem.
+
+**Verlinkung von music.nulltag.ch** (siehe music-site-PR): die Musikseite hatte
+bis dahin ueberhaupt keinen Weg hierher - weder die Konzern-Leiste des
+Designsystems noch einen einzelnen Link. Neu traegt sie beides: die `.nt-bar`
+wie hier, und im Tools-Abschnitt ein Feld «Am Klavier» mit Deep-Links
+(`?track=…`) auf die zehn Katalog-Tracks, die eine Lernfassung haben.
+
+## Runde 2026-08-18 — UI, Klangwahl, Track-Audit, zwei neue Songs
+
+**Zwei neue Tracks** (14 statt 12): *Ashes to Anthem* (NULLTAG-26, c-Moll,
+95 BPM, 64 Takte) und *Hymn of the Void* (c-Moll, 150 BPM, 106 Takte), beide
+aus einspurigen Klavier-MIDIs importiert: 1/16-Quantisierung (Medianabweichung
+9 bzw. 19 Ticks bei 480 PPQ), kostenbasierte Handtrennung, anschliessend ein
+Spielbarkeits-Durchgang, der zu weit gegriffene Anschlaege umverteilt oder
+Oktav-Dubletten streicht. Beide haben noch keine Demo-Videos - `DEMO_TITLES`
+haelt fest, welche Songs im Split-View auftauchen.
+
+**Track-Audit** (`tools/audit-tracks.js`, neu): prueft alle Songs gegen
+Tonart-Metadaten und physische Griffgrenzen. Befunde dieser Runde:
+- *Paper Kings* stand als b-Moll in den Metadaten, ist aber f-Moll (kein Ges
+  im ganzen Stueck, G durchgehend) - korrigiert.
+- *Burn the Void* stand als G-Dur im Trainer. Der Vault fuehrt den Track als
+  a-Moll - G-Dur war also nie die Kuenstler-Angabe, wie frueher notiert. Die
+  Klavierfassung enthaelt durchgehend Fis und schliesst auf Em, steht also in
+  e-Moll (gegenueber dem Original offenbar transponiert). Auf e-Moll gesetzt;
+  in der Runde 2026-08-19 (2) dann nach a-Moll transponiert - siehe oben.
+- *Higher Ground* c-Moll bestaetigt (offener Punkt 4 damit erledigt); bei
+  *Ashes to Anthem* zeigt die Erkennung die Parallele Es-Dur - dort gilt die
+  Vault-Angabe c-Moll.
+- Alle vierzehn Songs gegen `nulltag-cd/vault-export/tracks.json` abgeglichen:
+  vier stimmen ueberein, fuenf haben keinen Vault-Eintrag (learn_only), drei
+  fuehren im Vault keine Tonart. Tabelle in der Vault-Inbox-Notiz.
+- Die Easy-Fassung faltete die Melodie hart ins Fenster 60–84 zurueck und riss
+  dabei 241 Spruenge ueber eine Oktave in Linien, die im Original schrittweise
+  laufen. `foldNear` waehlt jetzt die Oktavlage nach der Kontur: 0 Spruenge
+  ueber eine Oktave, groesster Sprung 11 Halbtoene.
+- `makeEasy` setzte keine Hand-Flags; bei *Erster Schritt* (Splitpunkt 50)
+  landeten dadurch 9 Bassnoten in der rechten Hand. Flags werden jetzt gesetzt.
+
+**Fingersatz** — gemessen ueber alle Songs und Fassungen (19'500 Toene,
+3'500 Akkorde):
+- Akkordgriffe: `assignChord` schaetzte Finger aus dem halben Intervall und
+  lieferte 151 physisch unmoegliche Griffe (4.3%). Neu wird vollstaendig ueber
+  alle aufsteigenden Fingerfolgen gesucht, bewertet gegen die Ruhelage der
+  Hand -> 1 Griff (0.03%), und der ist ein echter Fall fuers Brechen.
+  Lehrbuch-Gegenprobe stimmt: Dreiklaenge 1-3-5, C7 1-2-3-5, LH C-G-C 5-2-1.
+- Laufwerk: ueberdehnte Fingerpaare innerhalb der Handweite werden gesperrt
+  statt nur verteuert -> unspielbare Legato-Spannen von 186 auf 8 (0.05%).
+  Die Tonleiter-Fingersaetze bleiben unveraendert korrekt (C-Dur, G-Dur,
+  F-Dur mit 1-2-3-4).
+- Nicht greifbare Akkorde werden im Trainer benannt («gebrochen spielen»)
+  statt mit einem Fingersatz kaschiert.
+
+**Klangwahl**: sechs Klangfarben (Fluegel, Filzfluegel, Fluegel hell, E-Piano,
+Vibraphon, Orgel), Wahl in `nulltag-sound` gemerkt. Alle Wiedergabewege laufen
+weiterhin ueber `tone()`, die Auswahl gilt also auch fuer Klaviatur,
+Gehoertraining, Analyse und Aufnahme-Wiedergabe. Neu wartet der Start, bis die
+Samples da sind - vorher begannen die ersten Sekunden mit dem Synth-Fallback
+und kippten mitten im Stueck auf den Fluegel um.
+
+**UI nach Designsystem**: die Trainer-Leiste ist zweigeteilt (Transport und
+Stueck oben, Werkzeuge einklappbar darunter, `nulltag-tools`) statt zwanzig
+gleichrangiger Knoepfe; aktive Schalter tragen den ruhigen Zustand des
+Designsystems (Bone auf `--surface-2`) statt Gruen/Tuerkis - Farbe bleibt den
+beiden Handfarben und der einen TIEFROT-Marke vorbehalten. Statuszeile in zwei
+Zeilen (Zustand / Legende), Schrittpanel mit klebender Kopfzeile. Die vier
+Platzhalter-Cover benutzten Farben ausserhalb der Palette (`#0b0b0f`,
+`#7c5cff`, `#4da6ff`) - alle sechs SVG-Cover folgen jetzt der Cover-Anatomie
+aus nulltag-cd. Im Querformat auf dem Handy schrumpfen Statusleiste und
+Konzern-Leiste, damit die Klaviatur Hoehe bekommt.
+
+
 Stand: 2026-07-19 · 22 PRs gemerged · Gesamt-Audit gruen (36 Basis-Checks + 83 Feature-Checks)
 
 ## Erreicht (live auf learn.nulltag.ch)
@@ -67,7 +260,17 @@ Stand: 2026-07-19 · 22 PRs gemerged · Gesamt-Audit gruen (36 Basis-Checks + 83
    - Pilze, Plaene und Panik: hat laut Ivan noch kein Cover (nirgends ein
      Release-Artwork: weder music-site noch nulltag-cd noch DJIS). Sobald eines
      existiert: nach assets/covers/pilze_plaene_panik.jpg (480px) + CACHE bumpen.
-4. **Higher Ground Meta pruefen**: Level 2 und c-Moll sind geschaetzt.
+4. ~~Higher Ground Meta pruefen~~ ERLEDIGT 2026-08-18: c-Moll ist bestaetigt
+   (Tonvorrat c-natuerlich-Moll, Bassschleife C–As–Es–B, Schlusston C).
+   Level 2 bleibt eine Einschaetzung.
+5. ~~Demo-Videos fuer die vier neuen Songs~~ ERLEDIGT 2026-08-19: alle 16
+   Songs haben Demo (16:9, 34s) und Teaser (9:16, 17s), `DEMO_TITLES`
+   entsprechend, CACHE auf v9.
+   Nach dem Rendern dort eintragen und `sw.js`-CACHE hochzaehlen.
+6. **Vault-Abgleich**: *Ashes to Anthem* steht im Vault mit `learn: false` -
+   das stimmt seit dieser Runde nicht mehr. *Hymn of the Void* fehlt im Vault
+   ganz und gehoert zu `learn_only`. Notiz liegt in
+   `nulltag-cd/vault-inbox/2026-08-18_learn-tracks-und-tonart.md`.
 
 ## Naechste Features (Ideen)
 

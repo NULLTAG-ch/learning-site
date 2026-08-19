@@ -1,8 +1,19 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400">
-<rect width="400" height="400" fill="#0b0b0f"/>
-<rect x="24" y="24" width="352" height="352" fill="none" stroke="#4da6ff" stroke-width="2" opacity="0.55"/>
-<circle cx="200" cy="168" r="64" fill="none" stroke="#4da6ff" stroke-width="3" opacity="0.9"/>
-<circle cx="200" cy="168" r="30" fill="#4da6ff" opacity="0.22"/>
-<text x="200" y="285" font-family="Inter Tight, Arial, sans-serif" font-size="26" font-weight="700" fill="#f2f2f5" text-anchor="middle" letter-spacing="2">HAUPTMOTIV</text>
-<text x="200" y="320" font-family="Inter Tight, Arial, sans-serif" font-size="14" fill="#8a8a95" text-anchor="middle" letter-spacing="6">NULLTAG 03</text>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" role="img" aria-label="HAUPT MOTIV">
+<rect width="400" height="400" fill="#0a0a0a"/>
+<!-- Eckwinkel -->
+<g stroke="#e8e3da" stroke-width="1.5" fill="none" opacity="0.4">
+<path d="M20 34V20h14"/><path d="M366 20h14v14"/><path d="M380 366v14h-14"/><path d="M34 380H20v-14"/>
+</g>
+<!-- Wortmarke + Katalog -->
+<text x="200" y="42" font-family="JetBrains Mono, SF Mono, Menlo, Consolas, monospace" font-size="10.5" fill="#e8e3da" text-anchor="middle" letter-spacing="4">NULLTAG</text>
+<text x="374" y="42" font-family="JetBrains Mono, SF Mono, Menlo, Consolas, monospace" font-size="9.5" fill="#8a8580" text-anchor="end" letter-spacing="1.7">LEARN</text>
+<!-- Hero: der eine helle Kern im Void -->
+<defs><radialGradient id="g"><stop offset="0%" stop-color="#e8e3da" stop-opacity="0.85"/><stop offset="45%" stop-color="#ff2a55" stop-opacity="0.45"/><stop offset="100%" stop-color="#ff2a55" stop-opacity="0"/></radialGradient></defs>
+<circle cx="200" cy="152" r="74" fill="url(#g)"/>
+<circle cx="200" cy="152" r="50" fill="none" stroke="#e8e3da" stroke-width="1" opacity="0.25"/>
+<text x="200" y="244.3" font-family="Bebas Neue, Oswald, Arial Narrow, sans-serif" font-size="54" fill="#e8e3da" text-anchor="middle" letter-spacing="-1" textLength="140" lengthAdjust="spacingAndGlyphs">HAUPT</text>
+<text x="200" y="294.0" font-family="Bebas Neue, Oswald, Arial Narrow, sans-serif" font-size="54" fill="#e8e3da" text-anchor="middle" letter-spacing="-1" textLength="140" lengthAdjust="spacingAndGlyphs">MOTIV</text>
+<rect x="156" y="320" width="88" height="2" fill="#ff2a55"/>
+<text x="24" y="378" font-family="JetBrains Mono, SF Mono, Menlo, Consolas, monospace" font-size="8" fill="#8a8580" letter-spacing="1.6">NULLTAG · MMXXVI</text>
+<text x="376" y="378" font-family="JetBrains Mono, SF Mono, Menlo, Consolas, monospace" font-size="8" fill="#8a8580" text-anchor="end" letter-spacing="1.6">NUR LERNFASSUNG</text>
 </svg>

@@ -5,6 +5,9 @@ NULLTAG-Designsystem ([`nulltag-cd`](https://github.com/NULLTAG-ch/nulltag-cd)).
 
 ## Features
 - Alle NULLTAG-Songs eingebettet (Easy- und Voll-Fassung, Lernschritte in 4-Takt-Bloecken)
+- Sechs Klangfarben zur Wahl (Fluegel, Filzfluegel, Fluegel hell, E-Piano,
+  Vibraphon, Orgel) - die Wahl gilt fuer Trainer, Klaviatur, Gehoertraining
+  und Analyse gleichermassen und wird im Browser gemerkt
 - Bibliothek mit 30 interaktiven Lektionen in drei Stufen (Einstieg / Fortgeschritten / Pro):
   Lagen, Tonleitern, Akkorde, Kadenzen, Arpeggien, Quintenzirkel, Moll-Varianten,
   Septakkorde, II-V-I, Walking Bass - alles laeuft direkt im Trainer (Warte-Modus),
@@ -15,6 +18,51 @@ NULLTAG-Designsystem ([`nulltag-cd`](https://github.com/NULLTAG-ch/nulltag-cd)).
 - Web-MIDI: erkennt MIDI-Keyboards (z.B. Novation FLkey 49) automatisch
 - Beliebige MIDI-Dateien ladbar: Drum-Filter, Handtrennung und Easy-Fassung werden client-seitig erzeugt
 - Klaviatur passt ihren Tonumfang dem geladenen Song an – grosse, lesbare Tasten statt 88 Mini-Tasten
+
+## Die vier Fassungen
+Jeder Song laeuft in vier Stufen, alle aus derselben Vorlage abgeleitet:
+
+| Fassung | was drin ist |
+|---|---|
+| **Easy** | Melodie + ein Basston pro halbem Takt |
+| **Normal** | echte Register, max. zwei Stimmen rechts, ein Basston pro Schlag |
+| **Pro** | das ganze Stueck, aber **garantiert greifbar** |
+| **Original** | die Vorlage, unangetastet |
+
+Die Garantie (`makePro`) heisst: kein Anschlag greift in einer Hand weiter als
+eine Oktave, keiner braucht mehr als fuenf Finger. Wo die Vorlage das
+verletzt, wird zuerst umverteilt (Aussenton in die freie Hand) und erst
+danach gebrochen - die unteren Toene setzen ein Sechzehntel frueher ein und
+klingen bis zum urspruenglichen Ende durch, so wie ein Pianist einen zu
+weiten Griff arpeggiert. Gestrichen wird nichts. Sie gilt fuer Easy, Normal
+und Pro; nur Original bleibt unberuehrt, weil es die Vorlage ist und keine
+Lernstufe.
+
+Der localStorage-Schluessel der Original-Fassung heisst weiterhin `full` -
+so bleiben Sterne und geteilte Links von frueher gueltig.
+
+## Rekonstruierte Saetze
+Ein Titel (*Euphoric Night*) liegt nur als Synth-Spur vor und
+waere woertlich uebertragen kein Klavierstueck. Sein Satz ist aus der
+Harmonik, der Form und dem melodischen Material des Originals rekonstruiert;
+die Songdaten fuehren dazu ein `note`-Feld, das die App als Merker
+«rekonstruiert» auf der Songkarte und als Satz im Trainer zeigt. Ein Song
+ohne `note` ist eine direkte Uebertragung.
+
+## Track-Audit
+`node tools/audit-tracks.js` prueft alle Songs auf Tonart, Handverteilung,
+Griffweiten und Fingersatz. Die geprueften Funktionen zieht das Skript
+wortwoertlich aus `index.html` - es testet also den ausgelieferten Code.
+Nach jeder Aenderung an Songdaten, `makeEasy`/`makeNormal` oder der
+Fingersatz-Berechnung laufen lassen.
+
+## Demo-Videos
+`node tools/render-demo.js` rendert fehlende Demo- (16:9, 34s) und
+Teaser-Clips (9:16, 17s) direkt aus dem Trainer - Canvas plus
+Salamander-Audio, Format identisch zu den bestehenden. Braucht einen lokalen
+Server auf dem Repo-Root, `playwright-core` mit Chromium und ein
+vollstaendiges ffmpeg (Details im Skriptkopf). Danach: neuen Song in
+`DEMO_TITLES` eintragen, `sw.js`-CACHE hochzaehlen.
 
 ## Deployment
 GitHub Pages, Branch `main`, Root (`.nojekyll`, kein Build-Schritt). Custom Domain
@@ -30,6 +78,14 @@ Alles liegt in `index.html` (HTML + CSS + JS, keine Dependencies). Designtokens
 Klavierklang: [Salamander Grand Piano](https://archive.org/details/SalamanderGrandPianoV3)
 von Alexander Holm, CC BY 3.0 - 15 Samples (Tritonus-Raster) via
 [tonejs-instruments](https://github.com/nbrosowsky/tonejs-instruments),
-selbst gehostet unter `assets/piano/`. Fingersatz-Hinweise werden client-seitig
-per dynamischer Programmierung aus klassischen Regeln berechnet
-(Daumenuntersatz, Spannweiten, keine Kreuzung ohne Daumen).
+selbst gehostet unter `assets/piano/`. Die uebrigen Klangfarben sind entweder
+gefilterte Varianten derselben Samples (Filzfluegel, Fluegel hell) oder
+synthetisch (E-Piano, Vibraphon, Orgel) - es kommen keine weiteren Assets dazu.
+
+Fingersatz-Hinweise werden client-seitig berechnet: Laufwerk-Passagen per
+dynamischer Programmierung aus klassischen Regeln (Daumenuntersatz,
+Spannweiten, keine Kreuzung ohne Daumen, Daumen meidet schwarze Tasten in
+Schrittbewegung), Akkordgriffe per vollstaendiger Suche ueber alle
+aufsteigenden Fingerfolgen gegen die Ruhelage der Hand. Griffe, die keine
+Hand fassen kann, werden als solche gemeldet statt mit einem Fingersatz
+kaschiert.
