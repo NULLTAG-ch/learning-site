@@ -42,9 +42,9 @@ function constBlock(name){
   }
   return src.slice(m.index, j + 1);
 }
-const CONSTS = ['FSPAN','FMAX','FREST','FSTIFF','FCOMBOS','KEYNAMES'];
+const CONSTS = ['FSPAN','FMAX','FREST','FSTIFF','FCOMBOS','KEYNAMES','PRO_SPAN','PRO_VOICES'];
 const FUNCS  = ['isBlackKey','transCost','assignChord','dpRun','computeFingering',
-                'isRHn','splitPoint','foldNear','makeEasy','makeNormal','detectKey','minor2label'];
+                'isRHn','splitPoint','foldNear','makeEasy','makeNormal','makePro','detectKey','minor2label'];
 const code = CONSTS.map(constBlock).join('\n')
   + '\nlet rolledChords = 0;\n'
   + FUNCS.map(n => block(new RegExp('^function ' + n + '\\s*\\(', 'm'), n)).join('\n')
@@ -73,7 +73,9 @@ for (const song of SONGS){
 
   // 2) Klaviertauglichkeit je Fassung
   for (const [vn, ns] of Object.entries({
-    Easy: T.makeEasy(song.notes, split), Normal: T.makeNormal(song.notes, split), Pro: song.notes })){
+    Easy: T.makePro(T.makeEasy(song.notes, split), split),
+    Normal: T.makePro(T.makeNormal(song.notes, split), split),
+    Pro: T.makePro(song.notes, split), Original: song.notes })){
     const map = T.computeFingering(ns, split);
     const rolled = T.getRolled();
     let wide = 0, over5 = 0, wrongHand = 0, chords = 0, chordBad = 0, legato = 0, badSpan = 0, leaps = 0;
@@ -111,7 +113,10 @@ for (const song of SONGS){
       }
     }
     for (const n of ns) if (n[3] != null && T.isRHn(n, split) !== (n[3] === 1)) wrongHand++;
-    const bad = wide || over5 || chordBad || badSpan || leaps;
+    // Die Original-Fassung ist die Vorlage: ein zu weiter Griff darin ist
+    // kein Fehler, sondern die Stelle, die Pro gebrochen notiert. Gemeldet
+    // wird er trotzdem - aber nur die Pro-Fassung muss sauber sein.
+    const bad = (vn === 'Original' ? 0 : wide || over5 || chordBad) || badSpan || leaps;
     say(bad ? '!' : ' ', vn.padEnd(6) + ns.length + ' Noten · ' +
       'Spanne>Oktave ' + wide + ' · >5 Stimmen ' + over5 + ' · Akkordgriff unspielbar ' + chordBad + '/' + chords +
       ' · Legato-Spanne unspielbar ' + badSpan + '/' + legato +

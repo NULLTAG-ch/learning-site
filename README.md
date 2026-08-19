@@ -19,6 +19,28 @@ NULLTAG-Designsystem ([`nulltag-cd`](https://github.com/NULLTAG-ch/nulltag-cd)).
 - Beliebige MIDI-Dateien ladbar: Drum-Filter, Handtrennung und Easy-Fassung werden client-seitig erzeugt
 - Klaviatur passt ihren Tonumfang dem geladenen Song an – grosse, lesbare Tasten statt 88 Mini-Tasten
 
+## Die vier Fassungen
+Jeder Song laeuft in vier Stufen, alle aus derselben Vorlage abgeleitet:
+
+| Fassung | was drin ist |
+|---|---|
+| **Easy** | Melodie + ein Basston pro halbem Takt |
+| **Normal** | echte Register, max. zwei Stimmen rechts, ein Basston pro Schlag |
+| **Pro** | das ganze Stueck, aber **garantiert greifbar** |
+| **Original** | die Vorlage, unangetastet |
+
+Die Garantie (`makePro`) heisst: kein Anschlag greift in einer Hand weiter als
+eine Oktave, keiner braucht mehr als fuenf Finger. Wo die Vorlage das
+verletzt, wird zuerst umverteilt (Aussenton in die freie Hand) und erst
+danach gebrochen - die unteren Toene setzen ein Sechzehntel frueher ein und
+klingen bis zum urspruenglichen Ende durch, so wie ein Pianist einen zu
+weiten Griff arpeggiert. Gestrichen wird nichts. Sie gilt fuer Easy, Normal
+und Pro; nur Original bleibt unberuehrt, weil es die Vorlage ist und keine
+Lernstufe.
+
+Der localStorage-Schluessel der Original-Fassung heisst weiterhin `full` -
+so bleiben Sterne und geteilte Links von frueher gueltig.
+
 ## Rekonstruierte Saetze
 Zwei Titel (*Eisflug*, *Euphoric Night*) liegen nur als Synth-Spur vor und
 waeren woertlich uebertragen kein Klavierstueck. Ihr Satz ist aus der

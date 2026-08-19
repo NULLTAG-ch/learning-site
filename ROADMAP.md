@@ -1,5 +1,36 @@
 # learn.nulltag.ch – Roadmap & Status
 
+## Runde 2026-08-19 — vierte Fassung: Original
+
+Bisher hiess die volle Fassung «Pro (Original)» - zwei Dinge unter einem Namen.
+Neu sind es vier Stufen: **Easy · Normal · Pro · Original**.
+
+- **Pro** ist neu und wird abgeleitet: das ganze Stueck, aber garantiert
+  greifbar. `makePro` stellt sicher, dass kein Anschlag in einer Hand weiter
+  als eine Oktave greift und keiner mehr als fuenf Finger braucht. Wo die
+  Vorlage das verletzt, wird zuerst umverteilt und erst danach gebrochen: die
+  unteren Toene setzen ein Sechzehntel frueher ein und klingen bis zum alten
+  Ende durch - mit Pedal klingt der Akkord wie geschrieben, die Hand muss ihn
+  aber nie auf einmal fassen. Gestrichen wird nichts.
+- **Original** ist die Vorlage, unangetastet. Sie behaelt den Schluessel
+  `full`, damit Sterne im localStorage und geteilte Links (`?v=full`) weiter
+  gelten.
+
+Die Garantie laeuft auch ueber Easy und Normal - eine Easy-Fassung, die weiter
+greift als eine Hand fasst, waere ein Widerspruch in sich. Das hat prompt
+einen Fehler in `makeNormal` aufgedeckt: die Fassung behaelt die obersten zwei
+Stimmen der rechten Hand, und die koennen eine Dezime auseinanderliegen (Peace
+Remains T6). Vorher stand das unbemerkt in einer Fassung, die als *leichter*
+verkauft wird.
+
+Damit sind die letzten offenen Audit-Befunde erledigt: in Easy, Normal und Pro
+steht ueber alle 16 Songs **kein einziger Griff mehr, den eine Hand nicht
+fassen kann**. Was bleibt, steht nur noch in der Original-Fassung - und dort
+gehoert es hin.
+
+Der Trainer sagt in der Original-Fassung dazu, wieviele Akkorde gebrochen
+gehoeren und dass die Pro-Fassung sie schon so notiert.
+
 ## Runde 2026-08-18 (2) — Eisflug, Euphoric Night, Verlinkung von der Musikseite
 
 **Zwei rekonstruierte Klaviersaetze** (16 Songs statt 14). Beide Quell-MIDIs sind

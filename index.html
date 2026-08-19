@@ -136,11 +136,11 @@ main { flex:1; overflow:auto; }
 .sprog { height:2px; background:var(--border); border-radius:1px; margin-top:9px; overflow:hidden; }
 .sprog div { height:100%; background:var(--tiefrot); }
 /* Fassungs-Matrix (Design 2b): drei gleich breite Zellen Easy/Normal/Pro */
-.vrow { display:flex; gap:6px; margin-top:14px; }
-.vcell { flex:1; display:flex; flex-direction:column; align-items:center; gap:3px; background:var(--void); color:var(--dim); border:1px solid var(--border); border-radius:4px; padding:7px 4px; cursor:pointer; transition:border-color 150ms var(--ease); }
+.vrow { display:flex; gap:5px; margin-top:14px; }
+.vcell { flex:1; min-width:0; display:flex; flex-direction:column; align-items:center; gap:3px; background:var(--void); color:var(--dim); border:1px solid var(--border); border-radius:var(--r-sm); padding:7px 3px; cursor:pointer; transition:border-color 150ms var(--ease); }
 .vcell:hover { border-color:var(--tiefrot); }
-.vcell .vlabel { font-family:var(--mono); font-size:9px; letter-spacing:0.18em; text-transform:uppercase; }
-.vcell .vstars { font-family:var(--mono); font-size:11px; letter-spacing:2px; color:var(--muted-deep); }
+.vcell .vlabel { font-family:var(--mono); font-size:8px; letter-spacing:0.04em; text-transform:uppercase; white-space:nowrap; }
+.vcell .vstars { font-family:var(--mono); font-size:10.5px; letter-spacing:0.5px; color:var(--muted-deep); white-space:nowrap; }
 .vcell .vstars.played { color:#e8c04a; }
 .lesson { background:var(--panel); border:1px solid var(--border); border-radius:6px; padding:20px 22px; margin-top:14px; box-shadow:0 1px 0 rgba(255,255,255,0.04) inset; }
 .lesson h3 { font-family:var(--brutal); font-weight:700; letter-spacing:-0.01em; margin-bottom:6px; }
@@ -400,9 +400,11 @@ nav button#midipill { margin-left:0; }
   <div id="view-songs" class="page hide">
     <h2>NULLTAG-Songs</h2>
     <p style="color:var(--dim); margin-top:8px; max-width:700px; line-height:1.55">Sortiert nach Schwierigkeit.
-    Jeder Song in drei Fassungen: <b>Easy</b> (Melodie + ein Basston), <b>Normal</b> (echte Register, max. zwei
-    Stimmen rechts, ein Basston pro Schlag), <b>Pro</b> (Original). Der Kontrolle-Modus vergibt bis zu drei
-    Sterne pro Fassung – dazu Lernschritte in 4-Takt-Häppchen.</p>
+    Jeder Song in vier Fassungen, aufsteigend: <b>Easy</b> (Melodie + ein Basston), <b>Normal</b> (echte
+    Register, max. zwei Stimmen rechts, ein Basston pro Schlag), <b>Pro</b> (das ganze Stück, aber garantiert
+    greifbar – was weiter als eine Oktave greift, steht gebrochen da, so wie ein Pianist es spielt) und
+    <b>Original</b> (die Vorlage, unangetastet). Der Kontrolle-Modus vergibt bis zu drei Sterne pro Fassung –
+    dazu Lernschritte in 4-Takt-Häppchen.</p>
     <div class="songgrid" id="songgrid"></div>
     <button class="btn ghost" onclick="document.getElementById('file').click()">Eigene MIDI-Datei laden…</button>
   </div>
@@ -457,7 +459,7 @@ nav button#midipill { margin-left:0; }
       <span class="csep" aria-hidden="true"></span>
       <div class="grp"><label>Song</label><select id="songsel"></select></div>
       <div class="grp"><label>Fassung</label>
-        <select id="version"><option value="easy">Easy</option><option value="normal">Normal</option><option value="full">Pro</option></select></div>
+        <select id="version"><option value="easy">Easy</option><option value="normal">Normal</option><option value="pro">Pro</option><option value="full">Original</option></select></div>
       <div class="grp"><label>Klang</label><select id="sound" title="Klangfarbe für Trainer, Klaviatur, Gehörtraining und Analyse"></select></div>
       <div class="grp"><label>Lernschritt</label><select id="step"></select></div>
       <div class="grp"><label>Takte</label><select id="section"></select></div>
@@ -801,6 +803,79 @@ function makeEasy(ns, split){
   }
   return [...merged, ...bass].sort((a, b) => a[0] - b[0]);
 }
+// Die vier Fassungen in der Reihenfolge, in der man sie lernt. Der
+// Schluessel `full` traegt die Original-Fassung: er stand von Anfang an in
+// den Sternen (localStorage) und in geteilten Links, und der bleibt gueltig.
+const VERSIONS = [['easy', 'Easy'], ['normal', 'Normal'], ['pro', 'Pro'], ['full', 'Original']];
+// Pro-Fassung: das ganze Stueck, aber garantiert greifbar.
+//
+// Die Original-Fassung bleibt unangetastet - sie ist die Vorlage, wie sie
+// geliefert wurde. Darin steht gelegentlich ein Griff, den keine Hand fassen
+// kann: mehr als eine Oktave gleichzeitig, oder mehr Toene als Finger. Ein
+// Pianist spielt so etwas gebrochen (arpeggiert), und genau das steht hier
+// in den Noten: die unteren Toene setzen um ein Sechzehntel frueher ein und
+// klingen bis zum urspruenglichen Ende durch. Mit Pedal klingt der Akkord
+// wie geschrieben, die Hand muss ihn aber nie auf einmal greifen.
+//
+// Zuerst wird umverteilt (der Aussenton in die freie Hand), erst danach
+// gebrochen - eine Note in die andere Hand zu geben aendert weniger als sie
+// zu verschieben. Gestrichen wird nichts: die Pro-Fassung soll vollstaendig
+// sein, nur spielbar.
+const PRO_SPAN = 12;      // eine Oktave gleichzeitig
+const PRO_VOICES = 5;     // fuenf Finger
+function makePro(ns, split){
+  const out = ns.map(n => n.slice());
+  const groups = () => {
+    const m = new Map();
+    for (const n of out) {
+      const k = n[0] + '|' + (isRHn(n, split) ? 1 : 0);
+      if (!m.has(k)) m.set(k, []);
+      m.get(k).push(n);
+    }
+    return m;
+  };
+  const tooWide = g => {
+    const ps = g.map(n => n[2]).sort((a, b) => a - b);
+    return g.length > PRO_VOICES || ps[ps.length - 1] - ps[0] > PRO_SPAN;
+  };
+  for (let pass = 0; pass < 6; pass++) {
+    let changed = false;
+    for (const [key, g] of groups()) {
+      if (g.length < 2 || !tooWide(g)) continue;
+      const rh = key.endsWith('|1');
+      const sorted = [...g].sort((a, b) => a[2] - b[2]);
+      // 1) Aussenton in die andere Hand, wenn die ihn ohne Kreuzung fassen kann
+      const cand = rh ? sorted[0] : sorted[sorted.length - 1];
+      const other = out.filter(n => n[0] === cand[0] && isRHn(n, split) !== rh);
+      const rest = rh ? sorted.slice(1) : sorted.slice(0, -1);
+      const op = other.map(n => n[2]).concat(cand[2]);
+      const lo = Math.min.apply(null, op), hi = Math.max.apply(null, op);
+      const crosses = rest.length && (rh ? hi > rest[0][2] : lo < rest[rest.length - 1][2]);
+      if (other.length < PRO_VOICES && hi - lo <= PRO_SPAN && !crosses) {
+        cand[3] = rh ? 0 : 1;
+        changed = true;
+        continue;
+      }
+      // 2) Brechen: von oben her die Toene behalten, die in eine Handspanne
+      //    passen; alles darunter setzt ein Sechzehntel frueher ein und
+      //    klingt bis zum alten Ende durch.
+      const top = sorted[sorted.length - 1][2];
+      const keep = sorted.filter(n => top - n[2] <= PRO_SPAN).slice(-PRO_VOICES);
+      const roll = sorted.filter(n => keep.indexOf(n) < 0);
+      if (!roll.length) continue;
+      for (const n of roll) {
+        n[1] = Math.round((n[1] + 0.25) * 100) / 100;
+        n[0] = Math.round((n[0] - 0.25) * 100) / 100;
+      }
+      changed = true;
+    }
+    if (!changed) break;
+  }
+  // Ein gebrochener Ton kann vor den Stueckanfang rutschen - dann rueckt er
+  // wieder auf die Eins, das Brechen entfaellt an dieser einen Stelle.
+  for (const n of out) if (n[0] < 0) { n[1] += n[0]; n[0] = 0; }
+  return out.sort((a, b) => a[0] - b[0] || a[2] - b[2]);
+}
 function makeNormal(ns, split){
   // Mittelstufe: echte Register und Rhythmen, aber ausgeduennt -
   // rechts max. 2 Stimmen pro Anschlag, links 1 Basston pro Schlag
@@ -856,13 +931,23 @@ function loadSong(name, fullNotes, bpm){
   recNotes = []; recEvents = []; showRec = false;   // alte Aufnahme gehoert zum alten Song
   const bars = Math.max(1, Math.ceil(Math.max(...fullNotes.map(n => n[0] + n[1]), 4) / 4));
   const split = splitPoint(fullNotes);
-  SONG = { name, bpm, split, bars, full: fullNotes, easy: makeEasy(fullNotes, split),
-           normal: makeNormal(fullNotes, split), steps: makeSteps(fullNotes, split, bars) };
+  // Vier Fassungen, alle aus derselben Vorlage abgeleitet. `full` ist die
+  // Vorlage selbst und heisst im UI Original - der Schluessel bleibt `full`,
+  // damit Sterne und geteilte Links von frueher weiter zeigen.
+  // Die Spielbarkeits-Garantie (makePro) gilt fuer jede abgeleitete Fassung,
+  // nicht nur fuer Pro: eine Easy- oder Normal-Fassung, die weiter greift
+  // als eine Hand fasst, waere ein Widerspruch in sich. Nur Original bleibt
+  // unangetastet - es ist die Vorlage, nicht eine Lernstufe.
+  SONG = { name, bpm, split, bars, full: fullNotes,
+           easy: makePro(makeEasy(fullNotes, split), split),
+           normal: makePro(makeNormal(fullNotes, split), split),
+           pro: makePro(fullNotes, split),
+           steps: makeSteps(fullNotes, split, bars) };
   setRange(SONG.full.concat(SONG.easy));
   document.getElementById('songname').textContent = name + ' · ' + bpm + ' BPM · ' + bars + ' Takte';
   secStart = 0; secEnd = Math.min(8, bars);
   buildSelectors(); rebuild(); updTempo(); pos = -4; setPlaying(false); draw();
-  document.getElementById('hint').textContent = SONG.steps.length + ' Lernschritte in Song-Reihenfolge (Schwierigkeit steht am Schritt). Easy-Fassung: Melodie + 1 Basston pro halben Takt.';
+  document.getElementById('hint').textContent = SONG.steps.length + ' Lernschritte in Song-Reihenfolge (Schwierigkeit steht am Schritt). Easy: Melodie + 1 Basston pro halben Takt · Pro: alles, aber greifbar · Original: die Vorlage.';
   updRolled();
   // Herkunfts-Hinweis: bei rekonstruierten Saetzen soll sichtbar sein, was
   // aus dem Original stammt und was der Klaviersatz ergaenzt.
@@ -927,9 +1012,10 @@ function updRolled(){
   const el = document.getElementById('rolled');
   if (!el) return;
   el.classList.toggle('hide', !rolledChords);
-  el.textContent = rolledChords === 1
-    ? '1 Akkord ist weiter als eine Handspanne – gebrochen spielen'
-    : rolledChords + ' Akkorde sind weiter als eine Handspanne – gebrochen spielen';
+  const one = rolledChords === 1;
+  el.textContent = (one ? '1 Akkord ist' : rolledChords + ' Akkorde sind') +
+    ' weiter als eine Handspanne – gebrochen spielen' +
+    (version === 'full' ? ' (die Pro-Fassung notiert ' + (one ? 'ihn' : 'sie') + ' schon gebrochen)' : '');
 }
 // Durchlauf-Anzeige: sichtbar machen, wenn der Lernteil durch ist und neu beginnt
 let roundN = 1, bannerUntil = 0, bannerText = '';
@@ -2825,14 +2911,14 @@ document.addEventListener('click', e => {
   const b = e.target.closest('button');
   if (b && e.detail > 0) b.blur();
 });
-// Songkarten: jeder Song in drei Fassungen (Flowkey/Simply-Piano-Prinzip), Sterne aus dem Kontrolle-Modus
+// Songkarten: jeder Song in vier Fassungen (Flowkey/Simply-Piano-Prinzip), Sterne aus dem Kontrolle-Modus
 const STARS_KEY = 'nulltag-trainer-stars';
 let starMap;
 try { starMap = JSON.parse(localStorage.getItem(STARS_KEY) || '{}'); } catch (e) { starMap = {}; }
 function saveStars(){ try { localStorage.setItem(STARS_KEY, JSON.stringify(starMap)); } catch (e) {} }
 function openSong(s, ver){
   loadSong(s.title, s.notes, s.bpm);
-  version = ['easy', 'normal', 'full'].includes(ver) ? ver : 'easy';
+  version = VERSIONS.some(v => v[0] === ver) ? ver : 'easy';
   document.getElementById('version').value = version;
   rebuild(); go('trainer'); draw();
 }
@@ -2897,8 +2983,8 @@ if (document.readyState === "loading") document.addEventListener("DOMContentLoad
 else initDemos();
 
 function songProgress(title){
-  const stars = ['easy','normal','full'].reduce((a, v) => a + (starMap[title + '|' + v] || 0), 0);
-  return Math.round(stars / 9 * 100);
+  const stars = VERSIONS.reduce((a, v) => a + (starMap[title + '|' + v[0]] || 0), 0);
+  return Math.round(stars / (VERSIONS.length * 3) * 100);
 }
 const grid = document.getElementById('songgrid');
 function renderSongs(){
@@ -2915,13 +3001,13 @@ function renderSongs(){
     d.querySelector('.cov').src = COVERS[s.title] || '';
     d.querySelector('h3').textContent = s.title;
     const row = d.querySelector('.vrow');
-    [['easy','Easy'],['normal','Normal'],['full','Pro']].forEach(([v, label]) => {
+    VERSIONS.forEach(([v, label]) => {
       const b = document.createElement('button');
       b.className = 'vcell';
       const st = starMap[s.title + '|' + v] || 0;
       b.innerHTML = '<span class="vlabel"></span><span class="vstars"></span>';
       b.querySelector('.vlabel').textContent = label;
-      b.querySelector('.vstars').textContent = st ? '★'.repeat(st) + '☆'.repeat(3 - st) : '– – –';
+      b.querySelector('.vstars').textContent = st ? '★'.repeat(st) + '☆'.repeat(3 - st) : '···';
       b.querySelector('.vstars').classList.toggle('played', st > 0);
       b.onclick = e => { e.stopPropagation(); openSong(s, v); };
       row.appendChild(b);
@@ -2939,13 +3025,13 @@ function renderSongs(){
       '<div class="vrow"></div><button class="mydel" title="Von diesem Gerät löschen">✗ entfernen</button></div>';
     d.querySelector('h3').textContent = s.title;
     const row = d.querySelector('.vrow');
-    [['easy','Easy'],['normal','Normal'],['full','Pro']].forEach(([v, label]) => {
+    VERSIONS.forEach(([v, label]) => {
       const b = document.createElement('button');
       b.className = 'vcell';
       const st = starMap[s.title + '|' + v] || 0;
       b.innerHTML = '<span class="vlabel"></span><span class="vstars"></span>';
       b.querySelector('.vlabel').textContent = label;
-      b.querySelector('.vstars').textContent = st ? '★'.repeat(st) + '☆'.repeat(3 - st) : '– – –';
+      b.querySelector('.vstars').textContent = st ? '★'.repeat(st) + '☆'.repeat(3 - st) : '···';
       b.querySelector('.vstars').classList.toggle('played', st > 0);
       b.onclick = e => { e.stopPropagation(); openSong(s, v); };
       row.appendChild(b);
@@ -3089,7 +3175,7 @@ function renderStart(){
       const s = SONGS.find(x => x.title === last.ref);
       if (s) {
         title = s.title; img = COVERS[s.title];
-        const vl = { easy: 'Easy', normal: 'Normal', full: 'Pro' }[last.version] || '';
+        const vl = (VERSIONS.find(v => v[0] === last.version) || [])[1] || '';
         const ml = { listen: 'Anhören', wait: 'Warten', check: 'Kontrolle' }[last.mode] || '';
         sub = vl + ' · ' + ml + ' · Takte ' + (last.a + 1) + '–' + last.b;
         open = () => {
@@ -3271,7 +3357,7 @@ function matchesSlug(title, wanted){
     ? SONGS.find(x => matchesSlug(x.title, slug))
     : SONGS.find(x => x.title === q.get('song'));
   if (!s) return;
-  openSong(s, ['easy', 'normal', 'full'].includes(q.get('v')) ? q.get('v') : 'easy');
+  openSong(s, VERSIONS.some(v => v[0] === q.get('v')) ? q.get('v') : 'easy');
   if (['listen', 'wait', 'check'].includes(q.get('m'))) { mode = q.get('m'); document.getElementById('mode').value = mode; }
   const t = /^(\d+)-(\d+)$/.exec(q.get('t') || '');
   if (t) {
