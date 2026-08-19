@@ -1,5 +1,20 @@
 # learn.nulltag.ch – Roadmap & Status
 
+## Runde 2026-08-19 (2) — Burn the Void nach a-Moll, Demo-Videos
+
+**Burn the Void transponiert**: +5 Halbtoene, von e-Moll nach a-Moll - die
+Tonart, in der der Vault den Track fuehrt. Abwaerts (-7) ginge nicht, der
+Bass fiele unter A0; aufwaerts passt der Umfang (29-98). Der
+Tonart-Widerspruch zwischen Katalog und Lernseite ist damit aufgeloest,
+das Audit bestaetigt a-Moll, und der fruehere Normal-Befund des Songs
+verschwindet gleich mit (andere Schwarz/Weiss-Lage, besserer Fingersatz).
+
+**Demo-Videos**: 16:9-Demo + 9:16-Teaser fuer die vier neuen Songs
+(Ashes to Anthem, Hymn of the Void, Eisflug, Euphoric Night), gerendert wie
+die bestehenden zwoelf: Trainer im Anhoeren-Modus, Canvas + Salamander-Audio
+per MediaRecorder, ffmpeg-Mux (Skript: tools/render-demo.js, im Repo).
+`DEMO_TITLES` fuehrt jetzt alle 16 Songs, sw.js-CACHE auf v9.
+
 ## Runde 2026-08-19 — vierte Fassung: Original
 
 Bisher hiess die volle Fassung «Pro (Original)» - zwei Dinge unter einem Namen.
@@ -82,7 +97,8 @@ Tonart-Metadaten und physische Griffgrenzen. Befunde dieser Runde:
 - *Burn the Void* stand als G-Dur im Trainer. Der Vault fuehrt den Track als
   a-Moll - G-Dur war also nie die Kuenstler-Angabe, wie frueher notiert. Die
   Klavierfassung enthaelt durchgehend Fis und schliesst auf Em, steht also in
-  e-Moll (gegenueber dem Original offenbar transponiert). Auf e-Moll gesetzt.
+  e-Moll (gegenueber dem Original offenbar transponiert). Auf e-Moll gesetzt;
+  in der Runde 2026-08-19 (2) dann nach a-Moll transponiert - siehe oben.
 - *Higher Ground* c-Moll bestaetigt (offener Punkt 4 damit erledigt); bei
   *Ashes to Anthem* zeigt die Erkennung die Parallele Es-Dur - dort gilt die
   Vault-Angabe c-Moll.
@@ -199,9 +215,9 @@ Stand: 2026-07-19 · 22 PRs gemerged · Gesamt-Audit gruen (36 Basis-Checks + 83
 4. ~~Higher Ground Meta pruefen~~ ERLEDIGT 2026-08-18: c-Moll ist bestaetigt
    (Tonvorrat c-natuerlich-Moll, Bassschleife C–As–Es–B, Schlusston C).
    Level 2 bleibt eine Einschaetzung.
-5. **Demo-Videos fuer die vier neuen Songs**: *Ashes to Anthem*, *Hymn of the
-   Void*, *Eisflug* und *Euphoric Night* stehen nicht in `DEMO_TITLES`, weil es
-   noch keine Clips gibt.
+5. ~~Demo-Videos fuer die vier neuen Songs~~ ERLEDIGT 2026-08-19: alle 16
+   Songs haben Demo (16:9, 34s) und Teaser (9:16, 17s), `DEMO_TITLES`
+   entsprechend, CACHE auf v9.
    Nach dem Rendern dort eintragen und `sw.js`-CACHE hochzaehlen.
 6. **Vault-Abgleich**: *Ashes to Anthem* steht im Vault mit `learn: false` -
    das stimmt seit dieser Runde nicht mehr. *Hymn of the Void* fehlt im Vault

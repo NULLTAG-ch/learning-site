@@ -56,6 +56,14 @@ wortwoertlich aus `index.html` - es testet also den ausgelieferten Code.
 Nach jeder Aenderung an Songdaten, `makeEasy`/`makeNormal` oder der
 Fingersatz-Berechnung laufen lassen.
 
+## Demo-Videos
+`node tools/render-demo.js` rendert fehlende Demo- (16:9, 34s) und
+Teaser-Clips (9:16, 17s) direkt aus dem Trainer - Canvas plus
+Salamander-Audio, Format identisch zu den bestehenden. Braucht einen lokalen
+Server auf dem Repo-Root, `playwright-core` mit Chromium und ein
+vollstaendiges ffmpeg (Details im Skriptkopf). Danach: neuen Song in
+`DEMO_TITLES` eintragen, `sw.js`-CACHE hochzaehlen.
+
 ## Deployment
 GitHub Pages, Branch `main`, Root (`.nojekyll`, kein Build-Schritt). Custom Domain
 `learn.nulltag.ch` via `CNAME`. HTTPS ist Pflicht, sonst blockiert der Browser
