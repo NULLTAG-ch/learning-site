@@ -20,18 +20,17 @@ NULLTAG-Designsystem ([`nulltag-cd`](https://github.com/NULLTAG-ch/nulltag-cd)).
 - Klaviatur passt ihren Tonumfang dem geladenen Song an – grosse, lesbare Tasten statt 88 Mini-Tasten
 
 ## Werkzeuge-Tab
-Zwei Studio-Helfer aus der NULLTAG-Produktion, eingebettet als iframe unter `tools/apps/`:
+Werkzeuge aus der NULLTAG-Produktion, eingebettet als iframe unter `tools/apps/`:
 
 | Werkzeug | Was es tut |
 |---|---|
 | **Kick Designer** | Genre + Grundton -> gestimmte Kick-Samples (WAV 24 Bit / 48 kHz) + Kick-3-Node-Werte. Sechs Genres. Stimmung wird per Goertzel am gerenderten Sample **gemessen**, nicht geschaetzt; zweites Gate prueft Tail gegen den Kick-Slot des Tempos. |
-| **Suno-Prompt-Generator** | Baut den kombinierten v5.5-Style-Block (Genre/BPM/Tonart/Atmosphaere/Vocals in einem Feld) plus Exclude-Styles. |
 
-Beide laufen offline im Browser, laden nichts hoch. Das iframe wird beim Verlassen des Tabs
+Laeuft offline im Browser, laedt nichts hoch. Das iframe wird beim Verlassen des Tabs
 **entladen** (`src` entfernt) - sonst liefe das Audio des Kick Designers im Hintergrund weiter.
 
-Quelle der Dateien: DJIS-Vault `tools/design/{kick_designer,suno_prompt_generator}/`.
-Bei Aenderungen dort die Kopien in `tools/apps/` nachziehen.
+Quelle der Dateien: DJIS-Vault `tools/design/kick_designer/`.
+Bei Aenderungen dort die Kopie in `tools/apps/` nachziehen.
 
 ## Die vier Fassungen
 Jeder Song laeuft in vier Stufen, alle aus derselben Vorlage abgeleitet:
