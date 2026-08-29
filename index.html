@@ -110,6 +110,17 @@ main { flex:1; overflow:auto; }
 .card { background:var(--panel); border:1px solid var(--border); border-radius:6px; padding:20px 22px; box-shadow:0 1px 0 rgba(255,255,255,0.04) inset; }
 .card h3 { font-family:var(--brutal); font-weight:700; font-size:1rem; letter-spacing:-0.01em; margin-bottom:6px; }
 .card p { font-size:0.86rem; color:var(--dim); line-height:1.55; }
+.toolcard { display:flex; flex-direction:column; cursor:pointer; transition:border-color 150ms var(--ease), transform 150ms var(--ease); }
+.toolcard:hover { border-color:var(--tiefrot); transform:translateY(-2px); }
+.toolcard .tag { display:inline-block; font-family:var(--mono); font-size:10px; letter-spacing:0.18em; color:var(--dim); border:1px solid var(--border); border-radius:3px; padding:3px 8px; margin-bottom:12px; text-transform:uppercase; }
+.toolcard .meta { font-family:var(--mono); font-size:10px; letter-spacing:0.12em; color:var(--dim); margin-top:auto; padding-top:12px; text-transform:uppercase; }
+#toolstage { margin-top:20px; }
+#toolstage .bar { display:flex; align-items:center; gap:12px; margin-bottom:12px; }
+#toolstage h3 { font-family:var(--brutal); font-weight:700; font-size:1rem; }
+#toolback { background:none; border:1px solid var(--border); color:var(--dim); font-family:var(--mono); font-size:11px; letter-spacing:0.08em; text-transform:uppercase; padding:8px 12px; border-radius:4px; cursor:pointer; }
+#toolback:hover { color:var(--bone); border-color:var(--bone); }
+#toolif { width:100%; height:calc(100vh - 230px); min-height:560px; border:1px solid var(--border); border-radius:6px; background:var(--void); display:block; }
+@media (max-width:640px){ #toolif { height:calc(100vh - 250px); min-height:480px; } }
 .card .num { display:inline-block; font-family:var(--mono); font-size:10px; letter-spacing:0.18em; color:var(--dim); border:1px solid var(--border); border-radius:3px; padding:3px 8px; margin-bottom:12px; }
 .card .num::before { content:'§'; }
 .btn { display:inline-block; background:transparent; border:1px solid var(--tiefrot); color:var(--bone); font-family:var(--mono); font-weight:500; font-size:11px; letter-spacing:0.18em; text-transform:uppercase; padding:11px 18px; border-radius:4px; cursor:pointer; margin-top:18px; transition:background 150ms var(--ease), border-color 150ms var(--ease), color 150ms var(--ease); }
@@ -323,6 +334,7 @@ nav button#midipill { margin-left:0; }
   <button data-v="songs">Songs</button>
   <button data-v="ana">Analyse</button>
   <button data-v="trainer">Trainer</button>
+  <button data-v="tools">Werkzeuge</button>
   <span id="streakpill" class="hide">⚡ 0 Tage</span>
   <button id="midipill">MIDI · nicht verbunden</button>
 </nav>
@@ -331,6 +343,7 @@ nav button#midipill { margin-left:0; }
   <button data-v="bib"><span class="tglyph">≡</span>Bibliothek</button>
   <button data-v="songs"><span class="tglyph">▤</span>Songs</button>
   <button data-v="trainer"><span class="tglyph">▶</span>Trainer</button>
+  <button data-v="tools"><span class="tglyph">◇</span>Werkzeuge</button>
 </div>
 <div id="rotgate">
   <div>
@@ -504,6 +517,39 @@ nav button#midipill { margin-left:0; }
         <span class="kbdlegend"><b class="r">türkis RH</b> · <b class="l">orange LH</b> · <b class="y">gelb erwartet</b> · <b class="g">grün richtig</b> · Fingersatz L/R + Ziffer, 1 = Daumen bis 5 = kleiner Finger · Klaviatur anklicken oder Tastenreihe A–Ö · Leertaste = Start/Stopp</span>
         <span id="hint"></span>
       </div>
+    </div>
+  </div>
+  <!-- WERKZEUGE -->
+  <div id="view-tools" class="page hide">
+    <div class="hero">
+      <h2>Werkzeuge</h2>
+      <p>Zwei Studio-Helfer aus der NULLTAG-Produktion. Sie laufen komplett im Browser —
+         nichts wird hochgeladen, nichts gespeichert.</p>
+    </div>
+    <div class="cards" id="toolcards">
+      <div class="card toolcard" data-tool="kick-designer" data-name="Kick Designer" tabindex="0" role="button">
+        <span class="tag">Sound-Design</span>
+        <h3>Kick Designer</h3>
+        <p>Genre und Grundton wählen — heraus kommen gestimmte Kick-Samples als WAV
+           (24 Bit / 48 kHz) plus die Kick-3-Werte zum Nachbauen. Sechs Genres von
+           Hard Techno bis Frenchcore, Stimmung wird am Sample gemessen statt geschätzt.</p>
+        <div class="meta">Web Audio · WAV-Export · offline</div>
+      </div>
+      <div class="card toolcard" data-tool="suno-prompt-generator" data-name="Suno-Prompt-Generator" tabindex="0" role="button">
+        <span class="tag">Prompting</span>
+        <h3>Suno-Prompt-Generator</h3>
+        <p>Baut einen sauberen v5.5-Style-Block: Genre, BPM, Tonart, Atmosphäre und
+           Vocal-Beschreibung in einem Feld, so wie Suno es erwartet — statt Feldern,
+           die es im Song-Mode gar nicht gibt.</p>
+        <div class="meta">Copy-and-paste · offline</div>
+      </div>
+    </div>
+    <div id="toolstage" class="hide">
+      <div class="bar">
+        <button id="toolback">← Übersicht</button>
+        <h3 id="toolname"></h3>
+      </div>
+      <iframe id="toolif" title="Werkzeug" allow="autoplay"></iframe>
     </div>
   </div>
 </main>
@@ -2925,8 +2971,32 @@ function go(v){
   if (v === 'bib') renderLibrary();
   if (v === 'songs') renderSongs();
   if (v === 'start') renderStart();
+  if (v !== 'tools') closeTool();
 }
 document.querySelectorAll('nav button, #tabbar button').forEach(b => { if (b.dataset.v) b.onclick = () => go(b.dataset.v); });
+// ---------- Werkzeuge ----------
+// Das iframe wird beim Verlassen bewusst ENTLADEN (src entfernt), nicht nur versteckt:
+// der Kick Designer erzeugt Audio, das sonst im Hintergrund weiterlaufen wuerde.
+function closeTool(){
+  const f = document.getElementById('toolif');
+  if (!f) return;
+  if (f.getAttribute('src')) f.removeAttribute('src');
+  document.getElementById('toolstage').classList.add('hide');
+  document.getElementById('toolcards').classList.remove('hide');
+}
+function openTool(slug, name){
+  document.getElementById('toolif').src = 'tools/apps/' + slug + '.html';
+  document.getElementById('toolname').textContent = name;
+  document.getElementById('toolcards').classList.add('hide');
+  document.getElementById('toolstage').classList.remove('hide');
+}
+for (const c of document.querySelectorAll('.toolcard')) {
+  const open = () => openTool(c.dataset.tool, c.dataset.name);
+  c.onclick = open;
+  c.onkeydown = e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); open(); } };
+}
+const _tb = document.getElementById('toolback');
+if (_tb) _tb.onclick = closeTool;
 // Querformat-Gate (Design 2a): Trainer mobil nur landscape
 let curView = 'start';
 function updateRotGate(){

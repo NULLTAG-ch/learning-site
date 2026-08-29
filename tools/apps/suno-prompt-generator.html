@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NULLTAG · Suno Prompt Generator</title>
+<style>
+  :root{ --void:#0A0A0A; --void2:#141414; --bone:#F2E9E4; --rot:#E63946; --sub:#8a8a8a; --line:#2a2a2a; }
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--void);color:var(--bone);font-family:-apple-system,Segoe UI,Roboto,sans-serif;line-height:1.5;}
+  header{padding:28px 24px 16px;border-bottom:1px solid var(--line);}
+  h1{font-family:'Bebas Neue',Impact,sans-serif;letter-spacing:3px;font-size:34px;margin:0;font-weight:800;text-transform:uppercase;}
+  h1 .r{color:var(--rot);}
+  .sub{color:var(--sub);font-size:13px;margin-top:4px;}
+  .wrap{max-width:1080px;margin:0 auto;padding:24px;display:grid;grid-template-columns:1fr 1fr;gap:24px;}
+  @media(max-width:820px){.wrap{grid-template-columns:1fr;}}
+  .panel{background:var(--void2);border:1px solid var(--line);border-radius:10px;padding:18px;}
+  label{display:block;font-size:11px;text-transform:uppercase;letter-spacing:1.5px;color:var(--sub);margin:14px 0 6px;}
+  select,input[type=range]{width:100%;background:var(--void);color:var(--bone);border:1px solid var(--line);border-radius:6px;padding:9px;font-size:14px;}
+  .bpmrow{display:flex;align-items:center;gap:12px;}
+  .bpmval{font-family:'Bebas Neue',Impact,sans-serif;font-size:24px;color:var(--rot);min-width:64px;}
+  .chips{display:flex;flex-wrap:wrap;gap:7px;margin-top:6px;}
+  .chip{border:1px solid var(--line);background:var(--void);color:var(--bone);border-radius:20px;padding:5px 12px;font-size:12px;cursor:pointer;user-select:none;transition:.15s;}
+  .chip:hover{border-color:var(--rot);}
+  .chip.on{background:var(--rot);border-color:var(--rot);color:#fff;}
+  .btns{display:flex;gap:10px;margin-top:18px;}
+  button.act{flex:1;background:var(--rot);color:#fff;border:none;border-radius:7px;padding:12px;font-weight:700;font-size:14px;cursor:pointer;letter-spacing:.5px;}
+  button.ghost{flex:1;background:transparent;color:var(--bone);border:1px solid var(--line);border-radius:7px;padding:12px;font-size:14px;cursor:pointer;}
+  button.ghost:hover{border-color:var(--rot);}
+  .outlabel{display:flex;justify-content:space-between;align-items:center;}
+  .copy{font-size:11px;color:var(--rot);cursor:pointer;border:1px solid var(--rot);border-radius:5px;padding:3px 9px;background:transparent;}
+  textarea{width:100%;background:var(--void);color:var(--bone);border:1px solid var(--line);border-radius:7px;padding:12px;font-family:ui-monospace,Menlo,monospace;font-size:13px;resize:vertical;}
+  .meta{font-size:12px;color:var(--sub);margin-top:10px;border-top:1px solid var(--line);padding-top:10px;}
+  .meta b{color:var(--bone);}
+  .foot{max-width:1080px;margin:0 auto;padding:0 24px 40px;color:var(--sub);font-size:12px;}
+  a{color:var(--rot);}
+  .count{font-size:11px;color:var(--sub);}
+</style>
+</head>
+<body>
+<header>
+  <h1>NULL<span class="r">TAG</span> · Suno Prompt Generator</h1>
+  <div class="sub">v5.5 Song-Mode · Styles = EIN kombinierter Block (≤1000) · Bausteine aus <code>producing/genre_recipes.md</code></div>
+</header>
+
+<div class="wrap">
+  <!-- INPUT -->
+  <div class="panel">
+    <label>Schiene / Genre</label>
+    <select id="genre" onchange="onGenre()"></select>
+
+    <label>BPM</label>
+    <div class="bpmrow"><input type="range" id="bpm" oninput="render()"><span class="bpmval" id="bpmval">200</span></div>
+
+    <label>Tonart-Familie</label>
+    <select id="key" onchange="render()"></select>
+
+    <label>Vocals</label>
+    <select id="vocal" onchange="render()"></select>
+
+    <label>Stimmung / Atmosphäre (multi)</label>
+    <div class="chips" id="moods"></div>
+
+    <label>Optionen</label>
+    <div class="chips">
+      <span class="chip" id="opt_ref" onclick="tog(this)">Reference-Artists</span>
+      <span class="chip on" id="opt_kick" onclick="tog(this)">Kick-Deskriptor</span>
+      <span class="chip on" id="opt_swiss" onclick="tog(this)" style="display:none">Swiss-German</span>
+    </div>
+
+    <div class="btns">
+      <button class="act" onclick="render()">Generieren</button>
+      <button class="ghost" onclick="randomize()">🎲 Zufallsstil</button>
+    </div>
+    <div class="meta" id="meta"></div>
+  </div>
+
+  <!-- OUTPUT -->
+  <div class="panel">
+    <div class="outlabel"><label style="margin-top:0">Styles (→ Suno Styles-Feld)</label>
+      <button class="copy" onclick="cp('styles')">copy</button></div>
+    <textarea id="styles" rows="7"></textarea>
+    <div class="count" id="scount"></div>
+
+    <div class="outlabel"><label>Exclude Styles (→ Suno Avoid-Feld)</label>
+      <button class="copy" onclick="cp('exclude')">copy</button></div>
+    <textarea id="exclude" rows="4"></textarea>
+
+    <div class="meta">
+      <b>Hinweis:</b> Im v5.5-Song-Mode gibt es KEIN separates BPM-/Key-Feld — BPM &amp; Tonart stehen im Styles-Block. Parametrisierte Section-Tags (<code>[Drop: triplet kicks]</code>) gehören ins <b>Lyrics</b>-Feld, nicht hier.
+    </div>
+  </div>
+</div>
+
+<div class="foot">
+  Bausteine = NULLTAG-verifizierte Genre-Rezepte (<code>tools/skills/producing/references/genre_recipes.md</code> + <code>cheatsheet_suno_v55.md</code>).
+  Frenchcore = Triplet-Kick 200 BPM · CINETEKK = 4-on-floor 152 BPM Phrygian-Dominant Hybrid · Imperial = orchestral 205 BPM.
+</div>
+
+<script>
+const G = {
+  frenchcore:{name:"Frenchcore (Lichtjahr)", bpm:[190,210,200], anchor:"uplifting frenchcore, triplet kicks, pitched harmonic kicks",
+    keys:["A aeolian","E phrygian dominant","A harmonic minor","D aeolian"], kick:"distorted triplet kicks (3 per beat), pitched sub harmonic to root, sharp 2-4kHz click",
+    vocals:["female lead","male spoken (dark)","operatic female","instrumental"], refs:"in style of Sefa, Igneon System",
+    moods:["euphoric","cosmic","uplifting","dark","driving","epic"], exclude:"no 4-on-the-floor only kick, no hardstyle reverse bass, no commercial pop polish, no lo-fi"},
+  imperial:{name:"Imperial-Orchestral Frenchcore", bpm:[200,210,205], anchor:"imperial orchestral frenchcore, full brass section, taiko drums, sweeping strings, triplet kicks, epic cinematic build",
+    keys:["A harmonic minor","E harmonic minor","A aeolian"], kick:"frenchcore triplet kicks under orchestral layers",
+    vocals:["operatic female + male latin choir","operatic female","male latin choir"], refs:"Holst The Planets (Jupiter) meets Two-Steps-From-Hell meets frenchcore",
+    moods:["epic","cosmic","euphoric","brooding","uplifting"], exclude:"no industrial dirty sounds, no underground lo-fi, no acid 303, no warehouse texture, no commercial pop hooks"},
+  cinetekk:{name:"CINETEKK / NACHTSTROM (Cinematic Techno)", bpm:[145,160,152], anchor:"melodic techno meets hard techno, cinematic atmosphere, pitched 4-on-the-floor kick, driving energy",
+    keys:["A phrygian dominant","E phrygian","A aeolian","D phrygian dominant"], kick:"pitched 4-on-the-floor kick, tape-saturated body, soft 1-3kHz click",
+    vocals:["female German","male deep","processed male","instrumental"], refs:"in style of Tale of Us, Massano, Anyma; Berghain driving energy",
+    moods:["cinematic","brooding","atmospheric","driving","melancholic","hypnotic"], exclude:"no triplet kicks, no frenchcore, no happy hardcore, no commercial EDM drop, no supersaw"},
+  hardtechno:{name:"Hard Techno / Schranz", bpm:[140,160,150], anchor:"hard techno, schranz, industrial hard techno, distorted 4-on-the-floor kicks, raw underground warehouse sound, acid 303 bassline with heavy resonance",
+    keys:["E phrygian","A phrygian dominant","E minor"], kick:"distorted 4-on-the-floor kick with long tail",
+    vocals:["sparse vocal chops","instrumental"], refs:"Klockworks / Berghain warehouse energy",
+    moods:["dark","driving","hypnotic","aggressive","brooding"], exclude:"no melodic supersaw, no triplet kicks, no pop vocals, no uplifting trance, no commercial polish"},
+  comedyhardtek:{name:"Comedy Hardtek (Standalone)", bpm:[175,195,190], anchor:"comedy hardtek, playful hardcore, tongue-in-cheek vocals, ironic energetic atmosphere, vocoder effect on choruses",
+    keys:["E phrygian dominant","A aeolian"], kick:"triplet or swung 4-on-the-floor kick",
+    vocals:["female playful swiss-german","male playful swiss-german","spoken swiss-german"], refs:"",
+    moods:["playful","euphoric","uplifting","driving"], exclude:"no serious dark atmosphere, no industrial harshness, no melancholic mood, no commercial pop polish", swiss:true},
+  deephouse:{name:"Deep House (Crossover)", bpm:[115,122,122], anchor:"deep house, warm jazzy seventh chords on Rhodes, soft kick, shuffled hi-hats with 56% swing, sub bass on root and fifth, vintage analog warmth, late-night intimate mood, vinyl crackle texture",
+    keys:["A minor dorian","A aeolian"], kick:"soft 4-on-the-floor kick, shuffled groove",
+    vocals:["female soulful vocal chops","instrumental"], refs:"", moods:["atmospheric","melancholic","hypnotic"], exclude:"no hard kick, no distortion, no triplet kicks, no aggressive energy"}
+};
+const ALLMOODS=["euphoric","cosmic","uplifting","dark","driving","epic","cinematic","brooding","atmospheric","melancholic","hypnotic","playful","aggressive"];
+let selMoods=new Set();
+
+function el(id){return document.getElementById(id);}
+function tog(c){c.classList.toggle('on');render();}
+
+function initGenre(){
+  const s=el('genre'); Object.keys(G).forEach(k=>{const o=document.createElement('option');o.value=k;o.textContent=G[k].name;s.appendChild(o);});
+  onGenre();
+}
+function onGenre(){
+  const g=G[el('genre').value];
+  el('bpm').min=g.bpm[0]; el('bpm').max=g.bpm[1]; el('bpm').value=g.bpm[2];
+  el('key').innerHTML=g.keys.map(k=>`<option>${k}</option>`).join('');
+  el('vocal').innerHTML=g.vocals.map(v=>`<option>${v}</option>`).join('');
+  el('opt_swiss').style.display = g.swiss ? 'inline-block':'none';
+  // moods
+  selMoods=new Set(g.moods.slice(0,2));
+  el('moods').innerHTML=ALLMOODS.map(m=>`<span class="chip ${selMoods.has(m)?'on':''}" onclick="togMood('${m}',this)">${m}</span>`).join('');
+  render();
+}
+function togMood(m,c){ if(selMoods.has(m)){selMoods.delete(m);c.classList.remove('on');}else{selMoods.add(m);c.classList.add('on');} render(); }
+
+function render(){
+  const g=G[el('genre').value];
+  const bpm=el('bpm').value; el('bpmval').textContent=bpm+" BPM";
+  const key=el('key').value, vocal=el('vocal').value;
+  const moods=[...selMoods];
+  let parts=[g.anchor, bpm+" BPM", key];
+  if(moods.length) parts.push(moods.join(", ")+" atmosphere");
+  if(el('opt_kick').classList.contains('on')) parts.push(g.kick);
+  if(vocal && vocal!=="instrumental") parts.push(vocal+" vocals"); else if(vocal==="instrumental") parts.push("instrumental, no vocals");
+  if(el('opt_ref').classList.contains('on') && g.refs) parts.push(g.refs);
+  parts.push("Swiss electronic");
+  let styles=parts.join(", ");
+  if(styles.length>1000) styles=styles.slice(0,1000);
+  el('styles').value=styles;
+  el('scount').textContent=styles.length+" / 1000 Zeichen";
+  el('exclude').value=g.exclude;
+  el('meta').innerHTML=`<b>${g.name}</b> · BPM-Range ${g.bpm[0]}–${g.bpm[1]} · Kick: ${g.kick.split(',')[0]}`;
+}
+function randomize(){
+  const keys=Object.keys(G); const gk=keys[Math.floor(Math.random()*keys.length)];
+  el('genre').value=gk; onGenre();
+  const g=G[gk];
+  el('bpm').value=g.bpm[0]+Math.floor(Math.random()*(g.bpm[1]-g.bpm[0]+1));
+  el('key').selectedIndex=Math.floor(Math.random()*el('key').options.length);
+  el('vocal').selectedIndex=Math.floor(Math.random()*el('vocal').options.length);
+  selMoods=new Set(); const pool=[...g.moods]; const n=2+Math.floor(Math.random()*2);
+  for(let i=0;i<n && pool.length;i++){ selMoods.add(pool.splice(Math.floor(Math.random()*pool.length),1)[0]); }
+  el('moods').innerHTML=ALLMOODS.map(m=>`<span class="chip ${selMoods.has(m)?'on':''}" onclick="togMood('${m}',this)">${m}</span>`).join('');
+  render();
+}
+function cp(id){ const t=el(id); t.select(); document.execCommand('copy'); const b=event.target; const o=b.textContent; b.textContent="✓ kopiert"; setTimeout(()=>b.textContent=o,1200); }
+initGenre();
+</script>
+</body>
+</html>

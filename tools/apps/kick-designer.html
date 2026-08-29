@@ -1,0 +1,643 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NULLTAG · Kick Designer</title>
+<style>
+  :root{ --void:#0A0A0A; --void2:#141414; --void3:#1c1c1c; --bone:#F2E9E4; --rot:#E63946; --gruen:#3ddc84; --gelb:#f0b429; --sub:#8a8a8a; --line:#2a2a2a; }
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--void);color:var(--bone);font-family:-apple-system,Segoe UI,Roboto,sans-serif;line-height:1.5;}
+  header{padding:28px 24px 16px;border-bottom:1px solid var(--line);}
+  h1{font-family:'Bebas Neue',Impact,sans-serif;letter-spacing:3px;font-size:34px;margin:0;font-weight:800;text-transform:uppercase;}
+  h1 .r{color:var(--rot);}
+  .sub{color:var(--sub);font-size:13px;margin-top:4px;}
+  .wrap{max-width:1180px;margin:0 auto;padding:24px;display:grid;grid-template-columns:340px 1fr;gap:24px;align-items:start;}
+  @media(max-width:900px){.wrap{grid-template-columns:1fr;}}
+  .panel{background:var(--void2);border:1px solid var(--line);border-radius:10px;padding:18px;}
+  label{display:block;font-size:11px;text-transform:uppercase;letter-spacing:1.5px;color:var(--sub);margin:14px 0 6px;}
+  label:first-child{margin-top:0;}
+  select,input[type=range]{width:100%;background:var(--void);color:var(--bone);border:1px solid var(--line);border-radius:6px;padding:9px;font-size:14px;}
+  input[type=range]{padding:0;accent-color:var(--rot);}
+  .row{display:flex;align-items:center;gap:12px;}
+  .val{font-family:'Bebas Neue',Impact,sans-serif;font-size:24px;color:var(--rot);min-width:70px;text-align:right;}
+  .btns{display:flex;gap:10px;margin-top:18px;}
+  button.act{flex:1;background:var(--rot);color:#fff;border:none;border-radius:7px;padding:12px;font-weight:700;font-size:14px;cursor:pointer;letter-spacing:.5px;}
+  button.ghost{background:transparent;color:var(--bone);border:1px solid var(--line);border-radius:7px;padding:12px;font-size:14px;cursor:pointer;}
+  button.ghost:hover{border-color:var(--rot);}
+  button:disabled{opacity:.45;cursor:not-allowed;}
+  .octtable{width:100%;border-collapse:collapse;font-size:12px;margin-top:6px;}
+  .octtable td{padding:4px 6px;border-bottom:1px solid var(--line);color:var(--sub);}
+  .octtable tr.on td{color:var(--bone);background:#221316;}
+  .octtable tr.on td:first-child{color:var(--rot);font-weight:700;}
+  .octtable td:last-child{text-align:right;}
+  .hint{font-size:11px;color:var(--sub);margin-top:8px;line-height:1.45;}
+  .tog{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--bone);cursor:pointer;margin-top:10px;user-select:none;text-transform:none;letter-spacing:0;}
+  .tog input{accent-color:var(--rot);width:auto;}
+  .card{background:var(--void2);border:1px solid var(--line);border-radius:10px;padding:16px;margin-bottom:14px;}
+  .card h3{margin:0;font-size:15px;letter-spacing:.5px;display:flex;justify-content:space-between;align-items:center;gap:10px;}
+  .card h3 .tag{font-size:10px;text-transform:uppercase;letter-spacing:1.5px;color:var(--sub);font-weight:400;}
+  canvas.wf{width:100%;height:64px;display:block;margin:10px 0 8px;background:var(--void);border:1px solid var(--line);border-radius:6px;}
+  .cardbtns{display:flex;gap:8px;flex-wrap:wrap;}
+  .cardbtns button{background:var(--void);color:var(--bone);border:1px solid var(--line);border-radius:6px;padding:7px 12px;font-size:12px;cursor:pointer;}
+  .cardbtns button:hover{border-color:var(--rot);}
+  .cardbtns button.dl{border-color:var(--rot);color:var(--rot);}
+  .stats{font-size:11px;color:var(--sub);margin-top:10px;display:flex;flex-wrap:wrap;gap:14px;}
+  .stats b{color:var(--bone);font-weight:600;}
+  .ok{color:var(--gruen);} .warn{color:var(--gelb);} .bad{color:var(--rot);}
+  details{margin-top:10px;border-top:1px solid var(--line);padding-top:9px;}
+  summary{font-size:11px;text-transform:uppercase;letter-spacing:1.5px;color:var(--rot);cursor:pointer;outline:none;}
+  pre.k3{background:var(--void);border:1px solid var(--line);border-radius:6px;padding:11px;font-family:ui-monospace,Menlo,monospace;font-size:11.5px;white-space:pre-wrap;margin:9px 0 0;color:var(--bone);}
+  .copy{font-size:11px;color:var(--rot);cursor:pointer;border:1px solid var(--rot);border-radius:5px;padding:3px 9px;background:transparent;margin-top:8px;}
+  .empty{color:var(--sub);font-size:13px;padding:40px 20px;text-align:center;border:1px dashed var(--line);border-radius:10px;}
+  .genremeta{font-size:11.5px;color:var(--sub);border-top:1px solid var(--line);margin-top:12px;padding-top:10px;line-height:1.5;}
+  .genremeta b{color:var(--bone);}
+  .foot{max-width:1180px;margin:0 auto;padding:0 24px 40px;color:var(--sub);font-size:12px;line-height:1.6;}
+  .foot code,.genremeta code,.hint code{background:var(--void3);padding:1px 5px;border-radius:4px;font-size:11px;}
+  a{color:var(--rot);}
+</style>
+</head>
+<body>
+<header>
+  <h1>NULL<span class="r">TAG</span> · Kick Designer</h1>
+  <div class="sub">Genre + Grundton &rarr; gestimmte Kick-Samples (WAV 24&nbsp;Bit / 48&nbsp;kHz) + Kick-3-Node-Werte · Genre-Parameter aus <code>producing/kick_design_genre_boundary.md</code></div>
+</header>
+
+<div class="wrap">
+  <!-- ---------- INPUT ---------- -->
+  <div class="panel">
+    <label>Genre</label>
+    <select id="genre" onchange="onGenre()"></select>
+
+    <label>Grundton (Tonart)</label>
+    <select id="note" onchange="onNote()"></select>
+
+    <label>Sub-Oktave</label>
+    <table class="octtable" id="octtable"></table>
+    <div class="hint" id="octhint"></div>
+
+    <label>BPM</label>
+    <div class="row"><input type="range" id="bpm" oninput="onBpm()"><span class="val" id="bpmval">150</span></div>
+    <label class="tog"><input type="checkbox" id="fitbpm" checked onchange="onFit()"> Tail an BPM koppeln</label>
+
+    <label>Anzahl Varianten</label>
+    <div class="row"><input type="range" id="count" min="3" max="8" value="5" oninput="document.getElementById('countval').textContent=this.value"><span class="val" id="countval">5</span></div>
+
+    <div class="btns">
+      <button class="act" id="gen" onclick="generate()">Kicks generieren</button>
+    </div>
+    <div class="btns" style="margin-top:8px">
+      <button class="ghost" style="flex:1" onclick="generate(true)">🎲 Variation</button>
+      <button class="ghost" style="flex:1" onclick="downloadAll()">⬇ Alle WAV</button>
+    </div>
+
+    <div class="genremeta" id="genremeta"></div>
+  </div>
+
+  <!-- ---------- OUTPUT ---------- -->
+  <div>
+    <div id="results"><div class="empty">Genre + Grundton wählen, dann <b>Kicks generieren</b>.<br>Jede Variante bleibt innerhalb der im Vault dokumentierten Genre-Grenzen.</div></div>
+  </div>
+</div>
+
+<div class="foot">
+  <b>Datenbasis:</b> Tail-Länge, Sub-/Body-/Click-Bänder, Saturation und Decay-Kurve pro Genre stammen aus der Boundary-Tabelle in
+  <code>tools/skills/producing/references/kick_design_genre_boundary.md</code> (Curator-verifiziert, D-008) und den 3-Layer-Rezepten in
+  <code>genre_recipes.md</code> §1.2 / §2.3. Der Generator erfindet keine Genre-Werte — er interpoliert nur innerhalb dieser Ranges.<br>
+  <b>Messendes Gate:</b> Nach dem Rendern wird die Grundfrequenz des Tails per Goertzel-Scan <i>gemessen</i> und gegen den Zielwert geprüft — Stimmung wird belegt, nicht behauptet. Kurze Triplet-Kicks enthalten zu wenige Schwingungen für eine belastbare Messung; dort wird die Pitch-Hüllkurve an einem verlängerten <b>Mess-Render</b> verifiziert (gleiche Pitch-Werte, längerer Sustain) — das exportierte Sample bleibt kurz.
+</div>
+
+<script>
+/* ============================================================
+   1 · GENRE-PROFILE  (Quelle: kick_design_genre_boundary.md +
+   genre_recipes.md §1.2/§2.3/§3.1 — Ranges nicht frei erfunden)
+   ============================================================ */
+const GENRES = {
+  hardtechno: {
+    name: "Hard Techno / Schranz",
+    src: "kick_design_genre_boundary.md (Hardtechno-Pure) + genre_recipes §3",
+    bpm: [140, 160, 150], pattern: "four",
+    subBand: [42, 58],            // wenig Sub, Body-fokussiert
+    tail: [200, 300],             // KURZ, dry, transient-betont
+    drop: [25, 45], startMul: 6,
+    click: [1000, 3000, 0.25, 14],// [loHz, hiHz, amount, ms] subtil, kein Rasiermesser
+    mix: [0.60, 0.95, 0.28],      // sub / body / click
+    drive: 0.16, bodyDrive: 0.30, hard: false, crush: 0,
+    curve: "exp", k: 5.0, lp: 7000,
+    note: "Dry, kurz ausklingend, transient-betont. Kein Tail-Saturation-Sumpf, keine Sub-Wall — genau das lesen Hardtechno-Pure-Curators als „pure“."
+  },
+  frenchcore: {
+    name: "Frenchcore (NULLTAG-Default)",
+    src: "genre_recipes §1.2 (3-Layer) + Boundary-Tabelle",
+    bpm: [190, 210, 200], pattern: "triplet",
+    subBand: [50, 60],            // §1.2: Sub 50-60 Hz, gepitcht zur Root
+    tail: [300, 500],             // MITTEL, distorted
+    drop: [30, 55], startMul: 7,
+    click: [2000, 4000, 0.55, 12],// Frenchcore-Pierce
+    mix: [0.80, 1.00, 0.55],
+    drive: 0.75, bodyDrive: 0.85, hard: false, crush: 0,
+    curve: "exp", k: 3.4, lp: 9000,
+    note: "Body 100–200 Hz mit harter Distortion, Click 2–4 kHz. Triplet-Pattern (3 Kicks/Beat) ist die Genre-Signatur — Pattern-Preview prüft, ob der Tail in den nächsten Kick blutet."
+  },
+  hardstyle: {
+    name: "Hardstyle / Rawstyle",
+    src: "kick_design_genre_boundary.md (Hardstyle-Spalte)",
+    bpm: [148, 162, 155], pattern: "four",
+    subBand: [35, 50],            // Sub-Wall
+    tail: [500, 800],             // LANG, tail-saturation
+    drop: [45, 80], startMul: 8,
+    click: [2000, 5000, 0.60, 10],// crispy snap
+    mix: [1.00, 0.70, 0.60],
+    drive: 0.60, bodyDrive: 0.55, hard: true, crush: 0,
+    curve: "revj", k: 3.0, lp: 11000,
+    note: "Reverse-J-Kurve: langer flacher Sustain, dann scharfes Release. Sub-Bass und Kick verschmelzen zur „Wall“ — das ist genau der Charakter, den Hardtechno-Curators als Drift lesen."
+  },
+  industrial: {
+    name: "Industrial Hardtek",
+    src: "kick_design_genre_boundary.md (Industrial-Spalte)",
+    bpm: [160, 175, 168], pattern: "four",
+    subBand: [35, 55],
+    tail: [450, 700],             // LANG, raw-saturated
+    drop: [30, 60], startMul: 6,
+    click: [1200, 3500, 0.42, 16],// Industrial-Patina
+    mix: [0.95, 0.62, 0.42],
+    drive: 0.72, bodyDrive: 0.60, hard: true, crush: 9,
+    curve: "exp", k: 2.6, lp: 8000,
+    note: "Sub-lastig, weniger Mid, Bit-Crush / Tape-Mangling statt sauberem Soft-Clip. 4-on-the-floor mit Industrial-Stagger."
+  },
+  cinetekk: {
+    name: "CINETEKK / Cinematic Techno",
+    src: "genre_recipes §2.3 (Kick-Design)",
+    bpm: [145, 160, 152], pattern: "four",
+    subBand: [40, 60],
+    tail: [280, 420],
+    drop: [35, 60], startMul: 5,
+    click: [1000, 3000, 0.20, 15],// softer als Frenchcore
+    mix: [0.85, 0.75, 0.22],
+    drive: 0.13, bodyDrive: 0.22, hard: false, crush: 0,
+    curve: "exp", k: 4.2, lp: 6500,
+    note: "Body 80–150 Hz mit Tape-Saturation statt Soft-Clip, Click 1–3 kHz. Leiser Mix-Target (−10 bis −12 LUFS-I) — der Kick trägt hier nicht allein."
+  },
+  comedyhardtek: {
+    name: "Comedy Hardtek",
+    src: "genre_recipes §5",
+    bpm: [175, 195, 190], pattern: "triplet",
+    subBand: [45, 62],
+    tail: [250, 400],
+    drop: [30, 50], startMul: 7,
+    click: [2000, 4000, 0.50, 12],
+    mix: [0.75, 0.92, 0.50],
+    drive: 0.58, bodyDrive: 0.70, hard: false, crush: 0,
+    curve: "exp", k: 3.8, lp: 9000,
+    note: "Triplet oder swung 4-on-the-floor, etwas weniger brutal als Frenchcore — der Track lebt vom Text, nicht von der Kick-Wand."
+  }
+};
+
+/* Varianten: Positionen INNERHALB der Genre-Range, keine Ausreisser */
+const VARIANTS = [
+  { id:"tight",    name:"Tight",         desc:"kurz & trocken",       tailF:0.00, dropF:0.15, driveF:0.85, clickF:1.20, subF:0.90 },
+  { id:"standard", name:"Standard",      desc:"Genre-Mitte",          tailF:0.45, dropF:0.50, driveF:1.00, clickF:1.00, subF:1.00 },
+  { id:"rumble",   name:"Rumble",        desc:"langer Tail",          tailF:1.00, dropF:0.85, driveF:1.00, clickF:0.80, subF:1.12 },
+  { id:"hot",      name:"Hot",           desc:"mehr Drive",           tailF:0.55, dropF:0.40, driveF:1.55, clickF:1.10, subF:0.95 },
+  { id:"click",    name:"Click-Forward", desc:"Transient betont",     tailF:0.30, dropF:0.10, driveF:1.05, clickF:1.70, subF:0.80 },
+  { id:"deep",     name:"Deep",          desc:"Sub betont",           tailF:0.75, dropF:0.70, driveF:0.90, clickF:0.55, subF:1.25 },
+  { id:"snap",     name:"Snap",          desc:"harter Punch",         tailF:0.15, dropF:0.05, driveF:1.30, clickF:1.45, subF:0.85 },
+  { id:"wide",     name:"Wide",          desc:"weicher Übergang",     tailF:0.85, dropF:1.00, driveF:0.80, clickF:0.70, subF:1.05 }
+];
+
+const NOTES = ["C","C#","D","D#","E","F","F#","G","G#","A","A#","B"];
+const DE    = {"C":"C","C#":"Cis","D":"D","D#":"Dis","E":"E","F":"F","F#":"Fis","G":"G","G#":"Gis","A":"A","A#":"Ais","B":"H"};
+const SR = 48000;
+
+/* n = MIDI-Nummer -> f = 440 * 2^((n-69)/12) */
+const midiToHz = n => 440 * Math.pow(2, (n - 69) / 12);
+/* Note-Index + Oktave -> MIDI (C4 = 60, also C0 = 12) */
+const noteToMidi = (i, oct) => 12 + oct * 12 + i;
+const lerp = (a, b, t) => a + (b - a) * t;
+const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
+
+let STATE = { genre:"hardtechno", note:6, oct:1, bpm:150, fitBpm:true };
+let RENDERED = [];
+let AC = null;
+const ac = () => (AC = AC || new (window.AudioContext || window.webkitAudioContext)());
+
+/* ============================================================
+   2 · UI-INIT
+   ============================================================ */
+function init(){
+  const g = document.getElementById("genre");
+  g.innerHTML = Object.keys(GENRES).map(k => `<option value="${k}">${GENRES[k].name}</option>`).join("");
+  const n = document.getElementById("note");
+  n.innerHTML = NOTES.map((s,i) => `<option value="${i}"${i===6?" selected":""}>${s}${DE[s]!==s?"  ("+DE[s]+")":""}</option>`).join("");
+  onGenre();
+}
+
+function onGenre(){
+  STATE.genre = document.getElementById("genre").value;
+  const G = GENRES[STATE.genre];
+  const b = document.getElementById("bpm");
+  b.min = G.bpm[0]; b.max = G.bpm[1]; b.value = G.bpm[2];
+  STATE.bpm = G.bpm[2];
+  document.getElementById("bpmval").textContent = G.bpm[2];
+  drawMeta();
+  pickOctave();
+}
+
+function onNote(){ STATE.note = +document.getElementById("note").value; pickOctave(); }
+function onBpm(){ STATE.bpm = +document.getElementById("bpm").value; document.getElementById("bpmval").textContent = STATE.bpm; drawMeta(); if(RENDERED.length) renderCards(); }
+function onFit(){ STATE.fitBpm = document.getElementById("fitbpm").checked; drawMeta(); if(RENDERED.length) generate(); }
+
+/* Tail-Range: Vault-Werte, bei Bedarf an das Kick-Raster des Tempos gekoppelt.
+   Ohne das erzeugt z.B. Frenchcore (Vault-Tail 300-500 ms) auf einem
+   100-ms-Triplet-Raster unbrauchbare Samples - vier Kicks stapeln sich. */
+function effTail(){
+  const G = GENRES[STATE.genre], slot = slotMs();
+  let min = G.tail[0], max = G.tail[1], clamped = false;
+  if(STATE.fitBpm){
+    const cap = slot * (G.pattern === "triplet" ? 1.15 : 1.70);
+    if(max > cap){ max = Math.round(Math.max(70, cap)); clamped = true; }
+    if(min > max) min = Math.round(Math.max(60, max * 0.70));
+  }
+  return { min, max, clamped, slot };
+}
+
+function drawMeta(){
+  const G = GENRES[STATE.genre], et = effTail();
+  document.getElementById("genremeta").innerHTML =
+    `<b>${G.name}</b><br>${G.note}<br><br>` +
+    `BPM <b>${G.bpm[0]}–${G.bpm[1]}</b> &middot; Tail <b>${G.tail[0]}–${G.tail[1]} ms</b> &middot; ` +
+    `Sub <b>${G.subBand[0]}–${G.subBand[1]} Hz</b> &middot; Click <b>${(G.click[0]/1000).toFixed(1)}–${(G.click[1]/1000).toFixed(1)} kHz</b> &middot; ` +
+    `Pattern <b>${G.pattern === "triplet" ? "Triplet (3/Beat)" : "4-on-the-floor"}</b><br><br>` +
+    (et.clamped
+      ? `<span class="warn">Kick-Slot bei ${STATE.bpm} BPM = ${Math.round(et.slot)} ms &rarr; Tail auf <b>${et.min}–${et.max} ms</b> begrenzt, sonst stapeln sich die Kicks. Häkchen lösen für die volle Genre-Range.</span><br><br>`
+      : `Kick-Slot bei ${STATE.bpm} BPM = <b>${Math.round(et.slot)} ms</b> — Genre-Tail passt ohne Anpassung.<br><br>`) +
+    `<span style="opacity:.7">Quelle: <code>${G.src}</code></span>`;
+}
+
+/* Oktave automatisch: die, deren Frequenz dem Genre-Sub-Band am nächsten liegt */
+function pickOctave(){
+  const G = GENRES[STATE.genre];
+  const target = Math.sqrt(G.subBand[0] * G.subBand[1]);   // geometrische Mitte
+  let best = 1, bestD = 1e9;
+  for(let o = 0; o <= 3; o++){
+    const f = midiToHz(noteToMidi(STATE.note, o));
+    const d = Math.abs(Math.log2(f / target));
+    if(d < bestD){ bestD = d; best = o; }
+  }
+  STATE.oct = best;
+  drawOctTable();
+}
+
+function drawOctTable(){
+  const G = GENRES[STATE.genre], nm = NOTES[STATE.note];
+  let html = "";
+  for(let o = 0; o <= 3; o++){
+    const f = midiToHz(noteToMidi(STATE.note, o));
+    const inBand = f >= G.subBand[0] && f <= G.subBand[1];
+    const use = o === 0 ? "zu tief" : (o === 1 || o === 2 ? (inBand ? "Sub / Tail ←" : "Punch / Body") : "Low Mids");
+    html += `<tr class="${o===STATE.oct?"on":""}" onclick="setOct(${o})" style="cursor:pointer">
+      <td>${nm}${o}</td><td>${f.toFixed(2)} Hz</td><td>${o===STATE.oct?"<b>gewählt</b>":use}</td></tr>`;
+  }
+  document.getElementById("octtable").innerHTML = html;
+  const f = midiToHz(noteToMidi(STATE.note, STATE.oct));
+  document.getElementById("octhint").innerHTML =
+    `Automatisch gewählt: <b style="color:var(--bone)">${nm}${STATE.oct} = ${f.toFixed(2)} Hz</b> — die Oktave, die im Genre-Sub-Fenster ${G.subBand[0]}–${G.subBand[1]} Hz landet. Zeile klicken zum Überschreiben.`;
+}
+function setOct(o){ STATE.oct = o; drawOctTable(); }
+
+/* ============================================================
+   3 · SYNTHESE
+   ============================================================ */
+function shaperCurve(drive, hard){
+  const n = 2048, c = new Float32Array(n), k = drive * 22;
+  for(let i = 0; i < n; i++){
+    const x = i * 2 / n - 1;
+    let y = (1 + k) * x / (1 + k * Math.abs(x));
+    if(hard) y = clamp(y * 1.35, -0.94, 0.94);
+    c[i] = y;
+  }
+  return c;
+}
+
+/* Amplituden-Envelope als Kurven-Array (volle Kontrolle über die Decay-Form) */
+function envCurve(shape, k, n, attackFrac){
+  const c = new Float32Array(n);
+  for(let i = 0; i < n; i++){
+    const t = i / (n - 1);
+    let v;
+    if(shape === "revj"){
+      const s = 0.62;                                   // langer flacher Sustain ...
+      v = t < s ? 1 - 0.18 * (t / s)
+                : 0.82 * Math.pow(1 - (t - s) / (1 - s), 2.4);   // ... dann scharfes Release
+    } else {
+      v = Math.exp(-k * t) * (1 - t);                   // exponentiell, sauber auf 0
+    }
+    c[i] = Math.max(0, v);
+  }
+  const aN = Math.max(2, Math.floor(n * attackFrac));   // kurzer Fade-in gegen DC-Klick
+  for(let i = 0; i < aN; i++) c[i] *= i / aN;
+  c[n - 1] = 0;
+  return c;
+}
+
+function noiseBuffer(ctx, ms){
+  const n = Math.ceil(SR * ms / 1000), b = ctx.createBuffer(1, n, SR), d = b.getChannelData(0);
+  let seed = 12345;
+  for(let i = 0; i < n; i++){ seed = (seed * 1103515245 + 12345) & 0x7fffffff; d[i] = (seed / 0x3fffffff) - 1; }
+  return b;
+}
+
+/* Ein Kick = Sub-Sinus (Pitch-Envelope) + verzerrter Body + Noise-Click, alles über einen Distortion-Bus */
+async function renderKick(p){
+  const total = (p.totalMs + 60) / 1000;
+  const ctx = new OfflineAudioContext(1, Math.ceil(SR * total), SR);
+
+  const bus = ctx.createGain(); bus.gain.value = 1;
+  const shaper = ctx.createWaveShaper();
+  shaper.curve = shaperCurve(p.drive, p.hard); shaper.oversample = "4x";
+  const comp = ctx.createGain(); comp.gain.value = 1 / (1 + p.drive * 6);   // Drive-Makeup
+  const hp = ctx.createBiquadFilter(); hp.type = "highpass"; hp.frequency.value = 22; hp.Q.value = 0.7;  // DC-Block
+  const lp = ctx.createBiquadFilter(); lp.type = "lowpass";  lp.frequency.value = p.lp;
+  bus.connect(shaper); shaper.connect(comp); comp.connect(hp); hp.connect(lp); lp.connect(ctx.destination);
+
+  const dropS = p.dropMs / 1000, tailS = p.totalMs / 1000;
+
+  // --- Sub-Layer: Sinus, Pitch-Envelope von startHz auf die Root ---
+  const sub = ctx.createOscillator(); sub.type = "sine";
+  sub.frequency.setValueAtTime(p.startHz, 0);
+  sub.frequency.exponentialRampToValueAtTime(p.rootHz, dropS);
+  const subG = ctx.createGain(); subG.gain.value = 0;
+  subG.gain.setValueCurveAtTime(envCurve(p.curve, p.k, 1024, 0.006), 0, tailS);
+  const subLvl = ctx.createGain(); subLvl.gain.value = p.mix[0];
+  sub.connect(subG); subG.connect(subLvl); subLvl.connect(bus);
+
+  // --- Body-Layer: 2. Harmonische, eigene (kürzere) Hüllkurve, eigene Distortion ---
+  const body = ctx.createOscillator(); body.type = "sine";
+  body.frequency.setValueAtTime(p.startHz * 1.6, 0);
+  body.frequency.exponentialRampToValueAtTime(p.rootHz * 2, dropS * 0.85);
+  const bodyG = ctx.createGain(); bodyG.gain.value = 0;
+  bodyG.gain.setValueCurveAtTime(envCurve("exp", p.k * 1.7, 1024, 0.004), 0, tailS * 0.72);
+  const bodySh = ctx.createWaveShaper(); bodySh.curve = shaperCurve(p.bodyDrive, false); bodySh.oversample = "4x";
+  const bodyLvl = ctx.createGain(); bodyLvl.gain.value = p.mix[1] / (1 + p.bodyDrive * 4);
+  body.connect(bodyG); bodyG.connect(bodySh); bodySh.connect(bodyLvl); bodyLvl.connect(bus);
+
+  // --- Click-Layer: gefilterter Noise-Burst für Kopfhörer-Definition ---
+  const nz = ctx.createBufferSource(); nz.buffer = noiseBuffer(ctx, 40);
+  const bp = ctx.createBiquadFilter(); bp.type = "bandpass";
+  bp.frequency.value = Math.sqrt(p.clickLo * p.clickHi); bp.Q.value = 0.9;
+  const nzG = ctx.createGain(); nzG.gain.value = 0;
+  nzG.gain.setValueCurveAtTime(envCurve("exp", 7, 256, 0.02), 0, p.clickMs / 1000);
+  const nzLvl = ctx.createGain(); nzLvl.gain.value = p.mix[2];
+  nz.connect(bp); bp.connect(nzG); nzG.connect(nzLvl); nzLvl.connect(bus);
+
+  sub.start(0); sub.stop(total); body.start(0); body.stop(total); nz.start(0);
+
+  const buf = await ctx.startRendering();
+  return postProcess(buf, p);
+}
+
+/* Post: Bit-Crush (Industrial) -> DC weg -> auf -1 dBFS normalisieren -> Fade-out */
+function postProcess(buf, p){
+  const d = buf.getChannelData(0), n = d.length;
+  if(p.crush > 0){
+    const steps = Math.pow(2, p.crush) / 2;
+    for(let i = 0; i < n; i++) d[i] = Math.round(d[i] * steps) / steps;
+  }
+  let mean = 0; for(let i = 0; i < n; i++) mean += d[i]; mean /= n;
+  let peak = 0;
+  for(let i = 0; i < n; i++){ d[i] -= mean; const a = Math.abs(d[i]); if(a > peak) peak = a; }
+  const rawPeak = peak;
+  if(peak > 0){ const g = 0.891 / peak; for(let i = 0; i < n; i++) d[i] *= g; }   // -1.0 dBFS
+  const fade = Math.min(n, Math.floor(SR * 0.004));
+  for(let i = 0; i < fade; i++) d[n - 1 - i] *= i / fade;
+  // Ende hart trimmen, sobald es unhörbar ist (Sample-Länge = Musik-Länge)
+  let end = n;
+  while(end > SR * 0.05 && Math.abs(d[end - 1]) < 0.0006) end--;
+  const len = Math.max(end + 240, 1200);
+  const out = (typeof AudioBuffer === "function" && AudioBuffer.length !== undefined)
+    ? new AudioBuffer({ length: len, sampleRate: SR, numberOfChannels: 1 })
+    : new OfflineAudioContext(1, len, SR).createBuffer(1, len, SR);
+  out.copyToChannel(d.subarray(0, len), 0);
+  return { buffer: out, rawPeak };
+}
+
+/* Messendes Gate: Grundfrequenz des Tails per Goertzel-Scan bestimmen.
+   Das Fenster endet immer VOR dem Sample-Ende - sonst wird Stille mitgemessen
+   und die Schaetzung wird bei kurzen Triplet-Kicks unbrauchbar. Zurueck kommt
+   auch die Zyklenzahl im Fenster: unter ~3 Zyklen ist keine Frequenz sicher
+   bestimmbar, das muss die Anzeige sagen statt eine Zahl vorzutaeuschen. */
+function measureFundamental(buf, fromMs, targetHz){
+  const d = buf.getChannelData(0);
+  const endMs = d.length / SR * 1000 - 6;                   // Fade-out aussparen
+  const a = Math.floor(SR * fromMs / 1000);
+  const b = Math.floor(SR * Math.min(fromMs + 260, endMs) / 1000);
+  const winMs = (b - a) / SR * 1000;
+  const cycles = winMs / 1000 * targetHz;
+  if(b - a < 600) return { hz: 0, winMs: Math.max(0, winMs), cycles };
+  const D = 4, sr = SR / D, m = Math.floor((b - a) / D), x = new Float32Array(m);
+  for(let i = 0; i < m; i++){                     // Box-Average vor der Dezimation (Anti-Alias)
+    const o = a + i * D; x[i] = (d[o] + d[o+1] + d[o+2] + d[o+3]) / 4;
+  }
+  let bf = 0, bm = -1;
+  for(let f = 25; f <= 220; f += 0.1){
+    const w = 2 * Math.PI * f / sr, c = 2 * Math.cos(w);
+    let s1 = 0, s2 = 0;
+    for(let i = 0; i < m; i++){ const s = x[i] + c * s1 - s2; s2 = s1; s1 = s; }
+    const mag = s1 * s1 + s2 * s2 - c * s1 * s2;
+    if(mag > bm){ bm = mag; bf = f; }
+  }
+  return { hz: bf, winMs, cycles };
+}
+
+/* ============================================================
+   4 · PARAMETER PRO VARIANTE
+   ============================================================ */
+function paramsFor(v, jit){
+  const G = GENRES[STATE.genre];
+  const rootHz = midiToHz(noteToMidi(STATE.note, STATE.oct));
+  const j = (a) => jit ? (Math.random() * 2 - 1) * a : 0;
+  const tailF  = clamp(v.tailF  + j(0.18), 0, 1);
+  const dropF  = clamp(v.dropF  + j(0.18), 0, 1);
+  const et = effTail();
+  const totalMs = Math.round(lerp(et.min, et.max, tailF));
+  const dropMs  = Math.round(lerp(G.drop[0], G.drop[1], dropF));
+  const drive   = clamp(G.drive * (v.driveF + j(0.10)), 0.05, 0.98);
+  const mix = [
+    clamp(G.mix[0] * (v.subF + j(0.06)), 0.1, 1.3),
+    G.mix[1],
+    clamp(G.mix[2] * v.clickF + j(0.05), 0.02, 1.1)
+  ];
+  return {
+    id: v.id, vname: v.name, vdesc: v.desc,
+    rootHz, startHz: Math.round(clamp(rootHz * G.startMul, 140, 620)),
+    totalMs, dropMs, drive, bodyDrive: G.bodyDrive, hard: G.hard, crush: G.crush,
+    curve: G.curve, k: G.k, lp: G.lp,
+    clickLo: G.click[0], clickHi: G.click[1], clickMs: Math.round(G.click[3] * clamp(v.clickF, .5, 1.8)),
+    mix, pattern: G.pattern
+  };
+}
+
+/* ============================================================
+   5 · GENERIEREN + DARSTELLEN
+   ============================================================ */
+async function generate(jitter){
+  const btn = document.getElementById("gen"); btn.disabled = true; btn.textContent = "rendert …";
+  const cnt = +document.getElementById("count").value;
+  RENDERED = [];
+  for(let i = 0; i < cnt; i++){
+    const p = paramsFor(VARIANTS[i % VARIANTS.length], !!jitter);
+    const { buffer, rawPeak } = await renderKick(p);
+    let meas = measureFundamental(buffer, p.dropMs + 20, p.rootHz);
+    /* Kurze Triplet-Kicks haben zu wenige Schwingungen fuer eine belastbare
+       Frequenzmessung. Dann wird die Pitch-Huellkurve an einem verlaengerten
+       Mess-Render mit identischen Pitch-Werten geprueft (laengerer Sustain,
+       weniger Drive = weniger Oberton-Leakage). Das Sample selbst bleibt kurz. */
+    if(meas.cycles < 4){
+      const probe = await renderKick(Object.assign({}, p, {
+        totalMs: Math.max(400, p.totalMs), k: 1.1, curve: "exp",
+        drive: Math.min(p.drive, 0.25), crush: 0
+      }));
+      const pm = measureFundamental(probe.buffer, p.dropMs + 20, p.rootHz);
+      if(pm.cycles >= 4){ pm.probe = true; meas = pm; }
+    }
+    RENDERED.push({ p, buffer, rawPeak, meas });
+  }
+  btn.disabled = false; btn.textContent = "Kicks generieren";
+  renderCards();
+}
+
+function slotMs(){
+  const beat = 60000 / STATE.bpm;
+  return GENRES[STATE.genre].pattern === "triplet" ? beat / 3 : beat;
+}
+
+function renderCards(){
+  const slot = slotMs();
+  document.getElementById("results").innerHTML = RENDERED.map((r, i) => {
+    const p = r.p;
+    const nm = NOTES[STATE.note] + STATE.oct;
+    const m = r.meas, dev = m.hz ? Math.abs(m.hz - p.rootHz) / p.rootHz : 1;
+    const thin = !m.probe && m.cycles < 4;                      // zu wenige Schwingungen im Fenster
+    const tuneCls = !m.hz || thin ? "warn" : dev < 0.015 ? "ok" : dev < 0.03 ? "warn" : "bad";
+    const tuneTxt = !m.hz ? "nicht messbar"
+                  : thin ? `${m.hz.toFixed(1)} Hz (unsicher, ${m.cycles.toFixed(1)} Schwingungen)`
+                  : `${m.hz.toFixed(1)} Hz (${(dev*100).toFixed(1)} % Abw.)${m.probe ? " · Mess-Render" : ""}`;
+    const ratio = p.totalMs / slot;
+    const okOverlap = GENRES[STATE.genre].pattern === "triplet" ? 1.15 : 1.70;
+    const bCls = ratio <= 1 ? "ok" : ratio <= okOverlap ? "warn" : "bad";
+    const bTxt = ratio <= 1 ? "sauber"
+               : ratio <= okOverlap ? `überlappt ${Math.round((ratio - 1) * 100)} % (genretypisch)`
+               : `blutet (+${Math.round(p.totalMs - slot)} ms)`;
+    const lenMs = Math.round(r.buffer.length / SR * 1000);
+    return `<div class="card">
+      <h3>${i+1} &middot; ${p.vname} <span class="tag">${p.vdesc} &middot; ${nm} &middot; ${p.rootHz.toFixed(2)} Hz</span></h3>
+      <canvas class="wf" id="wf${i}"></canvas>
+      <div class="cardbtns">
+        <button onclick="play(${i})">▶ Kick</button>
+        <button onclick="playPattern(${i})">▶ Pattern (${GENRES[STATE.genre].pattern === "triplet" ? "Triplet" : "4/4"} @ ${STATE.bpm})</button>
+        <button class="dl" onclick="dl(${i})">⬇ WAV 24 Bit</button>
+      </div>
+      <div class="stats">
+        <span>Länge <b>${lenMs} ms</b></span>
+        <span>Pitch-Drop <b>${p.startHz} → ${p.rootHz.toFixed(1)} Hz</b> in <b>${p.dropMs} ms</b></span>
+        <span>Drive <b>${Math.round(p.drive*100)} %</b></span>
+        <span>Stimmung gemessen <b class="${tuneCls}">${tuneTxt}</b></span>
+        <span>Tail vs. Slot (${Math.round(slot)} ms) <b class="${bCls}">${bTxt}</b></span>
+      </div>
+      <details><summary>Kick 3 &ndash; Node-Werte</summary>
+        <pre class="k3" id="k3${i}">${kick3Text(p, slot, r).replace(/</g,"&lt;")}</pre>
+        <button class="copy" onclick="cpK3(${i})">copy</button>
+      </details>
+    </div>`;
+  }).join("");
+  RENDERED.forEach((r, i) => drawWave(document.getElementById("wf" + i), r.buffer));
+}
+
+function kick3Text(p, slot, r){
+  const nm = NOTES[STATE.note] + STATE.oct, G = GENRES[STATE.genre];
+  return [
+`KICK 3 — ${G.name} · ${p.vname} · Grundton ${DE[NOTES[STATE.note]]} (${nm})`,
+`—`,
+`Workspace-Länge     ${p.totalMs} ms   (Slot bei ${STATE.bpm} BPM ${G.pattern==="triplet"?"(Triplet)":""} = ${Math.round(slot)} ms)`,
+`Genre-Range Vault   ${G.tail[0]}–${G.tail[1]} ms${effTail().clamped ? "  → auf " + effTail().min + "–" + effTail().max + " ms begrenzt (Tail an BPM gekoppelt)" : ""}`,
+`Pitch-Envelope      Start ${p.startHz} Hz  →  End ${p.rootHz.toFixed(2)} Hz (${nm})`,
+`  Drop-Zeit         ${p.dropMs} ms, Bezier leicht konkav`,
+`  Pitch Snap        AN — End-Node auf ${nm} rasten, Keytracking AUS (fix auf ${DE[NOTES[STATE.note]]})`,
+`Harmonics/Body      Peak um ${(p.rootHz*2).toFixed(1)} Hz (${NOTES[STATE.note]}${STATE.oct+1}) anheben`,
+`Distortion-Envelope 0 % bis ${p.dropMs} ms  →  ${Math.round(p.drive*100)} % ab Tail`,
+`                    (Transient sauber lassen, nur der Rumble wird dreckig)`,
+`Click-Layer         Bandpass ${p.clickLo}–${p.clickHi} Hz, Decay ${p.clickMs} ms`,
+`Layer-Mix           Sub ${Math.round(p.mix[0]*100)} %  ·  Body ${Math.round(p.mix[1]*100)} %  ·  Click ${Math.round(p.mix[2]*100)} %`,
+`Decay-Kurve         ${p.curve === "revj" ? "Reverse-J (langer Sustain → scharfes Release)" : "exponentiell, linear ausklingend"}`,
+`—`,
+`Stimmung gemessen:  ${r.meas.hz ? r.meas.hz.toFixed(2)+" Hz" : "n/a"} (Ziel ${p.rootHz.toFixed(2)} Hz, Fenster ${r.meas.winMs.toFixed(0)} ms = ${r.meas.cycles.toFixed(1)} Schwingungen${r.meas.probe ? ", am verlängerten Mess-Render" : ""}), Peak vor Normalisierung ${(20*Math.log10(r.rawPeak||1e-6)).toFixed(1)} dBFS`,
+`Danach extern: Saturation / Clipping auf dem Kick-Bus, Mix-Target siehe producing/mix_targets.md`
+  ].join("\n");
+}
+
+function cpK3(i){ navigator.clipboard.writeText(document.getElementById("k3"+i).textContent); }
+
+function drawWave(cv, buf){
+  const dpr = window.devicePixelRatio || 1;
+  const w = cv.clientWidth, h = cv.clientHeight;
+  cv.width = w * dpr; cv.height = h * dpr;
+  const g = cv.getContext("2d"); g.scale(dpr, dpr);
+  const d = buf.getChannelData(0), step = Math.max(1, Math.floor(d.length / w));
+  g.clearRect(0, 0, w, h);
+  g.strokeStyle = "#2a2a2a"; g.beginPath(); g.moveTo(0, h/2); g.lineTo(w, h/2); g.stroke();
+  g.fillStyle = "#E63946";
+  for(let x = 0; x < w; x++){
+    let mn = 1, mx = -1;
+    for(let i = 0; i < step; i++){ const v = d[x * step + i] || 0; if(v < mn) mn = v; if(v > mx) mx = v; }
+    g.fillRect(x, (1 - mx) * h / 2, 1, Math.max(1, (mx - mn) * h / 2));
+  }
+}
+
+/* ============================================================
+   6 · PLAY / EXPORT
+   ============================================================ */
+function play(i, when, ctxIn){
+  const c = ctxIn || ac(); if(c.state === "suspended") c.resume();
+  const s = c.createBufferSource(); s.buffer = RENDERED[i].buffer;
+  s.connect(c.destination); s.start(when || 0);
+}
+function playPattern(i){
+  const c = ac(); if(c.state === "suspended") c.resume();
+  const iv = slotMs() / 1000, hits = GENRES[STATE.genre].pattern === "triplet" ? 12 : 8;
+  const t0 = c.currentTime + 0.06;
+  for(let h = 0; h < hits; h++) play(i, t0 + h * iv, c);
+}
+
+function encodeWav24(buf){
+  const ch = buf.getChannelData(0), n = ch.length, bytes = n * 3;
+  const ab = new ArrayBuffer(44 + bytes), dv = new DataView(ab);
+  const str = (o, s) => { for(let i = 0; i < s.length; i++) dv.setUint8(o + i, s.charCodeAt(i)); };
+  str(0, "RIFF"); dv.setUint32(4, 36 + bytes, true); str(8, "WAVE");
+  str(12, "fmt "); dv.setUint32(16, 16, true); dv.setUint16(20, 1, true);
+  dv.setUint16(22, 1, true); dv.setUint32(24, SR, true); dv.setUint32(28, SR * 3, true);
+  dv.setUint16(32, 3, true); dv.setUint16(34, 24, true);
+  str(36, "data"); dv.setUint32(40, bytes, true);
+  let o = 44;
+  for(let i = 0; i < n; i++){
+    const v = Math.round(clamp(ch[i], -1, 1) * 8388607);
+    dv.setUint8(o++, v & 255); dv.setUint8(o++, (v >> 8) & 255); dv.setUint8(o++, (v >> 16) & 255);
+  }
+  return new Blob([ab], { type: "audio/wav" });
+}
+
+function fileName(i){
+  const p = RENDERED[i].p;
+  return `NULLTAG_kick_${STATE.genre}_${DE[NOTES[STATE.note]]}${STATE.oct}_${p.id}_${STATE.bpm}bpm.wav`;
+}
+function dl(i){
+  const url = URL.createObjectURL(encodeWav24(RENDERED[i].buffer));
+  const a = document.createElement("a"); a.href = url; a.download = fileName(i);
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 4000);
+}
+function downloadAll(){ RENDERED.forEach((_, i) => setTimeout(() => dl(i), i * 350)); }
+
+init();
+</script>
+</body>
+</html>
