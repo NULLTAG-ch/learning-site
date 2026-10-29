@@ -62,6 +62,13 @@ die Songdaten fuehren dazu ein `note`-Feld, das die App als Merker
 «rekonstruiert» auf der Songkarte und als Satz im Trainer zeigt. Ein Song
 ohne `note` ist eine direkte Uebertragung.
 
+## Notenblaetter (PDF)
+`python3 tools/song-to-sheet.py "<Titel>" [--meter 45:2/4,46:4/4] [--composer ...] [--tempo ...]`
+setzt einen Song aus `SONGS` als MusicXML und A4-PDF nach `assets/sheets/`
+(music21 fuer Raster, Stimmen und Haltebogen, Verovio fuer den Satz,
+Chromium fuer das PDF). Nach jeder Aenderung an den Songdaten neu laufen
+lassen. Die MusicXML-Datei laesst sich in MuseScore korrigieren.
+
 ## Track-Audit
 `node tools/audit-tracks.js` prueft alle Songs auf Tonart, Handverteilung,
 Griffweiten und Fingersatz. Die geprueften Funktionen zieht das Skript
