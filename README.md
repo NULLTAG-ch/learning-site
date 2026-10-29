@@ -54,6 +54,12 @@ Lernstufe.
 Der localStorage-Schluessel der Original-Fassung heisst weiterhin `full` -
 so bleiben Sterne und geteilte Links von frueher gueltig.
 
+## Schwache Takte
+Jede Kontrollrunde bucht pro Takt ein Fehlerkonto (`localStorage nulltag-weak`):
+ab zwei Fehlern kommt die Fehlerzahl dazu, eine fehlerfreie Runde halbiert.
+Ab Kontostand 4 holt die Tages-Session den schwaechsten Takt als eigenen
+Baustein - Loop ueber den Takt und seine Nachbarn, Auto-Tempo an.
+
 ## Rekonstruierte Saetze
 Ein Titel (*Euphoric Night*) liegt nur als Synth-Spur vor und
 waere woertlich uebertragen kein Klavierstueck. Sein Satz ist aus der
@@ -63,11 +69,20 @@ die Songdaten fuehren dazu ein `note`-Feld, das die App als Merker
 ohne `note` ist eine direkte Uebertragung.
 
 ## Notenblaetter (PDF)
-`python3 tools/song-to-sheet.py "<Titel>" [--meter 45:2/4,46:4/4] [--composer ...] [--tempo ...]`
-setzt einen Song aus `SONGS` als MusicXML und A4-PDF nach `assets/sheets/`
-(music21 fuer Raster, Stimmen und Haltebogen, Verovio fuer den Satz,
-Chromium fuer das PDF). Nach jeder Aenderung an den Songdaten neu laufen
-lassen. Die MusicXML-Datei laesst sich in MuseScore korrigieren.
+`python3 tools/song-to-sheet.py all` (oder ein Titel) setzt die Original-Fassung
+jedes Songs als A4-PDF plus `.mxl` (gezipptes MusicXML, oeffnet MuseScore) nach
+`assets/sheets/`, Dateiname wie Cover und Demo. Im Trainer oeffnet
+*Werkzeuge > Notenblatt PDF* das Blatt des geladenen Songs.
+
+- music21 fuer Raster, Stimmen und Haltebogen, Verovio fuer den Satz, Chromium fuer das PDF
+  (`pip install music21 verovio`)
+- Eingespielte MIDIs werden fuer den Satz bereinigt: Starts auf 16tel, ein Ton
+  endet beim naechsten Anschlag, Liegetoene unter einer bewegten Linie werden
+  zweite Stimme, Luecken bis ein Achtel werden geschlossen. 8va/8vb automatisch,
+  wenn eine Stimme einen ganzen Takt ueber A5 bzw. unter D2 liegt.
+- Von Hand gesetzte Songs (Listopad) laufen mit `raw` woertlich; Taktwechsel
+  und Triolen-Raster stehen pro Song in `SHEET` im Skript.
+- Nach jeder Aenderung an den Songdaten neu laufen lassen.
 
 ## Track-Audit
 `node tools/audit-tracks.js` prueft alle Songs auf Tonart, Handverteilung,

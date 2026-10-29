@@ -1,5 +1,18 @@
 # learn.nulltag.ch – Roadmap & Status
 
+## Runde 2026-10-29 — Listopad, Notenblaetter, schwache Takte
+
+- **Listopad** (Fux, fis-Moll, Grave, 53 Takte) aus Notenbild transkribiert;
+  Quelle `tools/transcriptions/listopad.py`. 20 Songs.
+- **Notenblaetter**: `tools/song-to-sheet.py all` -> PDF + `.mxl` fuer alle
+  20 Songs, Button *Notenblatt PDF* im Trainer. Eingespielte MIDIs
+  (How My Brain Sounds, Heat Death, ...) bleiben dicht - lesbar, aber kein
+  Handsatz. Fuer Druckqualitaet: `.mxl` in MuseScore nacharbeiten.
+- **Schwache Takte** ueber Sessions gemerkt, Baustein in der Tages-Session.
+- Offen: Mitspielen mit Originalspur (eigene MP3 je Song, Tempo per
+  playbackRate) - wartet auf Audio-Dateien bzw. Links.
+- CACHE auf v12.
+
 ## Runde 2026-08-19 (4) — How My Brain Sounds, Ashes-Reverie, echtes Greifbarkeits-Kriterium
 
 **Zwei neue Songs** aus den letzten gelieferten MIDIs (19 total):

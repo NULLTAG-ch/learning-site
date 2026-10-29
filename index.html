@@ -492,6 +492,7 @@ nav button#midipill { margin-left:0; }
       <button id="names" class="active">Notennamen</button>
       <button id="fing" class="active">Fingersatz</button>
       <button id="staffb">Noten</button>
+      <button id="sheetb" class="hide" title="Notenblatt der Original-Fassung als PDF">Notenblatt PDF</button>
       <span class="csep" aria-hidden="true"></span>
       <button id="rec">● Aufnahme</button>
     </div>
@@ -1033,6 +1034,10 @@ function loadSong(name, fullNotes, bpm){
     nEl.textContent = meta && meta.note ? meta.note : '';
     nEl.classList.toggle('hide', !(meta && meta.note));
   }
+  // Notenblatt: nur Bibliotheks-Songs haben eins (tools/song-to-sheet.py),
+  // Dateiname wie Cover und Demo
+  const sb = document.getElementById('sheetb');
+  if (sb) sb.classList.toggle('hide', !sheetUrl(name));
   syncSongSel();
 }
 function buildSelectors(){
@@ -1842,6 +1847,7 @@ function loopFrame(){
           if (isRHn(n, SONG.split)) rhMiss++; else lhMiss++;
         }
         const failBars = Object.entries(barErrs).sort((a, b) => b[1] - a[1]);
+        if (!currentLesson) recordWeak(SONG.name, version, secStart, secEnd, barErrs);
         accHist.push(Math.min(acc, cov));
         if (accHist.length > 12) accHist.shift();
         if (autoTempo && cov >= 0.85 && acc >= 0.85 && tempoPct < 100) {
@@ -2466,6 +2472,14 @@ document.getElementById('staffb').onclick = e => {
   draw();
 };
 if (showStaff) document.getElementById('staffb').classList.add('active');
+function sheetUrl(title){
+  const c = typeof COVERS !== 'undefined' && COVERS[title];
+  return c ? 'assets/sheets/' + String(c).split('/').pop().replace(/\.(jpg|svg|png)$/i, '') + '.pdf' : '';
+}
+document.getElementById('sheetb').onclick = () => {
+  const u = SONG && sheetUrl(SONG.name);
+  if (u) window.open(u, '_blank', 'noopener');
+};
 window.onresize = () => draw();
 
 // ================= Analyse: Tonart, Akkorde, Harmonie =================
@@ -3189,6 +3203,43 @@ function streakDays(){
   }
   return s;
 }
+// ---------- Schwache Takte: bleiben ueber Sessions gemerkt ----------
+// Je Song ein Fehlerkonto pro Takt. Eine Kontrollrunde mit >= 2 Fehlern im
+// Takt bucht dazu, eine fehlerfreie halbiert - so verschwindet ein Takt erst,
+// wenn er mehrfach sauber kam. Die Tages-Session holt den schwaechsten Takt
+// als eigenen Baustein (Auto-Tempo, Loop ueber den Takt und seine Nachbarn).
+const WEAK_KEY = 'nulltag-weak';
+let weakMap = {};
+try { weakMap = JSON.parse(localStorage.getItem(WEAK_KEY) || '{}'); } catch (e) { weakMap = {}; }
+function recordWeak(title, ver, a, b, errs){
+  if (!SONGS.some(x => x.title === title)) return;   // nur Bibliotheks-Songs
+  const w = weakMap[title] || { v: ver, bars: {} };
+  for (let bar = a + 1; bar <= b; bar++) {
+    const e = errs[bar] || 0, cur = w.bars[bar] || 0;
+    const next = e >= 2 ? Math.min(20, cur + e) : e === 0 ? Math.floor(cur / 2) : cur;
+    if (next > 0) w.bars[bar] = next; else delete w.bars[bar];
+  }
+  w.v = ver;
+  if (Object.keys(w.bars).length) weakMap[title] = w; else delete weakMap[title];
+  try { localStorage.setItem(WEAK_KEY, JSON.stringify(weakMap)); } catch (e) {}
+}
+function weakestSpot(){
+  let best = null;
+  for (const [title, w] of Object.entries(weakMap))
+    for (const [bar, sc] of Object.entries(w.bars))
+      if (sc >= 4 && (!best || sc > best.sc)) best = { title, ver: w.v, bar: +bar, sc };
+  return best;
+}
+function openWeak(spot){
+  const s = SONGS.find(x => x.title === spot.title);
+  if (!s) return;
+  openSong(s, spot.ver); applyPreset('train');
+  version = spot.ver; document.getElementById('version').value = version;
+  secStart = Math.max(0, spot.bar - 2); secEnd = Math.min(SONG.bars, spot.bar + 1);
+  document.getElementById('section').value = ''; document.getElementById('step').value = '';
+  looping = true; syncToggleUi(); rebuild(); draw();
+  document.getElementById('hint').textContent = 'Schwacher Takt ' + spot.bar + ': Loop mit Nachbartakten, Auto-Tempo an.';
+}
 // ---------- Spaced Repetition: Auffrischen nach 3/7/14 Tagen ----------
 const REVIEW_KEY = 'nulltag-review';
 const REVIEW_IVL = [3, 7, 14];
@@ -3223,6 +3274,9 @@ function startSession(){
   sessionQueue = [];
   // Baustein 1b: faellige Auffrischer (Spaced Repetition, max. 2 pro Session)
   dueReviews().slice(0, 2).forEach(it => sessionQueue.push(it));
+  // Baustein 1c: schwaechster Takt aus frueheren Kontrollrunden
+  const ws = weakestSpot();
+  if (ws) sessionQueue.push({ title: 'Schwacher Takt: ' + ws.title + ', Takt ' + ws.bar, open: () => openWeak(ws) });
   // Baustein 2: naechste offene Lektion
   const nl = ALL_LESSONS.find(l => !doneSet.has(l.id));
   if (nl) sessionQueue.push({ title: 'Lektion: ' + nl.title, open: () => openLesson(nl.id) });
