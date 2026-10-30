@@ -9,9 +9,18 @@
   (How My Brain Sounds, Heat Death, ...) bleiben dicht - lesbar, aber kein
   Handsatz. Fuer Druckqualitaet: `.mxl` in MuseScore nacharbeiten.
 - **Schwache Takte** ueber Sessions gemerkt, Baustein in der Tages-Session.
+- **Handy-Modus**: kurze Seite < 600 px und Touch -> kein MIDI-Setup, Pille
+  schaltet das Mikrofon, Songs oeffnen als Vorschau (Anhoeren). Desktop
+  bekommt den Mikrofon-Knopf zusaetzlich.
+- **Mikrofon-Tonerkennung** (McLeod + Goertzel auf die erwarteten Toene),
+  speist `onNote()` wie MIDI; Rueckkopplung ueber den Lautsprecher
+  unterbunden. Getestet mit synthetischen Klaviertoenen (Einzeltoene 36-88,
+  Akkorde, Anschlag/Halten/Wechsel, Warte-Schritt mit Dreiklang).
+- **GA4 mit Einwilligung**: `GA_ID` eintragen, Banner, Datenschutz-Seite,
+  Ereignisse ueber `track()`. Ohne ID passiert nichts.
 - Offen: Mitspielen mit Originalspur (eigene MP3 je Song, Tempo per
-  playbackRate) - wartet auf Audio-Dateien bzw. Links.
-- CACHE auf v12.
+  playbackRate) - wartet auf Audio-Dateien bzw. Links. GA_ID fehlt noch.
+- CACHE auf v13.
 
 ## Runde 2026-08-19 (4) — How My Brain Sounds, Ashes-Reverie, echtes Greifbarkeits-Kriterium
 

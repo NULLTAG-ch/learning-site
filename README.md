@@ -16,8 +16,56 @@ NULLTAG-Designsystem ([`nulltag-cd`](https://github.com/NULLTAG-ch/nulltag-cd)).
 - Spielbar ohne Zusatzgeraet: Klaviatur anklicken/antippen oder Computertastatur
   (Reihe A–Ö ab C4, layout-unabhaengig; Leertaste = Start/Stopp)
 - Web-MIDI: erkennt MIDI-Keyboards (z.B. Novation FLkey 49) automatisch
+- Mikrofon: hoert dem echten Klavier zu (Tonerkennung im Browser); auf dem Handy
+  ersetzt das Mikrofon das MIDI-Setup, Songs laufen dort als Vorschau
 - Beliebige MIDI-Dateien ladbar: Drum-Filter, Handtrennung und Easy-Fassung werden client-seitig erzeugt
 - Klaviatur passt ihren Tonumfang dem geladenen Song an – grosse, lesbare Tasten statt 88 Mini-Tasten
+
+## Handy-Modus
+Ein schmales Touch-Geraet (kurze Bildschirmseite unter 600 CSS-px, `body.phone`)
+bekommt kein Web-MIDI-Setup. Die Pille oben rechts schaltet stattdessen das
+Mikrofon, in den Werkzeugen steht *Eingabe: Vorschau | Mikrofon*:
+
+- **Vorschau**: Songs oeffnen im Modus *Anhoeren* - der Trainer spielt vor,
+  fallende Noten und Klaviatur laufen mit. Lektionen bleiben im Warte-Modus
+  (Touch-Klaviatur).
+- **Mikrofon**: die App hoert dem echten Klavier zu, Modus wechselt auf *Warten*.
+
+Tablets und Desktop behalten MIDI und bekommen den Mikrofon-Knopf zusaetzlich.
+
+## Mikrofon: Tonerkennung vom echten Klavier
+Alles laeuft im Browser (`getUserMedia` -> `AnalyserNode`, 8192 Samples, alle 32 ms);
+nichts wird aufgezeichnet oder gesendet. Zwei Wege speisen `onNote()` wie ein
+MIDI-Keyboard:
+
+1. **Einstimmig** per McLeod Pitch Method (normalisierte Autokorrelation ueber
+   die letzten 2048 Samples, erstes Maximum >= 85 % des hoechsten, Parabel-
+   Interpolation). Ein Ton gilt nach zwei Ticks gleicher Tonhoehe bei
+   Klarheit >= 0.88; ein Neuanschlag derselben Taste braucht einen deutlichen
+   Pegelsprung nach dem Ausklingen.
+2. **Erwartete Toene** (Akkorde): fuer die Toene des aktuellen Warte-Schritts
+   bzw. der Kontroll-Noten um den Playhead misst ein Goertzel-Filter mit
+   Hann-Fenster die Energie am Grundton und einen Halbton daneben (mindestens
+   1.3 Bins). Zaehlt, wenn der Grundton >= 4 % des RMS und >= 1.6x staerker als
+   die Nachbarn ist und gegenueber dem Pegel vor dem Anschlag um 1.8x steigt.
+
+Rueckkopplung: mit aktivem Mikrofon spielt der Trainer im Kontroll-Modus
+nicht vor und im Warte-Modus nicht nach - der eigene Lautsprecher wuerde sonst
+als Treffer zaehlen. Das Metronom bleibt. `handlePress` hakt zuerst die exakte
+Taste ab und erst dann oktavtolerant, sonst blockiert A2+A3 im selben Schritt.
+
+Grenzen: Toene ueber ~1800 Hz und unter 40 Hz werden ignoriert; bei Akkorden
+ohne Erwartung (Modus Anhoeren) wird nur der dominante Ton erkannt.
+
+## Nutzungsstatistik (Google Analytics 4)
+`GA_ID` am Anfang des Skripts (Form `G-XXXXXXXXXX`). Leer = kein Banner, kein
+Tracking. Mit ID zeigt die Seite einmalig ein Banner; erst nach *Einverstanden*
+wird `gtag.js` geladen (Wahl in `localStorage nulltag-consent`, widerrufbar auf
+der Datenschutz-Seite). Ohne Einwilligung geht keine Anfrage an Google.
+Ereignisse ueber `track(name, params)`: `page_view` (Bereich), `song_open`
+(Song, Fassung), `preset`, `lesson_done`, `session_start`/`session_done`,
+`sheet_open`, `midi_connect`, `mic_start`. Keine Nutzer-IDs, keine Werbesignale
+(Consent Mode: `ad_*` denied).
 
 ## Werkzeuge-Tab
 Werkzeuge aus der NULLTAG-Produktion, eingebettet als iframe unter `tools/apps/`:
