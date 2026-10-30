@@ -132,6 +132,16 @@ jedes Songs als A4-PDF plus `.mxl` (gezipptes MusicXML, oeffnet MuseScore) nach
   und Triolen-Raster stehen pro Song in `SHEET` im Skript.
 - Nach jeder Aenderung an den Songdaten neu laufen lassen.
 
+## Deploy und Cache
+GitHub Pages baut aus `main` (Pages-Pipeline rund 30 Sekunden, siehe Actions
+«pages build and deployment»). Was danach bremst, ist der Browser: Pages liefert
+alles mit `max-age=600`. Der Service Worker holt die Shell deshalb beim
+Installieren frisch (`cache: 'reload'`) und fragt bei jeder Navigation per
+ETag beim Server nach (`cache: 'no-cache'`); `sw.js` selbst wird mit
+`updateViaCache: 'none'` registriert. Ein Deploy ist damit beim naechsten
+Laden sichtbar. Weiterhin gilt: bei geaenderten Assets `CACHE` in `sw.js`
+hochzaehlen.
+
 ## Track-Audit
 `node tools/audit-tracks.js` prueft alle Songs auf Tonart, Handverteilung,
 Griffweiten und Fingersatz. Die geprueften Funktionen zieht das Skript

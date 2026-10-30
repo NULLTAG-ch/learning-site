@@ -3721,7 +3721,8 @@ function renderStart(){
 renderStart();
 updateStreakPill();
 // PWA: Service Worker fuer Offline-Betrieb (Samples + App-Shell)
-if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
+// updateViaCache 'none': auch sw.js selbst nie aus dem HTTP-Cache pruefen
+if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).catch(() => {});
 // Bibliothek initial rendern
 renderLibrary();
 // Start: leichtester Song vorladen
